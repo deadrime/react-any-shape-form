@@ -2,7 +2,15 @@
   "name": "react-styleless-form",
   "author": "Eugene Trofimov",
   "license": "ISC",
-  "version": "1.0.4",
+  "version": "1.0.5",
+  "keywords": [
+    "form",
+    "react",
+    "antd",
+    "ant",
+    "styleless",
+    "replacement"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/deadrime/react-styleless-form"
