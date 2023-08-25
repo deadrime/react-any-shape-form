@@ -2,7 +2,7 @@
   "name": "react-styleless-form",
   "author": "Eugene Trofimov",
   "license": "ISC",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/deadrime/react-styleless-form"
@@ -19,11 +19,13 @@
   "module": "dist/bundle.es.js",
   "exports": {
     ".": {
-      "import": "./dist/bundle.es.js"
+      "import": "./dist/bundle.es.js",
+      "types": "./dist/src/index.d.ts"
     },
     "./dist/*": {
       "import": "./dist/*",
-      "require": "./dist/*"
+      "require": "./dist/*",
+      "types": "./dist/src/index.d.ts"
     }
   },
   "files": [
