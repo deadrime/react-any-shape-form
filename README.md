@@ -10,14 +10,14 @@ Install this package
 
 
 ```bash
-npm i styleless-form
+npm i react-styleless-form
 ```
 
 
 Use it like this:
 
 ```tsx
-import { Form, FormItem } from 'styleless-form';
+import { Form, FormItem } from 'react-styleless-form';
 
 const HelloWorldForm = () => {
   return (
