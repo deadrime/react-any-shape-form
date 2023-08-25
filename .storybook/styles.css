@@ -1,0 +1,39 @@
+.form__form-item__label {
+  font-size: 20px;
+}
+
+.form__form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form__form-item + .form__form-item{
+  margin-top: 16px;
+}
+
+.form button[type="submit"] {
+  margin-top: 16px;
+}
+
+.form__form-item__error {
+  color: red;
+
+  animation-name: slideIn;
+  animation-duration: 0.20s;
+  animation-timing-function: ease-in-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    height: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    height: 16px;
+    transform: translateX(0%);
+  }
+}
