@@ -78,11 +78,14 @@ No CSS by default. You need to style form by you own.
 You can change classes prefix (`.form` by default) using `CSSPrefix` property.
 You can use `renderLabel` to customize <label> and `renderError` for customize form error message.
 
-CSS clasees:
+CSS classes:
 
 `.form` - <form> tag.
+
 `.form__form-item` - form item wrapper
+
 `.form__form-item__label` - form item label (<label> tag)
+
 `.form__form-item__error` - form item error
 
 Look at `./storybook/styles.css` as example.

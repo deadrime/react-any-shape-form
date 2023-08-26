@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, FormItem, useFormRef } from '../src/index';
-import { Meta } from '@storybook/react';
+import { Meta, StoryObj } from '@storybook/react';
 
 type InputProps<T> = {
   value?: T;
@@ -36,7 +36,7 @@ const meta = {
 
 export default meta
 
-export const Basic = {
+export const Basic: StoryObj = {
   render: () => {
     return (
       <Form onFinish={(fields) => {
@@ -90,7 +90,7 @@ export const Basic = {
   },
 };
 
-export const WithCustomValidation = {
+export const WithCustomValidation: StoryObj = {
   render: () => {
     return (
       <Form onFinish={(fields) => {
@@ -125,7 +125,7 @@ type MyFormType = {
   field2: string;
 }
 
-export const UsingFormApi = {
+export const UsingFormApi: StoryObj = {
   render: () => {
     const formRef = useFormRef<MyFormType>();
 
