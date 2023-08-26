@@ -2,6 +2,7 @@ import Form from './Form.tsx';
 import { FormItem, FormItemProps } from './FormItem';
 export * from './Form';
 export * from './FormItem';
+export * from './types.ts';
 
 type InternalFormType = typeof Form;
 

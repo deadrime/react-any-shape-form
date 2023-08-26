@@ -2,7 +2,7 @@
   "name": "react-styleless-form",
   "author": "Eugene Trofimov",
   "license": "ISC",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Small, type-friendly and flexible react form component.",
   "keywords": [
     "form",
@@ -49,6 +49,7 @@
     "react-use": "^17.4.0"
   },
   "devDependencies": {
+    "@storybook/addon-docs": "^7.3.2",
     "@storybook/addon-essentials": "^7.3.2",
     "@storybook/addon-interactions": "^7.3.2",
     "@storybook/addon-links": "^7.3.2",
