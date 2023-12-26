@@ -1,17 +1,17 @@
-# React styleless form
+# React any shape form
 
 This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
 
 Package size in 7.71 kB │ gzip: 2.84 kB │ map: 33.43 kB
 
-Examples - https://react-styleless-form.vercel.app/
+Docs and examples - https://react-any-shape-form.vercel.app/
 
 ## Get started
 
 Install this package
 
 ```bash
-npm i react-styleless-form
+npm i react-any-shape-form
 ```
 
 Use it like this:
