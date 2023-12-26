@@ -6,8 +6,6 @@ import { Meta, StoryObj } from '@storybook/react';
 import { Canvas, Source, Title, Description, Markdown, ArgTypes } from "@storybook/blocks";
 import { FormProps } from '../src';
 
-import { SourceType } from "@storybook/docs-tools"
-
 type InputProps<T> = {
   value?: T;
   onChange?: (value: T) => void
@@ -120,7 +118,7 @@ export const FormItemComponent: StoryObj<typeof FormItem> = {
     name: 'field',
     children: <TextInput />,
     rules: [{
-      required: true
+      required: true,
     }]
   },
   argTypes: {

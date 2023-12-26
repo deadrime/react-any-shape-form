@@ -112,23 +112,23 @@ export const FormItem = <FieldName extends string, Value>(props: FormItemProps<F
       if (rule.required) {
         promises.push(executeValidator(value, checkRequired as Validator<Value>, rule));
       }
-      if (rule.min) {
+      if ('min' in rule) {
         promises.push(executeValidator(value, checkMin as Validator<Value>, rule));
       }
-      if (rule.max) {
+      if ('max' in rule) {
         promises.push(executeValidator(value, checkMax as Validator<Value>, rule));
       }
-      if (rule.validator) {
+      if ('validator' in rule) {
         promises.push(executeValidator(value, rule.validator, rule)) ;
       }
-      if (rule.pattern) {
+      if (rule.type === 'regexp' && 'pattern' in rule) {
         promises.push(executeValidator(value, checkPattern as Validator<Value>, rule));
       }
       if (rule.type === 'email') {
         promises.push(executeValidator(value, checkPattern as Validator<Value>, {
           ...rule,
           pattern: emailRegex,
-        }));
+        } as FormItemRule & { key: number }));
       }
     }
 
