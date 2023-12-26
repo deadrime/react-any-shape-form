@@ -1,9 +1,12 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import React from 'react';
 import { Form, FormItem, useFormRef } from '../src/index';
 import { Meta, StoryObj } from '@storybook/react';
 
 import { Canvas, Source, Title, Description, Markdown, ArgTypes } from "@storybook/blocks";
-import { FormProps } from '../dist';
+import { FormProps } from '../src';
+
+import { SourceType } from "@storybook/docs-tools"
 
 type InputProps<T> = {
   value?: T;
@@ -32,7 +35,7 @@ const NumberInput: React.FC<InputProps<number>> = ({ value, onChange, id }) => {
   )
 }
 
-let baseExampleCode = `
+const baseExampleCode = `
 
 import Form from 'react-styleless-form';
 
@@ -136,92 +139,8 @@ export const FormItemComponent: StoryObj<typeof FormItem> = {
     <Form>
       <FormItem {...args} />
     </Form>
-  )
+  ),
 }
-
-const meta = {
-  component: Form,
-  args: {
-    initialState: {
-      name: 'Name'
-    },
-    CSSPrefix: 'form',
-    id: 'myForm',
-    onFinish: (fields) => {
-      alert(JSON.stringify(fields, undefined, 2))
-    },
-  },
-  argTypes: {
-    initialState: {
-      defaultValue: undefined,
-      description: 'Predefined fields value',
-      type: 'symbol'
-    },
-    CSSPrefix: {
-      type: 'string',
-      description: 'CSS prefix',
-      defaultValue: 'form'
-    },
-    id: {
-      type: 'string',
-      description: 'html form id',
-    },
-    onFinish: {
-      type: 'function',
-      description: 'callback after form submit',
-    },
-    onValuesChange: {
-      type: 'function',
-      description: 'callback after any fields value changes',
-    }
-  },
-  tags: ['autodocs'],
-  parameters: {
-    docs: {
-      page: () => (
-        <>
-          <Title>React styleless form</Title>
-          <Description>
-            This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
-          </Description>
-          <Markdown>## Install</Markdown>
-          <Source code='npm i react-styleless-form' language='bash' />
-          <Markdown>## `Form` props</Markdown>
-          <ArgTypes />
-          <Markdown>## `Form.Item` props</Markdown>
-          <ArgTypes of={FormItemComponent} include={['name', 'children', 'rules']} />
-          <Markdown>## Basic example</Markdown>
-          <Canvas
-            of={Basic}
-            source={{
-              language: 'tsx',
-              code: baseExampleCode
-            }}
-            sourceState={'shown'}
-          />
-          <Markdown>## With custom validation</Markdown>
-          <Canvas
-            of={WithCustomValidation}
-            source={{
-              language: 'tsx',
-            }}
-            sourceState={'shown'}
-          />
-          <Markdown>## Using form API</Markdown>
-          <Canvas
-            of={UsingFormApi}
-            source={{
-              language: 'tsx',
-            }}
-            sourceState={'shown'}
-          />
-        </>
-      )
-    }
-  }
-} satisfies Meta<FormProps>;
-
-export default meta
 
 export const Basic: StoryObj<typeof Form> = {
   tags: ['autodocs'],
@@ -373,3 +292,81 @@ export const UsingFormApi: StoryObj = {
     );
   },
 };
+
+const meta = {
+  component: Form,
+  args: {
+    initialState: {
+      name: 'Name'
+    },
+    CSSPrefix: 'form',
+    id: 'myForm',
+    onFinish: (fields) => {
+      alert(JSON.stringify(fields, undefined, 2))
+    },
+  },
+  argTypes: {
+    initialState: {
+      defaultValue: undefined,
+      description: 'Predefined fields value',
+      type: 'symbol'
+    },
+    CSSPrefix: {
+      type: 'string',
+      description: 'CSS prefix',
+      defaultValue: 'form'
+    },
+    id: {
+      type: 'string',
+      description: 'html form id',
+    },
+    onFinish: {
+      type: 'function',
+      description: 'callback after form submit',
+    },
+    onValuesChange: {
+      type: 'function',
+      description: 'callback after any fields value changes',
+    }
+  },
+  tags: ['autodocs'],
+  parameters: {
+    docs: {
+      page: () => (
+        <>
+          <Title>React styleless form</Title>
+          <Description>
+            This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
+          </Description>
+          <Markdown>## Install</Markdown>
+          <Source code='npm i react-styleless-form' language='bash' />
+          <Markdown>## `Form` props</Markdown>
+          <ArgTypes />
+          <Markdown>## `Form.Item` props</Markdown>
+          <ArgTypes of={FormItemComponent} include={['name', 'children', 'rules']} />
+          <Markdown>## Basic example</Markdown>
+          <Canvas
+            of={Basic}
+            source={{
+              language: 'tsx',
+              code: baseExampleCode
+            }}
+            sourceState={'shown'}
+          />
+          <Markdown>## With custom validation</Markdown>
+          <Canvas of={WithCustomValidation} sourceState={'shown'} />
+          <Markdown>## Using form API</Markdown>
+          <Canvas
+            of={UsingFormApi}
+            source={{
+              language: 'tsx',
+            }}
+            sourceState={'shown'}
+          />
+        </>
+      )
+    }
+  }
+} satisfies Meta<FormProps>;
+
+export default meta

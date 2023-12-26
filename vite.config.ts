@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import dts from 'vite-plugin-dts';
 import path from 'path';
+import terser from '@rollup/plugin-terser';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -19,7 +21,6 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
-    minify: 'esbuild',
     lib: {
       entry: path.resolve(__dirname, 'src/index.ts'),
       name: 'bundle',
@@ -35,6 +36,14 @@ export default defineConfig({
           'react-dom': 'ReactDOM',
         },
       },
+      plugins: [terser({
+        sourceMap: true,
+        format: {
+          comments: false,         
+        },
+        mangle: true,
+        compress: true,
+      }) as any]
     },
   },
 })

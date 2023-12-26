@@ -1,9 +1,8 @@
 import React, { CSSProperties, useCallback, useImperativeHandle, useMemo, useRef, useState, useEffect } from 'react';
 import { useDebounce } from 'react-use';
 import { checkPattern, checkMax, checkMin, checkRequired } from './basicValidation';
-import { useFormContext } from './FormContext';
+import { FormContextState, useFormContext } from './FormContext';
 import { FormItemRule, Validator, ValidationStatus, ValidateTrigger } from './types';
-import classNames from 'classnames';
 import omit from './helpers/omit';
 import getAllSettledResults from './helpers/getAllSettledResults';
 
@@ -31,23 +30,28 @@ export type FormItemApi = {
   setError: (error: string) => void
 }
 
-export type FormItemProps = {
+export type FormItemProps<
+  FieldName extends string = string,
+  Value = unknown,
+> = {
+  value?: Value
   children: React.ReactElement
   label?: React.ReactNode
-  name: string
-  rules?: FormItemRule[]
-  className?: string,
-  style?: CSSProperties,
+  name: FieldName
+  rules?: FormItemRule<Value>[]
+  className?: string
+  style?: CSSProperties
   hasFeedback?: boolean
   getValueFromEvent?: (event: unknown) => unknown
-  onInvalid?: (error: string, value: unknown, rule: FormItemRule) => void
+  onInvalid?: (error: string, value: Value, rule: FormItemRule<Value>) => void
   id?: string
-  renderLabel?: (value: unknown, formItemId?: string) => React.ReactElement,
-  renderError?: (error: string, value: unknown) => React.ReactElement
+  renderLabel?: (value: Value, formItemId?: string) => React.ReactElement
+  renderError?: (error: string, value: Value) => React.ReactElement
+  context?: React.Context<FormContextState>
 }
 
-export const FormItem: React.FC<FormItemProps> = ((
-  {
+export const FormItem = <FieldName extends string, Value>(props: FormItemProps<FieldName, Value>) => {
+  const {
     children,
     name,
     rules = [],
@@ -60,8 +64,9 @@ export const FormItem: React.FC<FormItemProps> = ((
     id: idFromProps,
     renderError,
     renderLabel,
-  }) => {
-  const { value, setValue, ref, id, CSSPrefix } = useField(name);
+  } = props;
+
+  const { value, setValue, ref, id, CSSPrefix } = useField<Value>(name);
   const formItemId = idFromProps || id;
   const [errorByRuleKey, setErrorByRuleKey] = useState<Record<string, string>>({});
   const stateRef = useRef<{ valueChanged: boolean }>({ valueChanged: false });
@@ -75,12 +80,12 @@ export const FormItem: React.FC<FormItemProps> = ((
 
   const executeValidator = useCallback(
     async (
-      value: unknown,
-      validator: Validator,
-      rule: FormItemRule & { key: number }
+      value: Value,
+      validator: Validator<Value>,
+      rule: FormItemRule<Value> & { key: number }
     ) => {
       try {
-        await validator(value, rule);
+        await validator(value);
         return Promise.resolve(rule.key);
       } catch (error) {
         const errorText = rule.message || String(error);
@@ -92,7 +97,7 @@ export const FormItem: React.FC<FormItemProps> = ((
       }
     }, [onInvalid]);
 
-  const runValidators = useCallback(async (value: unknown, trigger?: ValidateTrigger) => {
+  const runValidators = useCallback(async (value: Value, trigger?: ValidateTrigger) => {
     if (!rulesWithKey.length) {
       return;
     }
@@ -105,22 +110,22 @@ export const FormItem: React.FC<FormItemProps> = ((
         continue;
       }
       if (rule.required) {
-        promises.push(executeValidator(value, checkRequired, rule));
+        promises.push(executeValidator(value, checkRequired as Validator<Value>, rule));
       }
       if (rule.min) {
-        promises.push(executeValidator(value, checkMin, rule));
+        promises.push(executeValidator(value, checkMin as Validator<Value>, rule));
       }
       if (rule.max) {
-        promises.push(executeValidator(value, checkMax, rule));
+        promises.push(executeValidator(value, checkMax as Validator<Value>, rule));
       }
       if (rule.validator) {
         promises.push(executeValidator(value, rule.validator, rule)) ;
       }
       if (rule.pattern) {
-        promises.push(executeValidator(value, checkPattern, rule));
+        promises.push(executeValidator(value, checkPattern as Validator<Value>, rule));
       }
       if (rule.type === 'email') {
-        promises.push(executeValidator(value, checkPattern, {
+        promises.push(executeValidator(value, checkPattern as Validator<Value>, {
           ...rule,
           pattern: emailRegex,
         }));
@@ -200,7 +205,7 @@ export const FormItem: React.FC<FormItemProps> = ((
   }, [getValueFromEvent, errorByRuleKey, setValue]);
 
   return (
-    <div className={classNames(className, `${CSSPrefix}__form-item`)} style={style}>
+    <div className={`${className} ${CSSPrefix}__form-item`} style={style}>
       <label htmlFor={formItemId} className={`${CSSPrefix}__form-item__label`}>{renderLabel ? renderLabel(value, formItemId) : label}</label>
       {React.cloneElement(children as React.ReactElement<FormItemChildrenProps>, {
         value,
@@ -219,9 +224,9 @@ export const FormItem: React.FC<FormItemProps> = ((
       )}
     </div>
   );
-});
+};
 
-const useField = (field: string) => {
+const useField = <T,>(field: string) => {
   const { updateFieldValue, fieldsValue, initField, removeField, formId, CSSPrefix } = useFormContext();
   const ref = useRef<FormItemApi>(null);
 
@@ -230,6 +235,7 @@ const useField = (field: string) => {
       return;
     }
     initField(field, ref);
+
     return () => {
       removeField(field);
     };
@@ -239,7 +245,7 @@ const useField = (field: string) => {
 
   return {
     ref,
-    value,
+    value: value as T,
     setValue: updateFieldValue(field),
     id: formId ? `${formId}:${field}` : undefined,
     CSSPrefix,

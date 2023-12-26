@@ -1,6 +1,6 @@
 import { FormItemRule } from './types';
 
-export const checkMin = async (value: unknown, rule: FormItemRule) => {
+export const checkMin = async <T>(value: T, rule: FormItemRule<T>) => {
   if (typeof rule.min !== 'number') {
     return;
   }
@@ -12,7 +12,7 @@ export const checkMin = async (value: unknown, rule: FormItemRule) => {
   }
 };
 
-export const checkMax = async (value: unknown, rule: FormItemRule) => {
+export const checkMax = async <T>(value: T, rule: FormItemRule<T>) => {
   if (typeof rule.max !== 'number') {
     return;
   }
@@ -24,11 +24,14 @@ export const checkMax = async (value: unknown, rule: FormItemRule) => {
   }
 };
 
-export const checkRequired = async (value: unknown, rule: FormItemRule) => {
+export const checkRequired = async <T>(value: T, rule: FormItemRule<T>) => {
   if (typeof value === 'number' && value === 0) {
     return;
   }
-  if (typeof value === 'boolean') { //?
+  if (typeof value === 'boolean') {
+    if (typeof value === 'undefined' || value === null) {
+      return Promise.reject(rule.message);
+    }
     return;
   }
   if (Array.isArray(value) && value.length === 0) {
@@ -39,7 +42,7 @@ export const checkRequired = async (value: unknown, rule: FormItemRule) => {
   }
 };
 
-export const checkPattern = async (value: unknown, rule: FormItemRule) => {
+export const checkPattern = async <T>(value: T, rule: FormItemRule<T>) => {
   if (typeof value === 'string' && !rule.pattern?.test(value)) {
     return Promise.reject(rule.message || 'Invalid format');
   }

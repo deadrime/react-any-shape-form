@@ -1,15 +1,17 @@
 import React, { useCallback, forwardRef, useState, useImperativeHandle, CSSProperties, useRef } from 'react';
 import { FormItemApi } from './FormItem';
-import { FormContext } from './FormContext';
+import { FormContext, FormContextState } from './FormContext';
 import omit from './helpers/omit';
-import { useUpdateEffect } from 'react-use';
-import classNames from 'classnames';
+import useUpdateEffect from 'react-use/esm/useUpdateEffect';
 
-export type FormProps<State = Record<string, unknown>> = {
+type RenderChildrenFunction<State> = (state: State) => React.ReactNode;
+
+export type FormProps<State extends Record<string, unknown> = Record<string, unknown>> = {
   initialState?: State
-  children: React.ReactNode
+  children: React.ReactNode | RenderChildrenFunction<State>
   onFinish?: (state: State) => void
   onValuesChange?: (values: State) => void
+  context?: React.Context<FormContextState<State>>
   className?: string
   style?: CSSProperties
   id?: string
@@ -38,11 +40,16 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
     className,
     style,
     id,
-    CSSPrefix = 'form'
+    CSSPrefix = 'form',
+    context
   } = props;
-  const [fieldsValue, setFieldsValue] = useState<State>(initialState);
+  const [state, setState] = useState<State>(initialState);
   const [refByFieldName, setRefByFieldName] = useState<Record<string, React.RefObject<FormItemApi>>>({});
   const fieldNames = Object.keys(refByFieldName) as Field[];
+
+  useUpdateEffect(() => {
+    onValuesChange?.(state);
+  }, [state]);
 
   const initField = useCallback((fieldName: Field, ref: React.RefObject<FormItemApi>) => {
     setRefByFieldName(obj => ({
@@ -56,29 +63,26 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
   }, []);
 
   const updateFieldValue = useCallback((field: Field) => (value: State[Field]) => {
-    setFieldsValue(values => ({
-      ...values,
+    setState(state => ({
+      ...state,
       [field]: value,
     }));
   }, []);
 
   const updateFieldsValue = useCallback((update: Partial<State>) => {
-    setFieldsValue(values => ({
-      ...values,
+    setState(state => ({
+      ...state,
       ...update,
     }));
   }, []);
 
-  useUpdateEffect(() => {
-    onValuesChange?.(fieldsValue);
-  }, [fieldsValue]);
-
   const resetFields = useCallback(() => {
-    setFieldsValue(initialState as State);
+    setState(initialState as State);
+    onValuesChange?.(initialState);
     fieldNames.map((fieldName) => refByFieldName[fieldName].current?.reset());
-  }, [fieldNames, initialState, refByFieldName]);
+  }, [fieldNames, initialState, onValuesChange, refByFieldName]);
 
-  const setFieldError = useCallback((fieldName: string, error: string) => {
+  const setFieldError = useCallback((fieldName: Field, error: string) => {
     refByFieldName[fieldName].current?.setError(error);
   }, [refByFieldName]);
 
@@ -101,16 +105,21 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
 
   const submit = useCallback(async () => {
     await validateFields();
-    onFinish?.(fieldsValue);
-  }, [fieldsValue, onFinish, validateFields]);
+    onFinish?.(state);
+  }, [state, onFinish, validateFields]);
 
   const getFieldValue = useCallback((field: string) => {
-    return fieldsValue[field];
-  }, [fieldsValue]);
+    return state[field];
+  }, [state]);
 
   const getFieldsValue = useCallback(() => {
-    return fieldsValue;
-  }, [fieldsValue]);
+    return state;
+  }, [state]);
+
+  const handleSubmit = useCallback(async (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await submit();
+  }, [submit]);
 
   useImperativeHandle(
     ref,
@@ -126,34 +135,31 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
     [updateFieldsValue, resetFields, setFieldError, validateFields, submit, getFieldValue, getFieldsValue]
   );
 
-  const handleSubmit = useCallback(async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    await submit();
-  }, [submit]);
+  const Context = context || FormContext;
 
   return (
-    <FormContext.Provider
+    <Context.Provider
       value={{
-        fieldsValue,
+        fieldsValue: state,
+        setFieldsValue: setState,
         initField,
         removeField,
-        setFieldsValue,
         updateFieldValue,
         validateFields,
         formId: id,
         CSSPrefix,
-      } as unknown as any}
+      } as FormContextState}
     >
       <form
         onSubmit={handleSubmit}
-        className={classNames(className, CSSPrefix)}
+        className={`${className} ${CSSPrefix}`}
         style={style}
         noValidate
         id={id}
       >
-        {children}
+        {typeof children === 'function' ? children(state) : children}
       </form>
-    </FormContext.Provider>
+    </Context.Provider>
   );
 }
 
@@ -163,6 +169,12 @@ export function useFormRef<State extends Record<string, unknown>>() {
   return formRef;
 }
 
-export default forwardRef(Form) as <State extends Record<string, unknown>, Field = Extract<keyof State, string>>(
+const FormWithRef = forwardRef(Form) as <State extends Record<string, unknown>, Field = Extract<keyof State, string>>(
   props: FormProps<State> & { ref?: React.ForwardedRef<FormApi<State, Field>> }
 ) => ReturnType<typeof Form>;
+
+export const createForm = <State extends Record<string, unknown>>() => {
+  return FormWithRef<State>;
+}
+ 
+export default FormWithRef;
