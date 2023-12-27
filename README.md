@@ -2,7 +2,7 @@
 
 This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
 
-Package size in 7.71 kB │ gzip: 2.84 kB │ map: 33.43 kB
+Package size in 7.9 kB | 2.91 kB gzip;
 
 Docs and examples - https://react-any-shape-form.vercel.app/
 

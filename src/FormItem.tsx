@@ -42,7 +42,8 @@ export type FormItemProps<
   className?: string
   style?: CSSProperties
   hasFeedback?: boolean
-  getValueFromEvent?: (event: unknown) => unknown
+  getValueFromEvent?: (event: unknown) => Value
+  onChange?: (Value: Value, event: unknown) => unknown
   onInvalid?: (error: string, value: Value, rule: FormItemRule<Value>) => void
   id?: string
   renderLabel?: (value: Value, formItemId?: string) => React.ReactElement
@@ -50,7 +51,15 @@ export type FormItemProps<
   context?: React.Context<FormContextState>
 }
 
-export const FormItem = <FieldName extends string, Value>(props: FormItemProps<FieldName, Value>) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const defaultGetValueFromEvent = <T,>(e: any) => {
+  if (e?.constructor?.name === 'SyntheticBaseEvent') { 
+    return e?.target?.value as T;
+  }
+  return e as T
+}
+
+export const FormItem = <Value, FieldName extends string = string>(props: FormItemProps<FieldName, Value>) => {
   const {
     children,
     name,
@@ -59,7 +68,8 @@ export const FormItem = <FieldName extends string, Value>(props: FormItemProps<F
     className,
     style,
     hasFeedback,
-    getValueFromEvent = (value) => value,
+    getValueFromEvent = defaultGetValueFromEvent<Value>,
+    onChange,
     onInvalid,
     id: idFromProps,
     renderError,
@@ -202,7 +212,8 @@ export const FormItem = <FieldName extends string, Value>(props: FormItemProps<F
     }
     // TODO: For another triggers we need to add some logic here
     setValue(getValueFromEvent(event));
-  }, [getValueFromEvent, errorByRuleKey, setValue]);
+    onChange?.(getValueFromEvent(event), event);
+  }, [errorByRuleKey, setValue, getValueFromEvent, onChange]);
 
   return (
     <div className={`${className} ${CSSPrefix}__form-item`} style={style}>

@@ -35,7 +35,7 @@ const NumberInput: React.FC<InputProps<number>> = ({ value, onChange, id }) => {
 
 const baseExampleCode = `
 
-import Form from 'react-styleless-form';
+import Form from 'react-any-shape-form';
 
 type InputProps<T> = {
   value?: T;
@@ -112,6 +112,36 @@ const MyForm = () => (
   </Form>
 )
 `;
+
+const typedExample = `
+import { createTypedForm } from "./createTypedForm";
+
+type MyState = {
+  field1: number;
+  field2: string;
+}
+
+const { Form, FormItem } = createTypedForm<MyState>();
+
+const MyComponent = () => {
+  return (
+    <Form initialState={{
+      field1: 123,
+      field2: 321, // Type check
+    }} onFinish={(state) => {
+      console.log(state.field1) // Autocomplete
+    }}>
+      <FormItem name="field2" onChange={(value) => {
+        // value type highlight as string
+      }}>
+        <input/>
+      </FormItem>
+    </Form>
+  )
+}
+
+`
+
 
 export const FormItemComponent: StoryObj<typeof FormItem> = {
   args: {
@@ -337,19 +367,23 @@ const meta = {
             This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
           </Description>
           <Markdown>## Install</Markdown>
-          <Source code='npm i react-styleless-form' language='bash' />
+          <Source code='npm i react-any-shape-form' language='bash' />
           <Markdown>## `Form` props</Markdown>
           <ArgTypes />
           <Markdown>## `Form.Item` props</Markdown>
           <ArgTypes of={FormItemComponent} include={['name', 'children', 'rules']} />
           <Markdown>## Basic example</Markdown>
           <Canvas
-            of={Basic}
             source={{
               language: 'tsx',
               code: baseExampleCode
             }}
             sourceState={'shown'}
+          />
+          <Markdown>## Full type support for form:</Markdown>
+          <Source
+            code={typedExample}
+            dark
           />
           <Markdown>## With custom validation</Markdown>
           <Canvas of={WithCustomValidation} sourceState={'shown'} />
