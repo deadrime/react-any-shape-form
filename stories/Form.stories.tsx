@@ -114,7 +114,7 @@ const MyForm = () => (
 `;
 
 const typedExample = `
-import { createTypedForm } from "./createTypedForm";
+import { createTypedForm } from "react-any-shape-form";
 
 type MyState = {
   field1: number;
