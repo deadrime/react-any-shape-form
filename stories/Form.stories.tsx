@@ -142,8 +142,7 @@ const MyComponent = () => {
 
 `
 
-
-export const FormItemComponent: StoryObj<typeof FormItem> = {
+const FormItemComponent: StoryObj<typeof FormItem> = {
   args: {
     name: 'field',
     children: <TextInput />,
@@ -161,16 +160,11 @@ export const FormItemComponent: StoryObj<typeof FormItem> = {
     },
     rules: {
       description: 'array of `FormItemRule`'
-    }
+    },
   },
-  render: (args) => (
-    <Form>
-      <FormItem {...args} />
-    </Form>
-  ),
 }
 
-export const Basic: StoryObj<typeof Form> = {
+export const BaseExample: StoryObj<typeof Form> = {
   tags: ['autodocs'],
   render: (args) => {
     return (
@@ -362,8 +356,9 @@ const meta = {
     docs: {
       page: () => (
         <>
-          <Title>React styleless form</Title>
+          <Title>React any shape form</Title>
           <Description>
+            Minimal size, full type support.
             This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
           </Description>
           <Markdown>## Install</Markdown>
@@ -374,6 +369,7 @@ const meta = {
           <ArgTypes of={FormItemComponent} include={['name', 'children', 'rules']} />
           <Markdown>## Basic example</Markdown>
           <Canvas
+            of={BaseExample}
             source={{
               language: 'tsx',
               code: baseExampleCode
