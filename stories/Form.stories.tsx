@@ -185,7 +185,7 @@ export const FormItemComponent: Meta<typeof FormItem> = {
     },
     renderError: {
       type: 'function',
-      description: '`(error: string) => ReactNode`, if you want to customize error. You also can just just specify some CSS for `form__form-item__error`'
+      description: '`(error: string) => React.ReactNode`, if you want to customize error. You also can just just specify some CSS for `form__form-item__error`'
     },
     onChange: {
       type: 'function',
@@ -382,7 +382,7 @@ const meta = {
     },
     style: {
       type: {
-        summary: 'CSSProperties'
+        summary: 'React.CSSProperties'
       } as any,
     },
     children: {
