@@ -1,26 +1,23 @@
 .wrapper {
-  margin-bottom: 16px;
+  margin-bottom: var(--formWrapper-marginBottom, 16px);
 }
 
 .label {
   display: flex;
-  margin-bottom: 4px;
+  margin-bottom: var(--formLabel-marginBottom, 4x);
 }
 
 .error {
   display: flex;
-  padding-top: 4px;
-
-  animation-name: slideIn;
-  animation-duration: 0.20s;
-  animation-timing-function: ease-in-out;
+  padding-top: var(--formError-paddingTop, 4x);
+  animation: var(--formError-animation, slideIn 0.2s ease-in-out);
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
     height: 0;
-    transform: translateY(-4px);
+    transform: translateY(calc(var(--formError-paddingTop) * -1));
   }
 
   to {

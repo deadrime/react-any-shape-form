@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/rules-of-hooks */
 import React from 'react';
 import { Form, FormItem, useFormRef } from '../src/index';
@@ -142,7 +143,9 @@ const MyComponent = () => {
 
 `
 
-const FormItemComponent: StoryObj<typeof FormItem> = {
+export const FormItemComponent: Meta<typeof FormItem> = {
+  component: FormItem,
+  render: (props) => <Form><FormItem {...props} /></Form>,
   args: {
     name: 'field',
     children: <TextInput />,
@@ -150,18 +153,45 @@ const FormItemComponent: StoryObj<typeof FormItem> = {
       required: true,
     }]
   },
+  parameters: {
+    chromatic: { disable: true },
+  },
   argTypes: {
     name: {
       type: 'string',
       description: 'field name that store in form state',
     },
+    label: {
+      type: {
+        summary: 'React.ReactNode'
+      } as any,
+      description: 'Form item label, string or `React.ReactNode`'
+    },
     children: {
+      type: {
+        summary: 'React.ReactElement'
+      } as any,
       description: 'react component with `value` and `onChange` props',
+    },
+    renderLabel: {
+      description: '`(value) => React.ReactNode` function',
     },
     rules: {
       description: 'array of `FormItemRule`'
     },
-  },
+    getValueFromEvent: {
+      type: 'function',
+      description: '`(event: unknown) => event.target.myValue`, if you component dispatch some custom event you need to specify how value can be extracted'
+    },
+    renderError: {
+      type: 'function',
+      description: '`(error: string) => ReactNode`, if you want to customize error. You also can just just specify some CSS for `form__form-item__error`'
+    },
+    onChange: {
+      type: 'function',
+      description: '`(value: Value, event: unknown) => void`, usually you don\'t need need this callback, if you need access to form state - use render function as form children.'
+    }
+  }
 }
 
 export const BaseExample: StoryObj<typeof Form> = {
@@ -278,7 +308,7 @@ export const UsingFormApi: StoryObj = {
         >
           <TextInput />
         </FormItem>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
           <button type="button" onClick={() => {
             formRef.current?.setFieldsValue({
               field1: 'Some',
@@ -329,7 +359,7 @@ const meta = {
   },
   argTypes: {
     initialState: {
-      defaultValue: undefined,
+      defaultValue: {},
       description: 'Predefined fields value',
       type: 'symbol'
     },
@@ -344,11 +374,22 @@ const meta = {
     },
     onFinish: {
       type: 'function',
-      description: 'callback after form submit',
+      description: 'callback after form submit and successful validation',
     },
     onValuesChange: {
       type: 'function',
       description: 'callback after any fields value changes',
+    },
+    style: {
+      type: {
+        summary: 'CSSProperties'
+      } as any,
+    },
+    children: {
+      type: {
+        summary: 'React.ReactNode | (state: FormState) => React.ReactNode'
+      } as any,
+      description: 'Children can be anything. Use render function to get access to form state'
     }
   },
   tags: ['autodocs'],
@@ -366,7 +407,7 @@ const meta = {
           <Markdown>## `Form` props</Markdown>
           <ArgTypes />
           <Markdown>## `Form.Item` props</Markdown>
-          <ArgTypes of={FormItemComponent} include={['name', 'children', 'rules']} />
+          <ArgTypes of={FormItemComponent} />
           <Markdown>## Basic example</Markdown>
           <Canvas
             of={BaseExample}
