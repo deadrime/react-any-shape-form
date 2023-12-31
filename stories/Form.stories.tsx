@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/rules-of-hooks */
-import { useFormRef } from '../src/index';
+import { createTypedForm, useFormRef } from '../src/index';
 
 import type { Meta, StoryObj } from '@storybook/react';
 
@@ -108,6 +108,74 @@ export const BaseExample: StoryObj<typeof Form> = {
   args: {
     initialState: {
       name: 'Some name',
+      age: 20,
+    },
+    onFinish: (state) => {
+      alert(JSON.stringify(state, undefined, 2))
+    }
+  }
+};
+
+export const StateAccessExample: StoryObj<typeof Form> = {
+  render: (args) => {
+    const { Form, FormItem } = createTypedForm<{ name: string, age: number }>();
+
+    return (
+      <Form initialState={{
+        name: String(args?.initialState?.name),
+        age: Number(args?.initialState?.age),
+      }} onFinish={args.onFinish}>
+        {(state) => <>
+          <FormItem
+            name="name"
+            label="Name"
+            rules={[
+              {
+                required: true,
+                message: 'Name is required'
+              },
+            ]}
+          >
+            <input />
+          </FormItem>
+          <FormItem
+            name="age"
+            label={`${state.name} age`}
+            rules={[
+              {
+                required: true,
+                message: 'Age is required',
+              },
+              {
+                min: 18,
+                type: 'number',
+                message: 'You are too young :('
+              },
+              {
+                max: 100,
+                type: 'number',
+                message: 'You are too old :('
+              }
+            ]}
+          >
+            <input />
+          </FormItem>
+          <button type="submit">
+            Submit button
+          </button>
+        </>}
+
+      </Form>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
+  args: {
+    initialState: {
+      name: 'Boris',
       age: 20,
     },
     onFinish: (state) => {
