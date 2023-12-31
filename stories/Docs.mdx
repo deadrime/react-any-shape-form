@@ -1,0 +1,148 @@
+import { Title, Source, Canvas, ArgTypes } from '@storybook/blocks';
+import * as FormStories from './Form.stories';
+import * as FormItemStories from './FormItem.stories';
+
+<Title>React any shape form</Title>
+
+Minimal size, full type support.
+This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
+
+
+## Install
+<Source code='npm i react-any-shape-form' language='bash' />
+
+## `Form` props
+<ArgTypes of={FormStories} />
+
+## `Form.Item` props
+<ArgTypes of={FormItemStories} />
+
+## Basic example
+<Canvas
+  of={FormStories.BaseExample}
+  source={{
+    language: 'tsx',
+    code: `
+import Form from 'react-any-shape-form';
+
+const MyForm = () => (
+  <Form
+    onFinish={(fields) => {
+      // Do something with fields value
+      alert(JSON.stringify(fields, undefined, 2))
+    }}
+    id="myForm"
+  >
+    <Form.Item
+      name="name"
+      label="Name"
+      rules={[
+        {
+          required: true,
+          message: 'Name is required'
+        },
+      ]}
+    >
+      <input />
+    </Form.Item>
+    <Form.Item
+      name="age"
+      label="Age"
+      rules={[
+        {
+          required: true,
+          message: 'Age is required',
+        },
+        {
+          min: 18,
+          type: 'number',
+          message: 'You are too young :('
+        },
+        {
+          max: 100,
+          type: 'number',
+          message: 'You are too old :('
+        }
+      ]}
+    >
+      <input />
+    </Form.Item>
+    <button type="submit">
+      Submit button
+    </button>
+  </Form>
+)
+    `
+  }}
+  sourceState={'shown'}
+/>
+
+## Full type support for form:
+<Source
+  code={`
+import { createTypedForm } from "react-any-shape-form";
+
+type MyState = {
+  field1: number;
+  field2: string;
+}
+
+const { Form, FormItem } = createTypedForm<MyState>();
+
+const MyForm = () => {
+  return (
+    <Form initialState={{
+      field1: 123,
+      field2: 321, // Type check
+    }} onFinish={(state) => {
+      console.log(state.field1) // Autocomplete
+    }}>
+      <FormItem name="field2" onChange={(value) => {
+        // value type highlight as string
+      }}>
+        <input/>
+      </FormItem>
+    </Form>
+  )
+}
+`}
+  dark
+/>
+
+## With custom validation
+<Canvas
+  of={FormItemStories.WithCustomValidation}
+  sourceState='shown'
+  source={{
+    code: `
+import Form from 'react-any-shape-form';
+
+const MyForm = () => (
+  <Form onFinish={(fields) => {
+    alert(JSON.stringify(fields, undefined, 2))
+  }} id="myForm">
+    <Form.Item
+      rules={[{
+        validateTrigger: ['onFinish'],
+        validator: async (value) => {
+          if (Number(value) !== 42) {
+            throw new Error('Wrong!');
+          }
+        },
+      }]}
+    >
+      <input />
+    </Form.Item>
+    <button type="submit">
+      Submit
+    </button>
+  </Form>
+)
+  `
+}} />
+
+## Using form API
+<Canvas
+  of={FormStories.UsingFormApi}
+  sourceState={'shown'}
+/>

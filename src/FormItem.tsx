@@ -53,7 +53,7 @@ export type FormItemProps<
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const defaultGetValueFromEvent = <T,>(e: any) => {
-  if (e?.constructor?.name === 'SyntheticBaseEvent') { 
+  if (e?.constructor?.name === 'SyntheticBaseEvent') {
     return e?.target?.value as T;
   }
   return e as T
@@ -95,7 +95,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
       rule: FormItemRule<Value> & { key: number }
     ) => {
       try {
-        await validator(value);
+        await validator(value, rule);
         return Promise.resolve(rule.key);
       } catch (error) {
         const errorText = rule.message || String(error);
@@ -114,6 +114,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     const promises = [];
 
     for (const rule of rulesWithKey) {
+      console.log({ rulesWithKey });
       if (trigger && !rule.validateTrigger.includes(trigger)) {
         // Just to reset error
         promises.push(Promise.resolve(rule.key));
@@ -129,7 +130,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
         promises.push(executeValidator(value, checkMax as Validator<Value>, rule));
       }
       if ('validator' in rule) {
-        promises.push(executeValidator(value, rule.validator, rule)) ;
+        promises.push(executeValidator(value, rule.validator, rule));
       }
       if (rule.type === 'regexp' && 'pattern' in rule) {
         promises.push(executeValidator(value, checkPattern as Validator<Value>, rule));
@@ -138,7 +139,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
         promises.push(executeValidator(value, checkPattern as Validator<Value>, {
           ...rule,
           pattern: emailRegex,
-        } as FormItemRule & { key: number }));
+        } as FormItemRule<Value> & { key: number }));
       }
     }
 
@@ -228,8 +229,8 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
         hasFeedback,
         id: formItemId,
       })}
-      {Object.values(errorByRuleKey).map((error) => 
-        renderError 
+      {Object.values(errorByRuleKey).map((error) =>
+        renderError
           ? renderError?.(error, value)
           : <div className={`${CSSPrefix}__form-item__error`}>{error}</div>
       )}

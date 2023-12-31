@@ -1,10 +1,12 @@
 import { FormItemRule } from './types';
 
 export const checkMin = async <T>(value: T, rule: FormItemRule<T>) => {
+  console.log('checkMin', { value, rule })
   if ('min' in rule && typeof rule.min !== 'number') {
     return;
   }
   if ('min' in rule && rule.type === 'number' && Number(value) < rule.min) {
+    console.log({value})
     return Promise.reject(rule.message);
   }
   if ('min' in rule && rule.type === 'string' && String(value).length < rule.min) {
