@@ -53,7 +53,7 @@ export type FormItemProps<
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const defaultGetValueFromEvent = <T,>(e: any) => {
-  if (e?.constructor?.name === 'SyntheticBaseEvent') {
+  if (typeof e === 'object' && typeof e?.target?.value !== 'undefined') {
     return e?.target?.value as T;
   }
   return e as T
@@ -114,7 +114,6 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     const promises = [];
 
     for (const rule of rulesWithKey) {
-      console.log({ rulesWithKey });
       if (trigger && !rule.validateTrigger.includes(trigger)) {
         // Just to reset error
         promises.push(Promise.resolve(rule.key));
@@ -211,7 +210,6 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     if (errorByRuleKey['customError']) {
       setErrorByRuleKey(obj => omit(obj, 'customError'));
     }
-    // TODO: For another triggers we need to add some logic here
     setValue(getValueFromEvent(event));
     onChange?.(getValueFromEvent(event), event);
   }, [errorByRuleKey, setValue, getValueFromEvent, onChange]);
