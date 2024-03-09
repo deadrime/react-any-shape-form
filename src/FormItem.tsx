@@ -1,28 +1,9 @@
 import React, { CSSProperties, useCallback, useImperativeHandle, useMemo, useRef, useState, useEffect } from 'react';
 import { useDebounce } from 'react-use';
-import { checkPattern, checkMax, checkMin, checkRequired } from './basicValidation';
 import { FormContextState, useFormContext } from './FormContext';
-import { FormItemRule, Validator, ValidationStatus, ValidateTrigger } from './types';
+import { FormItemRule, ValidationStatus, ValidateTrigger } from './types';
 import omit from './helpers/omit';
-import getAllSettledResults from './helpers/getAllSettledResults';
-
-// I know it's bad, use <input type="email">
-const emailRegex =
-  /* eslint-disable-next-line no-useless-escape */
-  /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-
-type ValidationError = {
-  ruleKey: string | number;
-  errorText: string;
-}
-
-type FormItemChildrenProps<T = unknown> = {
-  value: T,
-  onChange: (value: T) => void
-  validationStatus?: ValidationStatus
-  hasFeedback?: boolean
-  id?: string
-}
+import { getValidationErrors } from './helpers/getValidationErrors';
 
 export type FormItemApi = {
   validate: (trigger?: ValidateTrigger) => Promise<void>;
@@ -30,12 +11,15 @@ export type FormItemApi = {
   setError: (error: string) => void
 }
 
+export type RenderFormItemChildren<FieldName extends string = string, Value = unknown> =
+  (props: Pick<FormItemProps<FieldName, Value>, 'value' | 'onChange'> & { validationStatus: ValidationStatus }) => React.ReactNode;
+
 export type FormItemProps<
   FieldName extends string = string,
   Value = unknown,
 > = {
   value?: Value
-  children: React.ReactElement
+  children: React.ReactElement | RenderFormItemChildren<FieldName, Value>
   label?: React.ReactNode
   name: FieldName
   rules?: FormItemRule<Value>[]
@@ -43,7 +27,7 @@ export type FormItemProps<
   style?: CSSProperties
   hasFeedback?: boolean
   getValueFromEvent?: (event: unknown) => Value
-  onChange?: (Value: Value, event: unknown) => unknown
+  onChange?: (value: Value, event: unknown) => unknown
   onInvalid?: (error: string, value: Value, rule: FormItemRule<Value>) => void
   id?: string
   renderLabel?: (value: Value, formItemId?: string) => React.ReactElement
@@ -58,6 +42,7 @@ const defaultGetValueFromEvent = <T,>(e: any) => {
   }
   return e as T
 }
+
 
 export const FormItem = <Value, FieldName extends string = string>(props: FormItemProps<FieldName, Value>) => {
   const {
@@ -84,87 +69,32 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
 
   const rulesWithKey = useMemo(() => rules.map((rule, index) => ({
     ...rule,
-    key: index,
+    key: String(index),
     validateTrigger: rule.validateTrigger || ['onChange', 'onFinish'],
   })), [rules]);
-
-  const executeValidator = useCallback(
-    async (
-      value: Value,
-      validator: Validator<Value>,
-      rule: FormItemRule<Value> & { key: number }
-    ) => {
-      try {
-        await validator(value, rule);
-        return Promise.resolve(rule.key);
-      } catch (error) {
-        const errorText = rule.message || String(error);
-        onInvalid?.(rule.message || String(error), value, rule);
-        return Promise.reject({
-          ruleKey: rule.key,
-          errorText,
-        }) as Promise<ValidationError>;
-      }
-    }, [onInvalid]);
 
   const runValidators = useCallback(async (value: Value, trigger?: ValidateTrigger) => {
     if (!rulesWithKey.length) {
       return;
     }
-    const promises = [];
 
-    for (const rule of rulesWithKey) {
-      if (trigger && !rule.validateTrigger.includes(trigger)) {
-        // Just to reset error
-        promises.push(Promise.resolve(rule.key));
-        continue;
-      }
-      if (rule.required) {
-        promises.push(executeValidator(value, checkRequired as Validator<Value>, rule));
-      }
-      if ('min' in rule) {
-        promises.push(executeValidator(value, checkMin as Validator<Value>, rule));
-      }
-      if ('max' in rule) {
-        promises.push(executeValidator(value, checkMax as Validator<Value>, rule));
-      }
-      if ('validator' in rule) {
-        promises.push(executeValidator(value, rule.validator, rule));
-      }
-      if (rule.type === 'regexp' && 'pattern' in rule) {
-        promises.push(executeValidator(value, checkPattern as Validator<Value>, rule));
-      }
-      if (rule.type === 'email') {
-        promises.push(executeValidator(value, checkPattern as Validator<Value>, {
-          ...rule,
-          pattern: emailRegex,
-        } as FormItemRule<Value> & { key: number }));
-      }
-    }
+    const errors = await getValidationErrors(value, rulesWithKey, trigger);
 
-    const settledPromises = await Promise.allSettled(promises);
-    const noErrors = settledPromises.every(promise => promise.status === 'fulfilled');
+    errors.forEach(error => {
+      onInvalid?.(error.errorText, error.value, error.rule);
+    })
 
-    setErrorByRuleKey(obj => {
-      const {
-        rejected,
-        fulfilled,
-      } = getAllSettledResults<number, ValidationError>(settledPromises);
+    const errorsByRuleKey = errors.reduce((acc, curr) => {
+      acc[curr.rule.key] = curr.errorText;
+      return acc;
+    }, {} as Record<string, string>)
 
-      for (const fieldKey of fulfilled) {
-        delete obj[fieldKey]
-      }
-      for (const error of rejected) {
-        obj[error.ruleKey] = error.errorText
-      }
+    setErrorByRuleKey(errorsByRuleKey);
 
-      return obj;
-    });
-
-    if (!noErrors) {
+    if (errors.length > 0) {
       return Promise.reject('reject');
     }
-  }, [executeValidator, rulesWithKey]);
+  }, [onInvalid, rulesWithKey]);
 
   const validate = useCallback(async (trigger?: ValidateTrigger) => {
     setValidationStatus('validating');
@@ -216,17 +146,26 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
 
   return (
     <div className={`${className} ${CSSPrefix}__form-item`} style={style}>
-      <label htmlFor={formItemId} className={`${CSSPrefix}__form-item__label`}>{renderLabel ? renderLabel(value, formItemId) : label}</label>
-      {React.cloneElement(children as React.ReactElement<FormItemChildrenProps>, {
-        value,
-        onChange: (value: unknown) => {
-          handleChange(value);
-          children.props?.onChange?.(value);
-        },
-        validationStatus,
-        hasFeedback,
-        id: formItemId,
-      })}
+      <label htmlFor={formItemId} className={`${CSSPrefix}__form-item__label`}>
+        {renderLabel ? renderLabel(value, formItemId) : label}
+      </label>
+      {typeof children === 'function'
+        ? children({
+          value,
+          onChange: handleChange,
+          validationStatus,
+        })
+        : React.cloneElement(children, {
+          value,
+          onChange: (value: unknown) => {
+            handleChange(value);
+            children.props?.onChange?.(value);
+          },
+          validationStatus,
+          hasFeedback,
+          id: formItemId,
+        })
+      }
       {Object.values(errorByRuleKey).map((error) =>
         renderError
           ? renderError?.(error, value)

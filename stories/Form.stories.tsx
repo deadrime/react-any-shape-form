@@ -116,14 +116,65 @@ export const BaseExample: StoryObj<typeof Form> = {
   }
 };
 
-export const StateAccessExample: StoryObj<typeof Form> = {
+export const CustomValidatorExample: StoryObj<typeof Form> = {
   render: (args) => {
-    const { Form, FormItem } = createTypedForm<{ name: string, age: number }>();
+    const { Form, FormItem } = createTypedForm<{ name: string, age: number, custom: number }>();
 
     return (
       <Form initialState={{
         name: String(args?.initialState?.name),
         age: Number(args?.initialState?.age),
+        custom: 0,
+      }} onFinish={args.onFinish}>
+        <FormItem
+          name="custom"
+          label={"Answer of Universe"}
+          rules={[
+            {
+              validator: async (value) => {
+                if (value === 42) {
+                  return
+                } else {
+                  return Promise.reject();
+                }
+              },
+              validateTrigger: ['onFinish'],
+              message: 'Wrong!',
+            },
+          ]}
+        >
+          <input />
+        </FormItem>
+        <button type="submit">
+          Submit button
+        </button>
+      </Form>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
+  args: {
+    initialState: {
+      custom: "",
+    },
+    onFinish: (state) => {
+      alert(JSON.stringify(state, undefined, 2))
+    }
+  }
+};
+
+export const StateAccessExample: StoryObj<typeof Form> = {
+  render: (args) => {
+    const { Form, FormItem } = createTypedForm<{ name: string, age: number, custom: number }>();
+
+    return (
+      <Form initialState={{
+        name: String(args?.initialState?.name),
+        age: Number(args?.initialState?.age),
+        custom: 0,
       }} onFinish={args.onFinish}>
         {(state) => <>
           <FormItem
@@ -186,7 +237,7 @@ export const StateAccessExample: StoryObj<typeof Form> = {
 
 type MyFormType = {
   field1: string;
-  field2: string;
+  field2: number;
 }
 
 export const UsingFormApi: StoryObj = {
@@ -225,7 +276,7 @@ export const UsingFormApi: StoryObj = {
           <button type="button" onClick={() => {
             formRef.current?.setFieldsValue({
               field1: 'Some',
-              field2: 'Value'
+              field2: 123
             })
           }}>
             Fill
@@ -257,5 +308,6 @@ export const UsingFormApi: StoryObj = {
     );
   },
 };
+
 
 export default meta;

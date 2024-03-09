@@ -176,5 +176,5 @@ const FormWithRef = forwardRef(Form) as <State extends Record<string, unknown>, 
 export const createForm = <State extends Record<string, unknown>>() => {
   return FormWithRef<State>;
 }
- 
+
 export default FormWithRef;
