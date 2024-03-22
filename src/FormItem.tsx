@@ -1,7 +1,7 @@
 import React, { CSSProperties, useCallback, useImperativeHandle, useMemo, useRef, useState, useEffect } from 'react';
 import { useDebounce } from 'react-use';
 import { FormContextState, useFormContext } from './FormContext';
-import { FormItemRule, ValidationStatus, ValidateTrigger } from './types';
+import { FormItemRule, ValidationStatus, ValidateTrigger, FieldUpdate } from './types';
 import omit from './helpers/omit';
 import { getValidationErrors } from './helpers/getValidationErrors';
 
@@ -27,7 +27,7 @@ export type FormItemProps<
   style?: CSSProperties
   hasFeedback?: boolean
   getValueFromEvent?: (event: unknown) => Value
-  onChange?: (value: Value, event: unknown) => unknown
+  onChange?: (value: FieldUpdate<Value>, event?: unknown) => unknown
   onInvalid?: (error: string, value: Value, rule: FormItemRule<Value>) => void
   id?: string
   renderLabel?: (value: Value, formItemId?: string) => React.ReactElement
@@ -42,7 +42,6 @@ const defaultGetValueFromEvent = <T,>(e: any) => {
   }
   return e as T
 }
-
 
 export const FormItem = <Value, FieldName extends string = string>(props: FormItemProps<FieldName, Value>) => {
   const {
@@ -140,6 +139,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     if (errorByRuleKey['customError']) {
       setErrorByRuleKey(obj => omit(obj, 'customError'));
     }
+
     setValue(getValueFromEvent(event));
     onChange?.(getValueFromEvent(event), event);
   }, [errorByRuleKey, setValue, getValueFromEvent, onChange]);
@@ -175,7 +175,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
   );
 };
 
-const useField = <T,>(field: string) => {
+export const useField = <T,>(field: string) => {
   const { updateFieldValue, fieldsValue, initField, removeField, formId, CSSPrefix } = useFormContext();
   const ref = useRef<FormItemApi>(null);
 
@@ -195,7 +195,7 @@ const useField = <T,>(field: string) => {
   return {
     ref,
     value: value as T,
-    setValue: updateFieldValue(field),
+    setValue: updateFieldValue(field) as (value: T) => void,
     id: formId ? `${formId}:${field}` : undefined,
     CSSPrefix,
   };

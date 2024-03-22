@@ -45,3 +45,7 @@ export type ValidationError<Value = unknown> = {
   value: Value,
   errorText: string;
 }
+
+export type FieldUpdateCb<T> = (oldState: T) => Partial<T>;
+
+export type FieldUpdate<T> = FieldUpdateCb<T> | T

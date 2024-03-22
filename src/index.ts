@@ -3,6 +3,7 @@ import { FormItem, FormItemProps } from './FormItem.tsx';
 export * from './Form.tsx';
 export * from './FormItem.tsx';
 export * from './types.ts';
+export * from './FormArrayItem.tsx';
 export { createTypedForm } from './createTypedForm.tsx';
 
 type InternalFormType = typeof Form;

@@ -3,6 +3,7 @@ import { FormItemApi } from './FormItem';
 import { FormContext, FormContextState } from './FormContext';
 import omit from './helpers/omit';
 import useUpdateEffect from 'react-use/esm/useUpdateEffect';
+import { FieldUpdate, FieldUpdateCb } from './types';
 
 type RenderChildrenFunction<State> = (state: State) => React.ReactNode;
 
@@ -62,10 +63,10 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
     setRefByFieldName(obj => omit(obj, fieldName));
   }, []);
 
-  const updateFieldValue = useCallback((field: Field) => (value: State[Field]) => {
+  const updateFieldValue = useCallback((field: Field) => (value: FieldUpdate<State[Field]>) => {
     setState(state => ({
       ...state,
-      [field]: value,
+      [field]: typeof value === 'function' ? (value as FieldUpdateCb<State[Field]>)(state[field]) : value,
     }));
   }, []);
 

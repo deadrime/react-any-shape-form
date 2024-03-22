@@ -309,5 +309,60 @@ export const UsingFormApi: StoryObj = {
   },
 };
 
+export const ArrayExample: StoryObj<typeof Form> = {
+  render: (args) => {
+    const { Form, FormArrayItem } = createTypedForm<{ people: string[] }>();
+
+    return (
+      <Form initialState={{
+        people: [],
+      }} onFinish={args.onFinish}>
+        <FormArrayItem
+          name="people"
+          label="People list"
+          rules={[
+            {
+              required: true,
+              message: 'Name is required'
+            },
+          ]}
+        >
+          {({ fields, update, append, remove }) => (
+            <div>
+              <div>
+                {fields.map((field, index) =>
+                  <div key={index}>
+                    <input value={field} onChange={e => update(index, e.target.value)} />
+                    <button type="button" onClick={() => remove(index)}>Remove</button>
+                  </div>
+                )}
+              </div>
+              <button type="button" onClick={() => append("")}>
+                Add
+              </button>
+            </div>
+          )}
+        </FormArrayItem>
+        <button type="submit">
+          Submit button
+        </button>
+      </Form>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
+  args: {
+    initialState: {
+      name: 'Boris',
+      age: 20,
+    },
+    onFinish: (state) => {
+      alert(JSON.stringify(state, undefined, 2))
+    }
+  }
+};
 
 export default meta;
