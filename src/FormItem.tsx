@@ -51,7 +51,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     label,
     className,
     style,
-    hasFeedback,
+    hasFeedback = false,
     getValueFromEvent = defaultGetValueFromEvent<Value>,
     onChange,
     onInvalid,
@@ -161,9 +161,10 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
             handleChange(value);
             children.props?.onChange?.(value);
           },
-          validationStatus,
-          hasFeedback,
           id: formItemId,
+          ...hasFeedback && {
+            validationStatus,
+          }
         })
       }
       {Object.values(errorByRuleKey).map((error) =>
