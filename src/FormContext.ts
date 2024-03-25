@@ -31,3 +31,11 @@ export const FormContext = createContext<FormContextState>(formDefaultContext)
 export const useFormContext = <State extends Record<string, unknown> = Record<string, unknown>>() => {
   return useContext<FormContextState<State>>(FormContext as unknown as React.Context<FormContextState<State>>)
 }
+
+export const useField = <T, Field extends string = string>(field: Field) => {
+  const { updateFieldValue, fieldsValue } = useFormContext();
+
+  const value = typeof fieldsValue[field] !== 'undefined' ? fieldsValue[field] : '';
+
+  return [value as T, updateFieldValue(field) as (value: T) => void,] as const;
+};

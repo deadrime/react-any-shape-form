@@ -1,6 +1,6 @@
 import React, { CSSProperties, useCallback, useImperativeHandle, useMemo, useRef, useState, useEffect } from 'react';
 import { useDebounce } from 'react-use';
-import { FormContextState, useFormContext } from './FormContext';
+import { FormContextState, useField, useFormContext } from './FormContext';
 import { FormItemRule, ValidationStatus, ValidateTrigger, FieldUpdate } from './types';
 import omit from './helpers/omit';
 import { getValidationErrors } from './helpers/getValidationErrors';
@@ -60,7 +60,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     renderLabel,
   } = props;
 
-  const { value, setValue, ref, id, CSSPrefix } = useField<Value>(name);
+  const { value, setValue, ref, id, CSSPrefix } = useFieldData<Value>(name);
   const formItemId = idFromProps || id;
   const [errorByRuleKey, setErrorByRuleKey] = useState<Record<string, string>>({});
   const stateRef = useRef<{ valueChanged: boolean }>({ valueChanged: false });
@@ -176,8 +176,9 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
   );
 };
 
-export const useField = <T,>(field: string) => {
-  const { updateFieldValue, fieldsValue, initField, removeField, formId, CSSPrefix } = useFormContext();
+const useFieldData = <T,>(field: string) => {
+  const [value, setValue] = useField<T>(field)
+  const { initField, removeField, formId, CSSPrefix } = useFormContext();
   const ref = useRef<FormItemApi>(null);
 
   useEffect(() => {
@@ -191,12 +192,10 @@ export const useField = <T,>(field: string) => {
     };
   }, [ref, field, initField, removeField]);
 
-  const value = typeof fieldsValue[field] !== 'undefined' ? fieldsValue[field] : '';
-
   return {
     ref,
-    value: value as T,
-    setValue: updateFieldValue(field) as (value: T) => void,
+    value,
+    setValue,
     id: formId ? `${formId}:${field}` : undefined,
     CSSPrefix,
   };
