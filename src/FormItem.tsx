@@ -12,7 +12,7 @@ export type FormItemApi = {
 }
 
 export type RenderFormItemChildren<FieldName extends string = string, Value = unknown> =
-  (props: Pick<FormItemProps<FieldName, Value>, 'value' | 'onChange'> & { validationStatus: ValidationStatus }) => React.ReactNode;
+  (props: Required<Pick<FormItemProps<FieldName, Value>, 'value' | 'onChange'>> & { validationStatus: ValidationStatus }) => React.ReactNode;
 
 export type FormItemProps<
   FieldName extends string = string,

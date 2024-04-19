@@ -1,9 +1,10 @@
 import { createContext, useContext } from 'react';
 import { FormItemApi } from './FormItem';
+import { FieldUpdate } from 'types';
 
-export type FormContextState<State extends Record<string, unknown> = Record<string, unknown>, Field = Extract<keyof State, string>> = {
-  fieldsValue: Record<string, unknown>
-  updateFieldValue: (field: Field) => (value: unknown) => void
+export type FormContextState<State extends Record<string, unknown> = Record<string, unknown>, Field extends Extract<keyof State, string> = Extract<keyof State, string>> = {
+  fieldsValue: State
+  updateFieldValue: (field: Field) => (value: FieldUpdate<State[Field]>) => void
   setFieldsValue: (update: Partial<State>) => void
   initField: (fieldName: Field, ref: React.RefObject<FormItemApi>) => void
   removeField: (fieldName: Field) => void
@@ -23,7 +24,7 @@ const formDefaultContext: FormContextState<Record<string, unknown>> = {
 };
 
 export const createFormContext = <State extends Record<string, unknown> = Record<string, unknown>>() => {
-  return createContext<FormContextState<State>>(formDefaultContext)
+  return createContext<FormContextState<State>>(formDefaultContext as unknown as FormContextState<State>)
 }
 
 export const FormContext = createContext<FormContextState>(formDefaultContext)

@@ -119,6 +119,7 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
 
   const handleSubmit = useCallback(async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     await submit();
   }, [submit]);
 
@@ -136,7 +137,7 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
     [updateFieldsValue, resetFields, setFieldError, validateFields, submit, getFieldValue, getFieldsValue]
   );
 
-  const Context = context || FormContext;
+  const Context = (context || FormContext) as React.Context<FormContextState<State>>;
 
   return (
     <Context.Provider
@@ -149,11 +150,11 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
         validateFields,
         formId: id,
         CSSPrefix,
-      } as FormContextState}
+      } as FormContextState<State>}
     >
       <form
         onSubmit={handleSubmit}
-        className={`${className} ${CSSPrefix}`}
+        className={`${className || ''} ${CSSPrefix}`}
         style={style}
         noValidate
         id={id}

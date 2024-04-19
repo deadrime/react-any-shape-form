@@ -1,11 +1,12 @@
 import React, { useCallback } from "react"
 import { FormItem, FormItemProps } from "./FormItem"
+import { FieldUpdateCb } from "./types"
 
 type FormArrayAPI<T extends unknown[]> = {
   fields: T,
   append: (value: T[number]) => void,
   remove: (index: number) => void,
-  update: (index: number, value: T[number]) => void,
+  update: (index: number, value: T[number] | FieldUpdateCb<T[number]>) => void,
   // prepend,
   // remove,
   // swap,
@@ -26,8 +27,8 @@ const FormArrayChildren = <Value extends unknown[]>({ value: fieldValue, onChang
     onChange?.(fields => fields.toSpliced(index, 1) as Value);
   }, [onChange])
 
-  const update = useCallback((index: number, value: Value[number]) => {
-    onChange?.(fields => fields.with(index, value) as Value);
+  const update = useCallback((index: number, value: Value[number] | FieldUpdateCb<Value[number]>) => {
+    onChange?.(fields => fields.with(index, typeof value === 'function' ? (value as FieldUpdateCb<Value[number]>)(fields[index]) : value) as Value);
   }, [onChange])
 
   return children({
