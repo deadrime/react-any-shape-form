@@ -2,7 +2,9 @@
 
 This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
 
-Package size in 7.9 kB | 2.91 kB gzip;
+Package size
+
+![npm bundle size](https://img.shields.io/bundlephobia/min/react-any-shape-form) ![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-any-shape-form)
 
 Docs and examples - https://react-any-shape-form.vercel.app/
 
