@@ -1,6 +1,6 @@
 import React, { useCallback, forwardRef, useState, useImperativeHandle, CSSProperties, useRef } from 'react';
 import { FormItemApi } from './FormItem';
-import { FormContext, FormContextState } from './FormContext';
+import { FieldsUpdate, FormContext, FormContextState } from './FormContext';
 import omit from './helpers/omit';
 import useUpdateEffect from 'react-use/esm/useUpdateEffect';
 import { FieldUpdate, FieldUpdateCb } from './types';
@@ -18,10 +18,6 @@ export type FormProps<State extends Record<string, unknown> = Record<string, unk
   id?: string
   CSSPrefix?: string
 }
-
-type FieldsUpdateCb<T> = (oldState: T) => T;
-
-type FieldsUpdate<T> = Partial<T> | FieldsUpdateCb<T>
 
 export type FormApi<State extends Record<string, unknown>, Field = Extract<keyof State, string>> = {
   setFieldsValue: (update: FieldsUpdate<State>) => void

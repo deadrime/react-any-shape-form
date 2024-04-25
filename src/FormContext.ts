@@ -2,10 +2,14 @@ import { createContext, useContext } from 'react';
 import { FormItemApi } from './FormItem';
 import { FieldUpdate } from 'types';
 
+export type FieldsUpdateCb<T> = (oldState: T) => T;
+
+export type FieldsUpdate<T> = Partial<T> | FieldsUpdateCb<T>
+
 export type FormContextState<State extends Record<string, unknown> = Record<string, unknown>, Field extends Extract<keyof State, string> = Extract<keyof State, string>> = {
   fieldsValue: State
   updateFieldValue: (field: Field) => (value: FieldUpdate<State[Field]>) => void
-  setFieldsValue: (update: Partial<State>) => void
+  setFieldsValue: (update: FieldsUpdate<State>) => void
   initField: (fieldName: Field, ref: React.RefObject<FormItemApi>) => void
   removeField: (fieldName: Field) => void
   validateFields: (fieldNames?: Field[]) => Promise<void>
