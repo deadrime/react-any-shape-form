@@ -19,8 +19,12 @@ export type FormProps<State extends Record<string, unknown> = Record<string, unk
   CSSPrefix?: string
 }
 
+type FieldsUpdateCb<T> = (oldState: T) => T;
+
+type FieldsUpdate<T> = Partial<T> | FieldsUpdateCb<T>
+
 export type FormApi<State extends Record<string, unknown>, Field = Extract<keyof State, string>> = {
-  setFieldsValue: (update: Partial<State>) => void
+  setFieldsValue: (update: FieldsUpdate<State>) => void
   resetFields: () => void
   setFieldError: (field: Field, error: string) => void
   getFieldsValue: () => State;
@@ -70,11 +74,15 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
     }));
   }, []);
 
-  const updateFieldsValue = useCallback((update: Partial<State>) => {
-    setState(state => ({
-      ...state,
-      ...update,
-    }));
+  const updateFieldsValue = useCallback((update: FieldsUpdate<State>) => {
+    if (typeof update === 'function') {
+      setState(update);
+    } else {
+      setState(state => ({
+        ...state,
+        ...update,
+      }));
+    }
   }, []);
 
   const resetFields = useCallback(() => {
@@ -143,7 +151,7 @@ const Form = <State extends Record<string, unknown>, Field extends Extract<keyof
     <Context.Provider
       value={{
         fieldsValue: state,
-        setFieldsValue: setState,
+        setFieldsValue: updateFieldsValue,
         initField,
         removeField,
         updateFieldValue,
