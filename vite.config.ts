@@ -47,10 +47,6 @@ export default defineConfig({
           comments: false,         
         },
         mangle: true,
-        compress: {
-          defaults: true,
-          arguments: true,
-        },
       }) as any]
     },
   },
