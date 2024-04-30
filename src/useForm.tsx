@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FormApi } from "./FormApi";
 import { FormApiGenericTypes, ArrayOnly, ArrayOnlyFields } from "./typesHelpers";
 import { FieldUpdate, FormItemRule, ValidationError } from "./types";
@@ -7,7 +7,7 @@ import { FormItem, FormItemProps } from "./FormItem";
 import { FormArrayItem, FormArrayItemProps, useArrayField } from "./FormArrayItem";
 
 export const useCreateForm = <State extends Record<string, unknown>>(initialState: State) => {
-  const formApiRef = useRef<FormApi<State>>(new FormApi(initialState));
+  const formApiRef = React.useRef<FormApi<State>>(new FormApi(initialState));
 
   return [formApiRef.current] as const
 }
