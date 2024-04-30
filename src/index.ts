@@ -4,8 +4,9 @@ export * from './Form.tsx';
 export * from './FormItem.tsx';
 export * from './types.ts';
 export * from './FormArrayItem.tsx';
-export { createTypedForm } from './createTypedForm.tsx';
-export { useField, useFormContext, createFormContext } from './FormContext.ts';
+export * from './useForm.tsx';
+
+export { useFormContext, createFormContext } from './FormContext.ts';
 
 type InternalFormType = typeof Form;
 
@@ -13,7 +14,7 @@ type CompoundedFormComponent = InternalFormType & {
   Item: React.FC<FormItemProps>
 }
 
-const CompoundedForm = Form as unknown as CompoundedFormComponent;
+const CompoundedForm = Form as CompoundedFormComponent;
 
 CompoundedForm.Item = FormItem
 

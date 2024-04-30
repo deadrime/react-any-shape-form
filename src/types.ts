@@ -1,4 +1,14 @@
-export type RuleType = 'string' | 'number' | 'regexp' | 'email';
+export type FieldsUpdateCb<T> = (oldState: T) => T;
+
+export type FieldError<Value> = ValidationError<Value>
+
+export type FieldOnChangeCb<T> = (value: T) => void
+
+export type FieldOnErrorCb<T, S> = (validationErrors: ValidationError<T>[], state: S) => void
+
+export type FieldOnSubmitCb<S> = (state: S) => void
+
+export type RuleType = 'string' | 'number' | 'regexp' | 'email' | 'array';
 
 export type Validator<T = unknown> = (value: T, rule: FormItemRule<T>) => Promise<string | void | Error>;
 
@@ -12,12 +22,12 @@ interface BaseRule {
 }
 
 interface MinRule extends BaseRule {
-  type: 'string' | 'number'
+  type: 'string' | 'number' | 'array'
   min: number
 }
 
 interface MaxRule extends BaseRule {
-  type: 'string' | 'number'
+  type: 'string' | 'number' | 'array'
   max: number
 }
 
@@ -38,10 +48,8 @@ export type FormItemRule<T = unknown> = RequiredRule | MinRule | MaxRule | Patte
 
 export type ValidationStatus = 'notStarted' | 'validating' | 'success' | 'error'
 
-export type FormItemRuleWithKey<T = unknown> = FormItemRule<T> & { key: string }
-
 export type ValidationError<Value = unknown> = {
-  rule: FormItemRuleWithKey<Value>,
+  rule: FormItemRule<Value>,
   value: Value,
   errorText: string;
 }

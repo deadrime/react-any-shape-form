@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Meta, StoryObj } from "@storybook/react";
 import { Form, FormItem } from "../src";
-import React from "react";
 
 const meta: Meta<typeof FormItem> = {
   component: FormItem,
@@ -21,39 +20,29 @@ const meta: Meta<typeof FormItem> = {
       description: 'field name that store in form state',
     },
     label: {
-      type: {
-        summary: 'React.ReactNode'
-      } as any,
-      description: 'Form item label, string or `React.ReactNode`'
+      description: 'form item label'
     },
     children: {
-      control: { type: null },
-      type: {
-        summary: 'React.ReactElement'
-      } as any,
-      description: 'react component with `value` and `onChange` props',
-    },
-    value: {
-      control: { type: null },
+      description: '`React.FC` or render function with `value` and `onChange` props',
     },
     renderLabel: {
-      description: '`(value) => React.ReactNode` function',
+      description: 'if you want to customize label',
     },
     rules: {
       control: 'object',
-      description: 'array of `FormItemRule`'
+      description: 'validation rules'
     },
     getValueFromEvent: {
-      type: 'function',
-      description: '`(event: unknown) => event.target.myValue`, if you component dispatch some custom event you need to specify how value can be extracted'
+      description: 'if you component dispatch some custom event you need to specify how value can be extracted'
+    },
+    normalize: {
+      description: 'if you want to transform value before display it'
     },
     renderError: {
-      type: 'function',
-      description: '`(error: string) => React.ReactNode`, if you want to customize error. You also can just just specify some CSS for `form__form-item__error`'
+      description: 'if you want to customize error. You also can just just specify some CSS for `form__form-item__error`'
     },
     onChange: {
-      type: 'function',
-      description: '`(value: Value, event: unknown) => void`, usually you don\'t need need this callback, if you need access to form state - use render function as form children.'
+      description: 'usually you don\'t need need this callback, if you need access to form state - use render function as form children.'
     }
   }
 }
@@ -90,39 +79,6 @@ export const BaseExample: StoryObj<typeof FormItem> = {
         // max: 100,
         message: 'Value must be between 10 and 100!'
       }
-    ]
-  }
-};
-
-export const WithCustomValidation: StoryObj<typeof FormItem> = {
-  render: (props) => {
-    return (
-      <Form onFinish={(fields) => {
-        alert(JSON.stringify(fields, undefined, 2))
-      }} id="myForm">
-        <Form.Item
-          {...props}
-        >
-          <input />
-        </Form.Item>
-        <button type="submit">
-          Submit
-        </button>
-      </Form>
-    );
-  },
-  args: {
-    name: 'answer',
-    label: 'Answer to the Ultimate Question of Life, the Universe, and Everything',
-    rules: [
-      {
-        validateTrigger: ['onFinish'],
-        validator: async (value) => {
-          if (Number(value) !== 42) {
-            throw new Error('Wrong!');
-          }
-        },
-      },
     ]
   }
 };

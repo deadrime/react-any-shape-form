@@ -4,9 +4,17 @@ import * as FormItemStories from './FormItem.stories';
 
 <Title>React any shape form</Title>
 
-Minimal size, full type support.
-This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
+Lightweight form library focused on ease of use. This library was inspired by `antd` form component and `react-hook-form`. 
 
+![npm bundle size](https://img.shields.io/bundlephobia/min/react-any-shape-form) ![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-any-shape-form)
+
+## Features
+
+- Small size
+- Type-friendly, all components and hooks fully typed
+- Ease to use, usually you need only `createForm` method to get all the functionality
+- Build in promise based validation, you can easy use your own promise function to validate fields
+- No extra re-renders
 
 ## Install
 <Source code='npm i react-any-shape-form' language='bash' />
@@ -23,193 +31,395 @@ This package was inspired by `antd` form component. But this one without any ant
   source={{
     language: 'tsx',
     code: `
-import Form from 'react-any-shape-form';
+import { createForm } from 'react-any-shape-form';
 
-const MyForm = () => (
-  <Form
-    onFinish={(fields) => {
-      // Do something with fields value
-      alert(JSON.stringify(fields, undefined, 2))
-    }}
-    id="myForm"
-  >
-    <Form.Item
+const MyForm = createForm({
+  name: 'Rina',
+  age: 24,
+})
+
+const MyComponent = () => 
+  <MyForm onFinish={(state) => {
+    alert(JSON.stringify(state, undefined, 2));
+  }}>
+    <MyForm.Item
       name="name"
       label="Name"
+      onChange={value => value}
       rules={[
         {
           required: true,
-          message: 'Name is required'
+          message: 'Name is required',
+          validateTrigger: ['onFinish']
         },
       ]}
     >
-      <input />
-    </Form.Item>
-    <Form.Item
-      name="age"
-      label="Age"
-      rules={[
-        {
-          required: true,
-          message: 'Age is required',
-        },
-        {
-          min: 18,
-          type: 'number',
-          message: 'You are too young :('
-        },
-        {
-          max: 100,
-          type: 'number',
-          message: 'You are too old :('
-        }
-      ]}
-    >
-      <input />
-    </Form.Item>
+      {({ value, onChange }) =>
+        <input value={value} onChange={e => onChange(e.target.value)} />
+      }
+    </MyForm.Item>
+    <MyForm.Item name="age">
+      {({ value, onChange }) =>
+        <input type="number" value={value} onChange={(e) => onChange(+e.target.value)} />
+      }
+    </MyForm.Item>
     <button type="submit">
       Submit button
     </button>
-  </Form>
-)
+  </MyForm>
     `
   }}
   sourceState={'shown'}
 />
 
-## Full type support for form:
-<Source
-  code={`
-import { createTypedForm } from "react-any-shape-form";
-
-type MyState = {
-  field1: number;
-  field2: string;
-}
-
-const { Form, FormItem } = createTypedForm<MyState>();
-
-const MyForm = () => {
-  return (
-    <Form initialState={{
-      field1: 123,
-      field2: 321, // Type check
-    }} onFinish={(state) => {
-      console.log(state.field1) // Autocomplete
-    }}>
-      <FormItem name="field2" onChange={(value) => {
-        // value type highlight as string
-      }}>
-        <input/>
-      </FormItem>
-    </Form>
-  )
-}
-`}
-  dark
-/>
-
-## With custom validation
+## Custom validator example
 <Canvas
-  of={FormItemStories.WithCustomValidation}
-  sourceState='shown'
+  of={FormStories.CustomValidatorExample}
+  sourceState={'hidden'}
   source={{
     code: `
-import Form from 'react-any-shape-form';
+import { createForm } from 'react-any-shape-form';
+
+const Form = createForm({
+  name: '',
+});
 
 const MyForm = () => (
-  <Form onFinish={(fields) => {
-    alert(JSON.stringify(fields, undefined, 2))
-  }} id="myForm">
-    <Form.Item
-      rules={[{
-        validateTrigger: ['onFinish'],
-        validator: async (value) => {
-          if (Number(value) !== 42) {
-            throw new Error('Wrong!');
-          }
-        },
-      }]}
-    >
-      <input />
-    </Form.Item>
-    <button type="submit">
-      Submit
-    </button>
-  </Form>
+  return (
+    <Form onFinish={args.onFinish}>
+      <Form.Item
+        name="custom"
+        label={"Answer of Universe"}
+        rules={[
+          {
+            validator: async (value) => {
+              if (value === 42) {
+                return
+              } else {
+                return Promise.reject();
+              }
+            },
+            validateTrigger: ['onFinish'],
+            message: 'Wrong!',
+          },
+        ]}
+      >
+        {({ value, onChange }) =>
+          <input
+            type="number"
+            value={value}
+            onChange={e => onChange(+e.target.value)}
+          />
+        }
+      </Form.Item>
+      <button type="submit">
+        Submit button
+      </button>
+    </Form>
+  );
 )
   `
 }} />
 
-## Using form API
+## `Form.useWatch` example
 <Canvas
-  of={FormStories.UsingFormApi}
-  sourceState={'shown'}
-/>
-
-## Get access to state
-<Canvas
-  of={FormStories.StateAccessExample}
-  sourceState='shown'
+  of={FormStories.UseWatchExample}
+  sourceState={'hidden'}
   source={{
     code: `
-import { createTypedForm } from 'react-any-shape-form';
+import { createForm } from 'react-any-shape-form';
 
-type MyState = {
-  name: string
-  age: number
+const Form = createForm({
+  name: '',
+});
+
+const AgeLabel = () => {
+  const name = Form.useWatch('name');
+
+  return <span>{name} age</span>
 }
 
-const { Form, FormItem } = createTypedForm<MyState>();
-
-const MyForm = () => {
+const MyForm = () => (
   return (
-    <Form initialState={{
-      name: String(args?.initialState?.name),
-      age: Number(args?.initialState?.age),
-    }} onFinish={args.onFinish}>
-      {(state) => <>
-        <FormItem
-          name="name"
-          label="Name"
-          rules={[
-            {
-              required: true,
-              message: 'Name is required'
-            },
-          ]}
-        >
-          <input />
-        </FormItem>
-        <FormItem
-          name="age"
-          label={\`\${state.name} age\`}
-          rules={[
-            {
-              required: true,
-              message: 'Age is required',
-            },
-            {
-              min: 18,
-              type: 'number',
-              message: 'You are too young :('
-            },
-            {
-              max: 100,
-              type: 'number',
-              message: 'You are too old :('
-            }
-          ]}
-        >
-          <input />
-        </FormItem>
-        <button type="submit">
-          Submit button
+    <Form onFinish={args.onFinish}>
+      <Form.Item
+        name="name"
+        label="Name"
+        rules={[
+          {
+            required: true,
+            message: 'Name is required'
+          },
+        ]}
+      >
+        <input />
+      </Form.Item>
+      <Form.Item
+        name="age"
+        label={<AgeLabel/>}
+        rules={[
+          {
+            required: true,
+            message: 'Age is required',
+          },
+          {
+            min: 18,
+            type: 'number',
+            message: 'You are too young :('
+          },
+          {
+            max: 100,
+            type: 'number',
+            message: 'You are too old :('
+          }
+        ]}
+      >
+        <input />
+      </Form.Item>
+      <button type="submit">
+        Submit button
+      </button>
+    </Form >
+  );
+)
+  `
+}} />
+
+## `Form.formApi` example
+<Canvas
+  of={FormStories.UsingFormApi}
+  sourceState={'hidden'}
+  source={{
+    code: `
+import { createForm } from 'react-any-shape-form';
+
+const Form = createForm({
+  field1: 'Some string',
+  field2: 123,
+});
+
+const MyForm = () => (
+  return (
+    <Form
+      onFinish={(fields) => {
+        alert(JSON.stringify(fields, undefined, 2))
+      }}
+      id="Form"
+    >
+      <Form.Item
+        name="field1"
+        label="Field1"
+        rules={[{
+          required: true,
+          message: 'Field1 is required',
+          validateTrigger: ['onFinish']
+        }]}
+      >
+        <input />
+      </Form.Item>
+      <Form.Item
+        name="field2"
+        label="Field2"
+        rules={[{
+          required: true,
+          message: 'Field2 is required',
+          validateTrigger: ['onFinish']
+        }]}
+      >
+        <input />
+      </Form.Item>
+      <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+        <button type="button" onClick={() => {
+          Form.formApi.setFieldsValue({
+            field1: 'Some',
+            field2: 123
+          })
+        }}>
+          Fill
         </button>
-      </>}
+        <button type="button" onClick={() => {
+          Form.formApi.resetFields();
+        }}>
+          Reset
+        </button>
+        <button type="button" onClick={() => {
+          Promise.resolve().then(() => {
+            Form.formApi.submit();
+          })
+        }}>
+          Custom submit
+        </button>
+        <button type="button" onClick={() => {
+          Form.formApi.validateFields()
+        }}>
+          Run all fields validation
+        </button>
+        <button type="button" onClick={() => {
+          Form.formApi.validateFields(['field2'])
+        }}>
+          Run validation only for field 2
+        </button>
+      </div>
     </Form>
   );
+)
+  `
+}} />
+
+## `Form.ArrayItem` example
+<Canvas
+  of={FormStories.ArrayExample}
+  sourceState={'hidden'}
+  source={{
+    code: `
+import { createForm } from 'react-any-shape-form';
+
+const Form = createForm({
+  userIds: [] as string[],
+});
+
+const MyForm = () => (
+  return (
+    <Form onFinish={state => {
+      alert(JSON.stringify(state, undefined, 2))
+    }}>
+      <Form.ArrayItem
+        name="userIds"
+        label="People list"
+        rules={[
+          {
+            required: true,
+            message: 'Add at least one userId'
+          },
+          {
+            validator: async (value) => {
+              if (!value.every(Boolean)) {
+                return Promise.reject('Some field is empty')
+              }
+            }
+          }
+        ]}
+      >
+        {({ fields, update, append, remove }) => (
+          <div>
+            <div>
+              {fields.map((field, index) =>
+                <div key={index}>
+                  <input value={field} onChange={e => update(index, e.target.value)} />
+                  <button type="button" onClick={() => remove(index)}>Remove</button>
+                </div>
+              )}
+            </div>
+            <button type="button" onClick={() => append("")}>
+              Add
+            </button>
+          </div>
+        )}
+      </Form.ArrayItem>
+      <button type="submit">
+        Submit button
+      </button>
+    </Form>
+  );
+)
+  `
+}} />
+
+## `Form.useArrayField` example
+<Canvas
+  of={FormStories.ArrayHookExample}
+  sourceState={'hidden'}
+  source={{
+    code: `
+import { createForm } from 'react-any-shape-form';
+
+const Form = createForm({
+  userIds: [] as string[],
+});
+
+const MyForm = () => (
+  const { fields, update, append, remove } = Form.useArrayField('userIds', [{
+    type: 'array',
+    min: 1,
+    message: 'Add at least one userId'
+  }]);
+
+  const errors = Form.useFieldError('userIds');
+
+  return (
+    <Form onFinish={state => {
+      alert(JSON.stringify(state, undefined, 2))
+    }}>
+      <div>
+        <div>
+          {fields.map((field, index) =>
+            <div key={index}>
+              <input value={field} onChange={e => update(index, e.target.value)} />
+              <button type="button" onClick={() => remove(index)}>Remove</button>
+            </div>
+          )}
+        </div>
+        <button type="button" onClick={() => append("")}>
+          Add
+        </button>
+      </div>
+
+      <div>
+        {errors.map(({ errorText }) => <div className='form__form-item__error'>{errorText}</div>)}
+      </div>
+
+      <button type="submit">
+        Submit button
+      </button>
+    </Form>
+  );
+  `
+}} />
+
+## Transform example
+<Canvas
+  of={FormStories.TransformExample}
+  sourceState={'hidden'}
+  source={{
+    code: `
+import { createForm } from 'react-any-shape-form';
+
+const Form = createForm({
+  amount: 123456
+});
+
+const convertToFloat = (number: string, locale = 'en-IN') => {
+  const group = new Intl.NumberFormat(locale).format(1111).replace(/1/g, '');
+  const decimal = new Intl.NumberFormat(locale).format(1.1).replace(/1/g, '');
+  const reversedVal = number
+    .replace(new RegExp('\\' + group, 'g'), '')
+    .replace(new RegExp('\\' + decimal, 'g'), '.')
+
+  return Number(reversedVal)
 }
-    `
-  }}
-/>
+
+const formatNumber = (number, locale = 'en-IN') => new Intl.NumberFormat(locale).format(number)
+
+const MyForm = () => (
+  return (
+    <Form onFinish={state => {
+      alert(JSON.stringify(state, undefined, 2))
+    }}>
+      <Form.Item
+        name='amount'
+        getValueFromEvent={e => {
+          const value = convertToFloat(e.target.value, 'ru');
+          return isNaN(value) ? Form.formApi.getFieldValue('test') : value
+        }}
+        normalize={value => formatNumber(value, 'ru')}>
+        <input />
+      </Form.Item>
+
+      <button type="submit">
+        Submit button
+      </button>
+    </Form>
+  );
+)
+  `
+}} />

@@ -1,13 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/rules-of-hooks */
-import { createTypedForm, useFormRef } from '../src/index';
-
 import type { Meta, StoryObj } from '@storybook/react';
+import { createForm, useForm } from '@/useForm';
+import { Form } from '@/Form'
 
-import { Form } from '../src/index';
-import React from 'react';
-
-const meta: Meta<typeof Form> = {
+const meta: Meta<any> = {
   component: Form,
   args: {
     initialState: {
@@ -23,7 +19,6 @@ const meta: Meta<typeof Form> = {
     initialState: {
       defaultValue: {},
       description: 'Predefined fields value',
-      type: 'symbol'
     },
     CSSPrefix: {
       type: 'string',
@@ -36,31 +31,138 @@ const meta: Meta<typeof Form> = {
     },
     onFinish: {
       type: 'function',
-      description: 'callback after form submit and successful validation',
-    },
-    onValuesChange: {
-      type: 'function',
-      description: 'callback after any fields value changes',
+      description: 'callback after form submission and successful validation',
     },
     style: {
       type: {
-        summary: 'React.CSSProperties'
+        summary: 'CSSProperties'
       } as any,
     },
     children: {
       type: {
-        summary: 'React.ReactNode | (state: FormState) => React.ReactNode'
-      } as any,
-      description: 'Children can be anything. Use render function to get access to form state'
+        name: 'other',
+        value: 'React.ReactElement'
+      },
+
+      description: 'Children can be anything.'
     }
   }
 };
 
+
 export const BaseExample: StoryObj<typeof Form> = {
-  render: (args) => {
+  render: () => {
+    // Create form outside of your component
+    const MyForm = createForm({
+      name: 'Rina',
+      age: 24,
+    })
+
     return (
-      <Form {...args}>
+      <MyForm onFinish={(state) => {
+        alert(JSON.stringify(state, undefined, 2));
+      }}>
+        <MyForm.Item
+          name="name"
+          label="Name"
+          onChange={value => value}
+          rules={[
+            {
+              required: true,
+              message: 'Name is required',
+              validateTrigger: ['onFinish']
+            },
+          ]}
+        >
+          {({ value, onChange }) =>
+            <input value={value} onChange={e => onChange(e.target.value)} />
+          }
+        </MyForm.Item>
+        <MyForm.Item name="age">
+          {({ value, onChange }) =>
+            <input type="number" value={value} onChange={(e) => onChange(+e.target.value)} />
+          }
+        </MyForm.Item>
+        <button type="submit">
+          Submit button
+        </button>
+      </MyForm>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
+  args: {
+    onFinish: (state) => {
+      alert(JSON.stringify(state, undefined, 2))
+    }
+  }
+};
+
+export const CustomValidatorExample: StoryObj<typeof Form> = {
+  render: (args) => {
+    const Form = createForm({
+      custom: 0,
+    });
+
+    return (
+      <Form onFinish={args.onFinish}>
         <Form.Item
+          name="custom"
+          label={"Answer of Universe"}
+          rules={[
+            {
+              validator: async (value) => {
+                if (value === 42) {
+                  return
+                } else {
+                  return Promise.reject();
+                }
+              },
+              validateTrigger: ['onFinish'],
+              message: 'Wrong!',
+            },
+          ]}
+        >
+          {({ value, onChange }) =>
+            <input
+              type="number"
+              value={value}
+              onChange={e => onChange(+e.target.value)}
+            />
+          }
+        </Form.Item>
+        <button type="submit">
+          Submit button
+        </button>
+      </Form>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
+  args: {
+    onFinish: (state) => {
+      alert(JSON.stringify(state, undefined, 2))
+    }
+  }
+};
+
+export const UseWatchExample: StoryObj<typeof Form> = {
+  render: (args) => {
+    const MyForm = useForm({
+      name: 'Rina',
+      age: 24,
+    });
+    const name = MyForm.useWatch('name');
+
+    return (
+      <MyForm onFinish={args.onFinish}>
+        <MyForm.Item
           name="name"
           label="Name"
           rules={[
@@ -71,10 +173,10 @@ export const BaseExample: StoryObj<typeof Form> = {
           ]}
         >
           <input />
-        </Form.Item>
-        <Form.Item
+        </MyForm.Item>
+        <MyForm.Item
           name="age"
-          label="Age"
+          label={`${name} age`}
           rules={[
             {
               required: true,
@@ -93,130 +195,11 @@ export const BaseExample: StoryObj<typeof Form> = {
           ]}
         >
           <input />
-        </Form.Item>
+        </MyForm.Item>
         <button type="submit">
           Submit button
         </button>
-      </Form>
-    );
-  },
-  argTypes: {
-    initialState: {
-      control: 'object',
-    },
-  },
-  args: {
-    initialState: {
-      name: 'Some name',
-      age: 20,
-    },
-    onFinish: (state) => {
-      alert(JSON.stringify(state, undefined, 2))
-    }
-  }
-};
-
-export const CustomValidatorExample: StoryObj<typeof Form> = {
-  render: (args) => {
-    const { Form, FormItem } = createTypedForm<{ name: string, age: number, custom: number }>();
-
-    return (
-      <Form initialState={{
-        name: String(args?.initialState?.name),
-        age: Number(args?.initialState?.age),
-        custom: 0,
-      }} onFinish={args.onFinish}>
-        <FormItem
-          name="custom"
-          label={"Answer of Universe"}
-          rules={[
-            {
-              validator: async (value) => {
-                if (value === 42) {
-                  return
-                } else {
-                  return Promise.reject();
-                }
-              },
-              validateTrigger: ['onFinish'],
-              message: 'Wrong!',
-            },
-          ]}
-        >
-          <input />
-        </FormItem>
-        <button type="submit">
-          Submit button
-        </button>
-      </Form>
-    );
-  },
-  argTypes: {
-    initialState: {
-      control: 'object',
-    },
-  },
-  args: {
-    initialState: {
-      custom: "",
-    },
-    onFinish: (state) => {
-      alert(JSON.stringify(state, undefined, 2))
-    }
-  }
-};
-
-export const StateAccessExample: StoryObj<typeof Form> = {
-  render: (args) => {
-    const { Form, FormItem } = createTypedForm<{ name: string, age: number, custom: number }>();
-
-    return (
-      <Form initialState={{
-        name: String(args?.initialState?.name),
-        age: Number(args?.initialState?.age),
-        custom: 0,
-      }} onFinish={args.onFinish}>
-        {(state) => <>
-          <FormItem
-            name="name"
-            label="Name"
-            rules={[
-              {
-                required: true,
-                message: 'Name is required'
-              },
-            ]}
-          >
-            <input />
-          </FormItem>
-          <FormItem
-            name="age"
-            label={`${state.name} age`}
-            rules={[
-              {
-                required: true,
-                message: 'Age is required',
-              },
-              {
-                min: 18,
-                type: 'number',
-                message: 'You are too young :('
-              },
-              {
-                max: 100,
-                type: 'number',
-                message: 'You are too old :('
-              }
-            ]}
-          >
-            <input />
-          </FormItem>
-          <button type="submit">
-            Submit button
-          </button>
-        </>}
-
-      </Form>
+      </MyForm >
     );
   },
   argTypes: {
@@ -235,46 +218,45 @@ export const StateAccessExample: StoryObj<typeof Form> = {
   }
 };
 
-type MyFormType = {
-  field1: string;
-  field2: number;
-}
-
 export const UsingFormApi: StoryObj = {
   render: () => {
-    const formRef = useFormRef<MyFormType>();
+    const MyForm = useForm({
+      field1: 'Some string',
+      field2: 123,
+    });
 
     return (
-      <Form
-        ref={formRef}
+      <MyForm
         onFinish={(fields) => {
           alert(JSON.stringify(fields, undefined, 2))
         }}
         id="myForm"
       >
-        <Form.Item
+        <MyForm.Item
           name="field1"
           label="Field1"
           rules={[{
             required: true,
-            message: 'Field1 is required'
+            message: 'Field1 is required',
+            validateTrigger: ['onFinish']
           }]}
         >
           <input />
-        </Form.Item>
-        <Form.Item
+        </MyForm.Item>
+        <MyForm.Item
           name="field2"
           label="Field2"
           rules={[{
             required: true,
-            message: 'Field2 is required'
+            message: 'Field2 is required',
+            validateTrigger: ['onFinish']
           }]}
         >
           <input />
-        </Form.Item>
+        </MyForm.Item>
         <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
           <button type="button" onClick={() => {
-            formRef.current?.setFieldsValue({
+            MyForm.formApi.setFieldsValue({
               field1: 'Some',
               field2: 123
             })
@@ -282,49 +264,56 @@ export const UsingFormApi: StoryObj = {
             Fill
           </button>
           <button type="button" onClick={() => {
-            formRef.current?.resetFields();
+            MyForm.formApi.resetFields();
           }}>
             Reset
           </button>
           <button type="button" onClick={() => {
             Promise.resolve().then(() => {
-              formRef.current?.submit();
+              MyForm.formApi.submit();
             })
           }}>
             Custom submit
           </button>
           <button type="button" onClick={() => {
-            formRef.current?.validateFields()
+            MyForm.formApi.validateFields()
           }}>
             Run all fields validation
           </button>
           <button type="button" onClick={() => {
-            formRef.current?.validateFields(['field2'])
+            MyForm.formApi.validateFields(['field2'])
           }}>
             Run validation only for field 2
           </button>
         </div>
-      </Form>
+      </MyForm>
     );
   },
 };
 
 export const ArrayExample: StoryObj<typeof Form> = {
-  render: (args) => {
-    const { Form, FormArrayItem } = createTypedForm<{ people: string[] }>();
+  render: () => {
+    const Form = useForm({ userIds: [] as string[], test: 0 });
 
     return (
-      <Form initialState={{
-        people: [],
-      }} onFinish={args.onFinish}>
-        <FormArrayItem
-          name="people"
+      <Form onFinish={state => {
+        alert(JSON.stringify(state, undefined, 2))
+      }}>
+        <Form.ArrayItem
+          name="userIds"
           label="People list"
           rules={[
             {
               required: true,
-              message: 'Name is required'
+              message: 'Add at least one userId'
             },
+            {
+              validator: async (value) => {
+                if (!value.every(Boolean)) {
+                  return Promise.reject('Some field is empty')
+                }
+              }
+            }
           ]}
         >
           {({ fields, update, append, remove }) => (
@@ -342,7 +331,7 @@ export const ArrayExample: StoryObj<typeof Form> = {
               </button>
             </div>
           )}
-        </FormArrayItem>
+        </Form.ArrayItem>
         <button type="submit">
           Submit button
         </button>
@@ -354,15 +343,96 @@ export const ArrayExample: StoryObj<typeof Form> = {
       control: 'object',
     },
   },
-  args: {
+};
+
+export const ArrayHookExample: StoryObj<typeof Form> = {
+  render: () => {
+    const Form = useForm({ userIds: [] as string[] });
+
+    const { fields, update, append, remove } = Form.useArrayField('userIds', [{
+      type: 'array',
+      min: 1,
+      message: 'Add at least one userId'
+    }]);
+
+    const errors = Form.useFieldError('userIds');
+
+    return (
+      <Form onFinish={state => {
+        alert(JSON.stringify(state, undefined, 2))
+      }}>
+        <div>
+          <div>
+            {fields.map((field, index) =>
+              <div key={index}>
+                <input value={field} onChange={e => update(index, e.target.value)} />
+                <button type="button" onClick={() => remove(index)}>Remove</button>
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={() => append("")}>
+            Add
+          </button>
+        </div>
+
+        <div>
+          {errors.map(({ errorText }) => <div className='form__form-item__error'>{errorText}</div>)}
+        </div>
+
+        <button type="submit">
+          Submit button
+        </button>
+      </Form>
+    );
+  },
+  argTypes: {
     initialState: {
-      name: 'Boris',
-      age: 20,
+      control: 'object',
     },
-    onFinish: (state) => {
-      alert(JSON.stringify(state, undefined, 2))
+  },
+};
+
+export const TransformExample: StoryObj<typeof Form> = {
+  render: () => {
+    const Form = useForm({ test: 123456 });
+
+    const convertToFloat = (number: string, locale = 'en-IN') => {
+      const group = new Intl.NumberFormat(locale).format(1111).replace(/1/g, '');
+      const decimal = new Intl.NumberFormat(locale).format(1.1).replace(/1/g, '');
+      const reversedVal = number
+        .replace(new RegExp('\\' + group, 'g'), '')
+        .replace(new RegExp('\\' + decimal, 'g'), '.')
+
+      return Number(reversedVal)
     }
-  }
+
+    const formatNumber = (number, locale = 'en-IN') => new Intl.NumberFormat(locale).format(number)
+
+    return (
+      <Form onFinish={state => {
+        alert(JSON.stringify(state, undefined, 2))
+      }}>
+        <Form.Item
+          name='test'
+          getValueFromEvent={e => {
+            const value = convertToFloat(e.target.value, 'ru');
+            return isNaN(value) ? Form.formApi.getFieldValue('test') : value
+          }}
+          normalize={value => formatNumber(value, 'ru')}>
+          <input />
+        </Form.Item>
+
+        <button type="submit">
+          Submit button
+        </button>
+      </Form>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
 };
 
 export default meta;

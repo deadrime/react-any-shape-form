@@ -1,5 +1,5 @@
 import { checkRequired, checkMin, checkMax, checkPattern } from "../basicValidation";
-import { FormItemRuleWithKey, ValidateTrigger, ValidationError, Validator } from "../types";
+import { FormItemRule, ValidateTrigger, ValidationError, Validator } from "../types";
 import { filterOnlyRejectedPromises } from "./promises";
 
 // I know it's bad, use <input type="email">
@@ -9,7 +9,7 @@ const emailRegex =
 
 export const getValidationErrors = async <Value,>(
   value: Value,
-  rules: (FormItemRuleWithKey<Value> & { validateTrigger: ValidateTrigger[] })[],
+  rules: (FormItemRule<Value> & { validateTrigger: ValidateTrigger[] })[],
   trigger?: ValidateTrigger
 ) => {
   const result = [] as {

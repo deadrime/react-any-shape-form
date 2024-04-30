@@ -14,8 +14,7 @@ export default defineConfig({
   },
   plugins: [
     react({
-      exclude: /\.stories\.(t|j)sx?$/,
-      jsxRuntime: 'classic',
+      jsxRuntime: 'automatic',
     }),
     dts({
       insertTypesEntry: true,
@@ -24,8 +23,11 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react/jsx-runtime'],
   },
+  esbuild: {
+    jsx: 'automatic',
+  },
   build: {
-    sourcemap: false,
+    sourcemap: true,
     lib: {
       entry: path.resolve(__dirname, 'src/index.ts'),
       name: 'bundle',
@@ -42,15 +44,12 @@ export default defineConfig({
         },
       },
       plugins: [terser({
-        sourceMap: false,
+        sourceMap: true,
         format: {
           comments: false,         
         },
         mangle: true,
-        compress: {
-          defaults: true,
-          arguments: true,
-        },
+        compress: true,
       }) as any]
     },
   },
