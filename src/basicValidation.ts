@@ -4,6 +4,9 @@ export const checkMin = async <T>(value: T, rule: FormItemRule<T>) => {
   if ('min' in rule && typeof rule.min !== 'number') {
     return;
   }
+  if ('min' in rule && Array.isArray(value) && value.length < rule.min) {
+    return Promise.reject(rule.message);
+  }
   if ('min' in rule && rule.type === 'number' && Number(value) < rule.min) {
     return Promise.reject(rule.message);
   }
@@ -15,6 +18,9 @@ export const checkMin = async <T>(value: T, rule: FormItemRule<T>) => {
 export const checkMax = async <T>(value: T, rule: FormItemRule<T>) => {
   if ('max' in rule && typeof rule.max !== 'number') {
     return;
+  }
+  if ('max' in rule && Array.isArray(value) && value.length > rule.max) {
+    return Promise.reject(rule.message);
   }
   if ('max' in rule && rule.type === 'number' && Number(value) > rule.max) {
     return Promise.reject(rule.message);

@@ -24,6 +24,6 @@ export const useFormContext = <F extends FormApi<any> = FormApi<any>>() => {
 }
 
 export const useFormInstance = <F extends FormApi<any> = FormApi<any>>() => {
-  const {formApi} = useFormContext<F>();
+  const { formApi } = useFormContext<F>();
   return formApi
 }

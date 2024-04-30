@@ -1,10 +1,11 @@
 import React, { useCallback } from "react"
 import { FormItem, FormItemProps } from "./FormItem"
-import { FieldUpdate, FieldUpdateCb } from "./types"
+import { FieldUpdate, FieldUpdateCb, FormItemRule } from "./types"
 import { useField } from "./useForm"
 import { FormApi } from "./FormApi"
-import { FormApiGenericTypes } from "./typesHelpers"
+import { ArrayOnlyFields, FormApiGenericTypes } from "./typesHelpers"
 import { useFormInstance } from "./FormContext"
+import { useInitField } from "./helpers/useFieldData"
 
 type FormArrayAPI<T extends unknown[]> = {
   fields: T,
@@ -15,13 +16,14 @@ type FormArrayAPI<T extends unknown[]> = {
   prepend: (value: T[number]) => void,
 }
 
-export const useFormArrayField = <
+export const useArrayField = <
   Form extends FormApi<any>,
   Types extends FormApiGenericTypes<Form> = FormApiGenericTypes<Form>,
   State extends Types['state'] = Types['state'],
-  Field extends Types['field'] = Types['field']
->(form: Form, field: Field) => {
+  Field extends ArrayOnlyFields<State> = ArrayOnlyFields<State>,
+>(form: Form, field: Field, rules?: FormItemRule<State[Field]>[]) => {
   const [value, setValue] = useField(form, field);
+  useInitField(form, field, rules);
 
   const append = useCallback((value: State[Field][number]) => {
     setValue?.(fields => fields.concat(value))
@@ -64,7 +66,7 @@ export type FormArrayItemProps<FieldName extends string = string, Value extends 
 
 const FormArrayChildren = <Value extends unknown[]>({ name, children }: FormArrayItemProps<string, Value>) => {
   const form = useFormInstance();
-  const formArray = useFormArrayField(form, name);
+  const formArray = useArrayField(form, name);
 
   return children(formArray)
 }

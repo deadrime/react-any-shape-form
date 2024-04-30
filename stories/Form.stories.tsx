@@ -19,7 +19,6 @@ const meta: Meta<any> = {
     initialState: {
       defaultValue: {},
       description: 'Predefined fields value',
-      type: 'symbol'
     },
     CSSPrefix: {
       type: 'string',
@@ -32,22 +31,20 @@ const meta: Meta<any> = {
     },
     onFinish: {
       type: 'function',
-      description: 'callback after form submit and successful validation',
-    },
-    onValuesChange: {
-      type: 'function',
-      description: 'callback after any fields value changes',
+      description: 'callback after form submission and successful validation',
     },
     style: {
       type: {
-        summary: 'React.CSSProperties'
+        summary: 'CSSProperties'
       } as any,
     },
     children: {
       type: {
-        summary: 'React.ReactNode | (state: FormState) => React.ReactNode'
-      } as any,
-      description: 'Children can be anything. Use render function to get access to form state'
+        name: 'other',
+        value: 'React.ReactElement'
+      },
+
+      description: 'Children can be anything.'
     }
   }
 };
@@ -155,8 +152,7 @@ export const CustomValidatorExample: StoryObj<typeof Form> = {
   }
 };
 
-
-export const StateAccessExample: StoryObj<typeof Form> = {
+export const UseWatchExample: StoryObj<typeof Form> = {
   render: (args) => {
     const MyForm = useForm({
       name: 'Rina',
@@ -297,7 +293,7 @@ export const UsingFormApi: StoryObj = {
 
 export const ArrayExample: StoryObj<typeof Form> = {
   render: () => {
-    const Form = useForm({ userIds: [] as string[] });
+    const Form = useForm({ userIds: [] as string[], test: 0 });
 
     return (
       <Form onFinish={state => {
@@ -309,7 +305,7 @@ export const ArrayExample: StoryObj<typeof Form> = {
           rules={[
             {
               required: true,
-              message: 'Name is required'
+              message: 'Add at least one userId'
             },
             {
               validator: async (value) => {
@@ -336,6 +332,96 @@ export const ArrayExample: StoryObj<typeof Form> = {
             </div>
           )}
         </Form.ArrayItem>
+        <button type="submit">
+          Submit button
+        </button>
+      </Form>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
+};
+
+export const ArrayHookExample: StoryObj<typeof Form> = {
+  render: () => {
+    const Form = useForm({ userIds: [] as string[] });
+
+    const { fields, update, append, remove } = Form.useArrayField('userIds', [{
+      type: 'array',
+      min: 1,
+      message: 'Add at least one userId'
+    }]);
+
+    const errors = Form.useFieldError('userIds');
+
+    return (
+      <Form onFinish={state => {
+        alert(JSON.stringify(state, undefined, 2))
+      }}>
+        <div>
+          <div>
+            {fields.map((field, index) =>
+              <div key={index}>
+                <input value={field} onChange={e => update(index, e.target.value)} />
+                <button type="button" onClick={() => remove(index)}>Remove</button>
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={() => append("")}>
+            Add
+          </button>
+        </div>
+
+        <div>
+          {errors.map(({ errorText }) => <div className='form__form-item__error'>{errorText}</div>)}
+        </div>
+
+        <button type="submit">
+          Submit button
+        </button>
+      </Form>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
+};
+
+export const TransformExample: StoryObj<typeof Form> = {
+  render: () => {
+    const Form = useForm({ test: 123456 });
+
+    const convertToFloat = (number: string, locale = 'en-IN') => {
+      const group = new Intl.NumberFormat(locale).format(1111).replace(/1/g, '');
+      const decimal = new Intl.NumberFormat(locale).format(1.1).replace(/1/g, '');
+      const reversedVal = number
+        .replace(new RegExp('\\' + group, 'g'), '')
+        .replace(new RegExp('\\' + decimal, 'g'), '.')
+
+      return Number(reversedVal)
+    }
+
+    const formatNumber = (number, locale = 'en-IN') => new Intl.NumberFormat(locale).format(number)
+
+    return (
+      <Form onFinish={state => {
+        alert(JSON.stringify(state, undefined, 2))
+      }}>
+        <Form.Item
+          name='test'
+          getValueFromEvent={e => {
+            const value = convertToFloat(e.target.value, 'ru');
+            return isNaN(value) ? Form.formApi.getFieldValue('test') : value
+          }}
+          normalize={value => formatNumber(value, 'ru')}>
+          <input />
+        </Form.Item>
+
         <button type="submit">
           Submit button
         </button>

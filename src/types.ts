@@ -8,7 +8,7 @@ export type FieldOnErrorCb<T, S> = (validationErrors: ValidationError<T>[], stat
 
 export type FieldOnSubmitCb<S> = (state: S) => void
 
-export type RuleType = 'string' | 'number' | 'regexp' | 'email';
+export type RuleType = 'string' | 'number' | 'regexp' | 'email' | 'array';
 
 export type Validator<T = unknown> = (value: T, rule: FormItemRule<T>) => Promise<string | void | Error>;
 
@@ -22,12 +22,12 @@ interface BaseRule {
 }
 
 interface MinRule extends BaseRule {
-  type: 'string' | 'number'
+  type: 'string' | 'number' | 'array'
   min: number
 }
 
 interface MaxRule extends BaseRule {
-  type: 'string' | 'number'
+  type: 'string' | 'number' | 'array'
   max: number
 }
 

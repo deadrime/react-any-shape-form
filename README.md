@@ -1,16 +1,22 @@
 # React any shape form
 
-This package was inspired by `antd` form component. But this one without any antd dependencies, smaller, type-friendly and way more flexible. Feel free to just replace antd form with this one.
-
-Package size
+Lightweight form library focused on ease of use. This library was inspired by `antd` form component and `react-hook-form`. 
 
 ![npm bundle size](https://img.shields.io/bundlephobia/min/react-any-shape-form) ![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-any-shape-form)
+
+## Features
+
+- Small size
+- Type-friendly, all components and hooks fully typed
+- Ease to use, you need only `createForm` method to get all the functionality
+- Build in promise based validation, you can easy use your own promise function to validate fields
+- No extra re-renders
 
 Docs and examples - https://react-any-shape-form.vercel.app/
 
 ## Get started
 
-Install this package
+Install:
 
 ```bash
 npm i react-any-shape-form
@@ -19,72 +25,45 @@ npm i react-any-shape-form
 Use it like this:
 
 ```tsx
-import { Form, FormItem } from "react-styleless-form";
+import { createForm } from 'react-any-shape-form';
 
-const HelloWorldForm = () => {
-  return (
-    <Form
-      onFinish={(fields) => {
-        alert(JSON.stringify(fields, undefined, 2));
-      }}
-      id="myForm"
+const MyForm = createForm({
+  name: 'Rina',
+  age: 24,
+})
+
+const MyComponent = () => 
+  <MyForm onFinish={(state) => {
+    alert(JSON.stringify(state, undefined, 2));
+  }}>
+    <MyForm.Item
+      name="name"
+      label="Name"
+      onChange={value => value}
+      rules={[
+        {
+          required: true,
+          message: 'Name is required',
+          validateTrigger: ['onFinish']
+        },
+      ]}
     >
-      <FormItem
-        name="name"
-        label="Name"
-        rules={[
-          {
-            required: true,
-            message: "Name is required",
-          },
-        ]}
-      >
-        <TextInput />
-      </FormItem>
-      <FormItem name="city" label="City">
-        <TextInput />
-      </FormItem>
-      <FormItem
-        name="age"
-        label="Age"
-        rules={[
-          {
-            required: true,
-            message: "Age is required",
-          },
-          {
-            min: 18,
-            type: "number",
-            message: "you are too young :(",
-          },
-          {
-            max: 100,
-            type: "number",
-            message: "you are too old :(",
-          },
-        ]}
-      >
-        <NumberInput />
-      </FormItem>
-      <button type="submit">Submit button</button>
-    </Form>
-  );
-};
+      {({ value, onChange }) =>
+        <input value={value} onChange={e => onChange(e.target.value)} />
+      }
+    </MyForm.Item>
+    <MyForm.Item name="age">
+      {({ value, onChange }) =>
+        <input type="number" value={value} onChange={(e) => onChange(+e.target.value)} />
+      }
+    </MyForm.Item>
+    <button type="submit">
+      Submit button
+    </button>
+  </MyForm>
 ```
 
-For more type support use `createTypedForm` method instead:
-
-```tsx
-import { createTypedForm } from 'react-styleless-form';
-
-type FormState {
-  field1: string
-  field2: number
-}
-
-const { Form, FormItem } =  createTypedForm<FormState>();
-
-```
+You can find more examples in ![docs](https://react-any-shape-form.vercel.app/?path=/docs/docs--docs)
 
 ### Styling
 
@@ -106,8 +85,8 @@ Look at `./storybook/styles.css` as example.
 
 ### Validation
 
-You can pass array of validation rules to `FormItem`.
-Don't forget to set error message.
+You can pass array of validation rules to `Form.Item`.
+Don't forget to set error message or return `Promise.reject('your-error-message')`.
 You can control validation trigger using `validationTrigger`:
 `["onChange"]` - trigger fires if value changed (debounced by `300ms`)
 `["onFinish"]` - trigger fires only after form submit
@@ -146,4 +125,56 @@ You can control validation trigger using `validationTrigger`:
     message: "some error",
   },
 ];
+```
+
+### Hooks
+
+- `Form.useWatchHook` - get actual field value
+
+```tsx
+const MyForm = createForm({
+  name: 'Rina',
+  age: 24,
+})
+
+const SomeComponent = () => {
+  const name = MyForm.useWatch('name');
+  ...
+}
+
+```
+
+- `Form.useField` - get control over field state
+
+```tsx
+const [name, setName] = MyForm.useField('name');
+```
+
+- `Form.useFieldError` - get actual field validation errors
+
+- `useArrayField` - get control over array field
+
+```tsx
+const MyForm = createForm({
+  userIds: [] as string[]
+})
+
+const SomeComponent = () => {
+  const { fields, append, delete } = MyForm.useArrayField('userIds');
+  
+  return (
+    <>
+      {fields.map((field, index) =>
+        <div key={index}>
+          <input value={field} onChange={e => update(index, e.target.value)} />
+          <button type="button" onClick={() => remove(index)}>Remove</button>
+        </div>
+      )}
+      <button type="button" onClick={() => append("")}>
+        Add
+      </button>
+    </>
+  )
+}
+
 ```

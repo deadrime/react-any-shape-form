@@ -1,24 +1,28 @@
-import React, { CSSProperties, useCallback, useRef, useLayoutEffect } from 'react';
+import React, { CSSProperties, useCallback, useRef } from 'react';
 import { useDebounce } from 'react-use';
 import { FormContextState, useFormContext } from './FormContext';
-import { FormItemRule, ValidationStatus, FieldUpdate, ValidationError } from './types';
-import { useField, useFieldError } from './useForm';
+import { FormItemRule, ValidationStatus, ValidationError } from './types';
+import { useFieldError } from './useForm';
+import { useFieldData } from './helpers/useFieldData';
 
-export type RenderFormItemChildren<Value = unknown> =
-  (props: { value: Value, onChange: (value: Value, event?: unknown) => unknown, validationStatus: ValidationStatus }) => React.ReactNode;
+type FormItemChildrenProps<V = any> = { value: V, onChange: (value: V) => unknown, validationStatus?: ValidationStatus }
+
+type FormItemChildren<V = any> = React.FC<FormItemChildrenProps<V>> | React.ReactElement<FormItemChildrenProps<V>>
 
 export type FormItemProps<
   FieldName extends string = string,
   Value = unknown,
+  Children extends FormItemChildren<Value> = FormItemChildren<Value>
 > = {
-  children: React.ReactElement | RenderFormItemChildren<Value>
+  children: Children
   label?: React.ReactNode
   name: FieldName
   rules?: FormItemRule<Value>[]
   className?: string
   style?: CSSProperties
   hasFeedback?: boolean
-  getValueFromEvent?: (event: unknown) => Value
+  normalize?: (value: Value) => any,
+  getValueFromEvent?: (...args: any[]) => any
   onChange?: (value: Value, event?: unknown) => unknown
   onInvalid?: (error: ValidationError[], value: Value) => void
   id?: string
@@ -35,7 +39,7 @@ const defaultGetValueFromEvent = <T,>(e: any) => {
   return e as T
 }
 
-export const FormItem = <Value, FieldName extends string = string>(props: FormItemProps<FieldName, Value>) => {
+export const FormItem = <Value, FieldName extends string = string, Children extends FormItemChildren = FormItemChildren>(props: FormItemProps<FieldName, Value, Children>) => {
   const {
     children,
     name,
@@ -50,9 +54,11 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     id: idFromProps,
     renderError,
     renderLabel,
+    normalize,
   } = props;
   const { formApi } = useFormContext()
   const { value, setValue, id, CSSPrefix } = useFieldData<Value>(name, rules);
+  const normalizedValue = normalize ? normalize(value) : value;
   const validationErrors = useFieldError(formApi, name);
   const formItemId = idFromProps || id;
   const stateRef = useRef<{ valueChanged: boolean }>({ valueChanged: false });
@@ -68,10 +74,10 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     })
   }, 300, [value, formApi.validateField]);
 
-  const handleChange = useCallback(async (event: unknown) => {
+  const handleChange = useCallback(async (...args: any[]) => {
     stateRef.current.valueChanged = true;
-    setValue(getValueFromEvent(event));
-    onChange?.(getValueFromEvent(event), event);
+    setValue(getValueFromEvent(...args));
+    onChange?.(getValueFromEvent(...args), ...args);
   }, [setValue, getValueFromEvent, onChange]);
 
   return (
@@ -81,19 +87,18 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
       </label>
       {typeof children === 'function'
         ? children({
-          value,
+          value: normalizedValue,
           onChange: handleChange,
           validationStatus: 'notStarted',
         })
         : React.cloneElement(children, {
-          value,
+          value: normalizedValue,
           onChange: (value: unknown) => {
             handleChange(value);
-            children.props?.onChange?.(value);
+            children.props?.onChange?.(normalizedValue);
           },
-          id: formItemId,
           ...hasFeedback && {
-            validationStatus: '',
+            validationStatus: 'notStarted',
           }
         })
       }
@@ -104,28 +109,6 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
       )}
     </div>
   );
-};
-
-const useFieldData = <T,>(field: string, rules: FormItemRule<T>[]) => {
-  const { formApi, formId, CSSPrefix } = useFormContext()
-  const [value, setValue] = useField(formApi, field);
-
-  useLayoutEffect(() => {
-    formApi.setFieldRules(field, rules);
-
-    // Init with undefined
-    if (!(field in formApi.getState())) {
-      formApi.setFieldValue(field, undefined);
-    }
-    // reset maybe?
-  }, [field, formApi, rules])
-
-  return {
-    value: value as T,
-    setValue: setValue as (value: FieldUpdate<T>) => void,
-    id: formId ? `${formId}:${field}` : undefined,
-    CSSPrefix,
-  };
 };
 
 FormItem.displayName = 'FormItem';
