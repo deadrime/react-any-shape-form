@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Meta, StoryObj } from "@storybook/react";
 import { Form, FormItem } from "../src";
-import React from "react";
 
 const meta: Meta<typeof FormItem> = {
   component: FormItem,
@@ -27,14 +26,11 @@ const meta: Meta<typeof FormItem> = {
       description: 'Form item label, string or `React.ReactNode`'
     },
     children: {
-      control: { type: null },
+      control: { type: undefined },
       type: {
         summary: 'React.ReactElement'
       } as any,
       description: 'react component with `value` and `onChange` props',
-    },
-    value: {
-      control: { type: null },
     },
     renderLabel: {
       description: '`(value) => React.ReactNode` function',

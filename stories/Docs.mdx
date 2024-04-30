@@ -23,55 +23,42 @@ This package was inspired by `antd` form component. But this one without any ant
   source={{
     language: 'tsx',
     code: `
-import Form from 'react-any-shape-form';
+import { createForm } from 'react-any-shape-form';
 
-const MyForm = () => (
-  <Form
-    onFinish={(fields) => {
-      // Do something with fields value
-      alert(JSON.stringify(fields, undefined, 2))
-    }}
-    id="myForm"
-  >
-    <Form.Item
+const MyForm = createForm({
+  name: 'Rina',
+  age: 24,
+})
+
+const MyComponent = () => 
+  <MyForm onFinish={(state) => {
+    alert(JSON.stringify(state, undefined, 2));
+  }}>
+    <MyForm.Item
       name="name"
       label="Name"
+      onChange={value => value}
       rules={[
         {
           required: true,
-          message: 'Name is required'
+          message: 'Name is required',
+          validateTrigger: ['onFinish']
         },
       ]}
     >
-      <input />
-    </Form.Item>
-    <Form.Item
-      name="age"
-      label="Age"
-      rules={[
-        {
-          required: true,
-          message: 'Age is required',
-        },
-        {
-          min: 18,
-          type: 'number',
-          message: 'You are too young :('
-        },
-        {
-          max: 100,
-          type: 'number',
-          message: 'You are too old :('
-        }
-      ]}
-    >
-      <input />
-    </Form.Item>
+      {({ value, onChange }) =>
+        <input value={value} onChange={e => onChange(e.target.value)} />
+      }
+    </MyForm.Item>
+    <MyForm.Item name="age">
+      {({ value, onChange }) =>
+        <input type="number" value={value} onChange={(e) => onChange(+e.target.value)} />
+      }
+    </MyForm.Item>
     <button type="submit">
       Submit button
     </button>
-  </Form>
-)
+  </MyForm>
     `
   }}
   sourceState={'shown'}

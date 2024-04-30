@@ -1,25 +1,17 @@
-import React, { CSSProperties, useCallback, useImperativeHandle, useMemo, useRef, useState, useEffect } from 'react';
+import React, { CSSProperties, useCallback, useRef, useLayoutEffect } from 'react';
 import { useDebounce } from 'react-use';
-import { FormContextState, useField, useFormContext } from './FormContext';
-import { FormItemRule, ValidationStatus, ValidateTrigger, FieldUpdate } from './types';
-import omit from './helpers/omit';
-import { getValidationErrors } from './helpers/getValidationErrors';
+import { FormContextState, useFormContext } from './FormContext';
+import { FormItemRule, ValidationStatus, FieldUpdate, ValidationError } from './types';
+import { useField, useFieldError } from './useForm';
 
-export type FormItemApi = {
-  validate: (trigger?: ValidateTrigger) => Promise<void>;
-  reset: () => void;
-  setError: (error: string) => void
-}
-
-export type RenderFormItemChildren<FieldName extends string = string, Value = unknown> =
-  (props: Required<Pick<FormItemProps<FieldName, Value>, 'value' | 'onChange'>> & { validationStatus: ValidationStatus }) => React.ReactNode;
+export type RenderFormItemChildren<Value = unknown> =
+  (props: { value: Value, onChange: (value: Value, event?: unknown) => unknown, validationStatus: ValidationStatus }) => React.ReactNode;
 
 export type FormItemProps<
   FieldName extends string = string,
   Value = unknown,
 > = {
-  value?: Value
-  children: React.ReactElement | RenderFormItemChildren<FieldName, Value>
+  children: React.ReactElement | RenderFormItemChildren<Value>
   label?: React.ReactNode
   name: FieldName
   rules?: FormItemRule<Value>[]
@@ -27,11 +19,11 @@ export type FormItemProps<
   style?: CSSProperties
   hasFeedback?: boolean
   getValueFromEvent?: (event: unknown) => Value
-  onChange?: (value: FieldUpdate<Value>, event?: unknown) => unknown
-  onInvalid?: (error: string, value: Value, rule: FormItemRule<Value>) => void
+  onChange?: (value: Value, event?: unknown) => unknown
+  onInvalid?: (error: ValidationError[], value: Value) => void
   id?: string
   renderLabel?: (value: Value, formItemId?: string) => React.ReactElement
-  renderError?: (error: string, value: Value) => React.ReactElement
+  renderError?: (error: ValidationError<Value>) => React.ReactElement
   context?: React.Context<FormContextState>
 }
 
@@ -59,90 +51,28 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
     renderError,
     renderLabel,
   } = props;
-
-  const { value, setValue, ref, id, CSSPrefix } = useFieldData<Value>(name);
+  const { formApi } = useFormContext()
+  const { value, setValue, id, CSSPrefix } = useFieldData<Value>(name, rules);
+  const validationErrors = useFieldError(formApi, name);
   const formItemId = idFromProps || id;
-  const [errorByRuleKey, setErrorByRuleKey] = useState<Record<string, string>>({});
   const stateRef = useRef<{ valueChanged: boolean }>({ valueChanged: false });
-  const [validationStatus, setValidationStatus] = useState<ValidationStatus>('notStarted');
-
-  const rulesWithKey = useMemo(() => rules.map((rule, index) => ({
-    ...rule,
-    key: String(index),
-    validateTrigger: rule.validateTrigger || ['onChange', 'onFinish'],
-  })), [rules]);
-
-  const runValidators = useCallback(async (value: Value, trigger?: ValidateTrigger) => {
-    if (!rulesWithKey.length) {
-      return;
-    }
-
-    const errors = await getValidationErrors(value, rulesWithKey, trigger);
-
-    errors.forEach(error => {
-      onInvalid?.(error.errorText, error.value, error.rule);
-    })
-
-    const errorsByRuleKey = errors.reduce((acc, curr) => {
-      acc[curr.rule.key] = curr.errorText;
-      return acc;
-    }, {} as Record<string, string>)
-
-    setErrorByRuleKey(errorsByRuleKey);
-
-    if (errors.length > 0) {
-      return Promise.reject('reject');
-    }
-  }, [onInvalid, rulesWithKey]);
-
-  const validate = useCallback(async (trigger?: ValidateTrigger) => {
-    setValidationStatus('validating');
-    try {
-      await runValidators(value, trigger);
-      setValidationStatus('success');
-    } catch (error) {
-      setValidationStatus('error');
-      return Promise.reject();
-    }
-  }, [runValidators, value]);
 
   useDebounce(() => {
     if (!stateRef?.current.valueChanged) {
       return;
     }
-    validate('onChange');
-  }, 300, [validate]);
-
-  const setError = useCallback((error: string) => {
-    setErrorByRuleKey(obj => ({
-      ...obj,
-      customError: error,
-    }));
-  }, []);
-
-  const reset = useCallback(() => {
-    stateRef.current.valueChanged = false;
-    setValidationStatus('notStarted');
-    setErrorByRuleKey({});
-  }, []);
-
-  useImperativeHandle(ref, () => ({
-    validate,
-    reset,
-    setError,
-  }), [reset, setError, validate]);
+    formApi.getFieldError(name, 'onChange').then((validationErrors) => {
+      if (validationErrors.length > 0) {
+        onInvalid?.(validationErrors, value)
+      }
+    })
+  }, 300, [value, formApi.validateField]);
 
   const handleChange = useCallback(async (event: unknown) => {
     stateRef.current.valueChanged = true;
-
-    // Reset custom error
-    if (errorByRuleKey['customError']) {
-      setErrorByRuleKey(obj => omit(obj, 'customError'));
-    }
-
     setValue(getValueFromEvent(event));
     onChange?.(getValueFromEvent(event), event);
-  }, [errorByRuleKey, setValue, getValueFromEvent, onChange]);
+  }, [setValue, getValueFromEvent, onChange]);
 
   return (
     <div className={`${className} ${CSSPrefix}__form-item`} style={style}>
@@ -153,7 +83,7 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
         ? children({
           value,
           onChange: handleChange,
-          validationStatus,
+          validationStatus: 'notStarted',
         })
         : React.cloneElement(children, {
           value,
@@ -163,39 +93,36 @@ export const FormItem = <Value, FieldName extends string = string>(props: FormIt
           },
           id: formItemId,
           ...hasFeedback && {
-            validationStatus,
+            validationStatus: '',
           }
         })
       }
-      {Object.values(errorByRuleKey).map((error) =>
+      {validationErrors.map((error, index) =>
         renderError
-          ? renderError?.(error, value)
-          : <div className={`${CSSPrefix}__form-item__error`}>{error}</div>
+          ? renderError?.(error as ValidationError<Value>)
+          : <div key={index} className={`${CSSPrefix}__form-item__error`}>{error.errorText}</div>
       )}
     </div>
   );
 };
 
-const useFieldData = <T,>(field: string) => {
-  const [value, setValue] = useField<T>(field)
-  const { initField, removeField, formId, CSSPrefix } = useFormContext();
-  const ref = useRef<FormItemApi>(null);
+const useFieldData = <T,>(field: string, rules: FormItemRule<T>[]) => {
+  const { formApi, formId, CSSPrefix } = useFormContext()
+  const [value, setValue] = useField(formApi, field);
 
-  useEffect(() => {
-    if (!ref.current) {
-      return;
+  useLayoutEffect(() => {
+    formApi.setFieldRules(field, rules);
+
+    // Init with undefined
+    if (!(field in formApi.getState())) {
+      formApi.setFieldValue(field, undefined);
     }
-    initField(field, ref);
-
-    return () => {
-      removeField(field);
-    };
-  }, [ref, field, initField, removeField]);
+    // reset maybe?
+  }, [field, formApi, rules])
 
   return {
-    ref,
-    value,
-    setValue,
+    value: value as T,
+    setValue: setValue as (value: FieldUpdate<T>) => void,
     id: formId ? `${formId}:${field}` : undefined,
     CSSPrefix,
   };

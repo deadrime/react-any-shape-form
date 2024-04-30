@@ -19,13 +19,20 @@
     "jsx": "react-jsx",
     /* Linting */
     "strict": true,
+    "noImplicitAny": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": "src",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
   },
   "include": [
     "src",
-    "custom.d.ts"
+    "custom.d.ts",
+    "stories"
   ]
 }
