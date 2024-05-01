@@ -63,7 +63,7 @@ const MyComponent = () =>
   </MyForm>
 ```
 
-You can find more examples in ![docs](https://react-any-shape-form.vercel.app/?path=/docs/docs--docs)
+You can find more examples in [docs](https://react-any-shape-form.vercel.app/?path=/docs/docs--docs)
 
 ### Styling
 
