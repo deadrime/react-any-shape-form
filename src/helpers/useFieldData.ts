@@ -2,11 +2,10 @@ import { FormApi } from "@/FormApi";
 import { useFormContext } from "@/FormContext";
 import { FieldUpdate, FormItemRule } from "@/types";
 import { useField } from "@/useForm";
-import { useLayoutEffect } from "react";
+import { useIsomorphicLayoutEffect } from "./useIsomorphicLayoutEffect";
 
 export const useInitField = <Value, T extends string = string>(formApi: FormApi<any>, field: T, rules?: FormItemRule<Value>[]) => {
-  useLayoutEffect(() => {
-    console.log('useInitField', { rules })
+  useIsomorphicLayoutEffect(() => {
     if (rules) {
       formApi.setFieldRules(field, rules);
     }

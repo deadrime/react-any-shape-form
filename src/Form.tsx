@@ -2,6 +2,7 @@ import React, { useCallback, CSSProperties, useMemo, useEffect } from 'react';
 
 import { FormContext } from './FormContext';
 import { FormApi } from './FormApi';
+import { useIsomorphicLayoutEffect } from './helpers/useIsomorphicLayoutEffect';
 
 type FormBasedOnInitialState<
   InitialState extends Record<string, unknown>,
@@ -37,6 +38,7 @@ export const Form = <
     children,
     onFinish,
     className,
+    initialState,
     style,
     id,
     CSSPrefix = 'form',
@@ -47,6 +49,12 @@ export const Form = <
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [props.form]
   );
+
+  useIsomorphicLayoutEffect(() => {
+    if (initialState) {
+      formApi.setFieldsValue(initialState);
+    }
+  }, [])
 
   const handleSubmit = useCallback(async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
