@@ -1,6 +1,6 @@
 import React, { useCallback } from "react"
 import { FormItem, FormItemProps } from "./FormItem"
-import { FieldUpdate, FieldUpdateCb, FormItemRule } from "./types"
+import { FieldUpdate, FieldUpdateCb, ValidationRule } from "./types"
 import { useField } from "./useForm"
 import { FormApi } from "./FormApi"
 import { ArrayOnlyFields, FormApiGenericTypes } from "./typesHelpers"
@@ -21,7 +21,7 @@ export const useArrayField = <
   Types extends FormApiGenericTypes<Form> = FormApiGenericTypes<Form>,
   State extends Types['state'] = Types['state'],
   Field extends ArrayOnlyFields<State> = ArrayOnlyFields<State>,
->(form: Form, field: Field, rules?: FormItemRule<State[Field]>[]) => {
+>(form: Form, field: Field, rules?: ValidationRule<State[Field]>[]) => {
   const [value, setValue] = useField(form, field);
   useInitField(form, field, rules);
 

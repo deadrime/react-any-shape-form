@@ -11,6 +11,8 @@ Lightweight form library focused on ease of use. This library was inspired by `a
 - Ease to use, you need only `createForm` method to get all the functionality
 - Build in promise based validation, you can easy use your own promise function to validate fields
 - No extra re-renders
+- `useWatch`, `useField`, `useArrayField`, `useFieldError` hooks
+- Access to form state in any place of application, even outside of form component
 
 Docs and examples - https://react-any-shape-form.vercel.app/
 
@@ -64,6 +66,29 @@ const MyComponent = () =>
 ```
 
 You can find more examples in [docs](https://react-any-shape-form.vercel.app/?path=/docs/docs--docs)
+
+### Form props
+
+| Field        | Type        | Description             | Default     |
+|--------------|-------------|-------------------------|-------------|
+| initialState | `Object`    | Predefined fields value | `{}`        |
+| CSSPrefix    | `string`    | Prefix for css classes  | 'form'      |
+| id           | `string`    | html form id            | `undefined` |
+| children     | `ReactNode` |                         |             |
+
+### Form.Item props
+
+| Field             | Type                                                  | Description                                       | Default |
+|-------------------|-------------------------------------------------------|---------------------------------------------------|---------|
+| children          | `FC` or `ReactElement`                                | Function/component with `value`, `onChange` props | `{}`    |
+| label             | `ReactNode`                                           | Field label                                       |         |
+| rules             | `ValidationRule[]`                                    | Validation rule                                   |         |
+| normalize         | `(value: Value) => any`                               | Transform value before display it                 |         |
+| getValueFromEvent | `(...args: any[]) => Value`                           | Get value from `onChange` cb                      |         |
+| onChange          | `(value: Value, event?: unknown)` => any              | Triggers on field state changes                   |         |
+| onInvalid         | `(error: ValidationError[], value: Value) => void`    | Triggers on validation error                      |         |
+| renderLabel       | `(value: Value, formItemId?: string) => ReactElement` | Customize label                                   |         |
+| renderError       | `(error: ValidationError<Value>) => ReactElement`     | Customize error                                   |         |
 
 ### Styling
 
@@ -129,7 +154,7 @@ You can control validation trigger using `validationTrigger`:
 
 ### Hooks
 
-- `Form.useWatchHook` - get actual field value
+- `Form.useWatch` - get actual field value
 
 ```tsx
 const MyForm = createForm({
@@ -152,7 +177,7 @@ const [name, setName] = MyForm.useField('name');
 
 - `Form.useFieldError` - get actual field validation errors
 
-- `useArrayField` - get control over array field
+- `Form.useArrayField` - get control over array field
 
 ```tsx
 const MyForm = createForm({

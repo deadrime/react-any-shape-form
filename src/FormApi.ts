@@ -1,11 +1,11 @@
 import { getValidationErrors } from "./helpers/getValidationErrors";
-import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, FormItemRule, ValidateTrigger, ValidationError } from "./types";
+import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, ValidationRule, ValidateTrigger, ValidationError } from "./types";
 
 export class FormApi<State extends Record<string, unknown>, Field extends Extract<keyof State, string> = Extract<keyof State, string>> {
   private state: State
-  private readonly initialState: State;
+  private initialState: State;
   private fieldErrors: Partial<Record<Field, FieldError<State[Field]>[]>>
-  private validationRulesByField: Partial<Record<Field, FormItemRule<State[Field]>[]>>
+  private validationRulesByField: Partial<Record<Field, ValidationRule<State[Field]>[]>>
   private subscribers: Map<Field, FieldOnChangeCb<State[Field]>[]>;
   private errorSubscribers: Map<Field, FieldOnErrorCb<State[Field], State>[]>;
   private submitSubscribers: Set<FieldOnSubmitCb<State>>;
@@ -71,7 +71,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends Extrac
   }
 
   getFieldValue<F extends Field>(field: F) {
-    return this.state[field];
+    return this.getState()[field];
   }
 
   getFieldsValue(fields?: Field[]) {
@@ -85,19 +85,19 @@ export class FormApi<State extends Record<string, unknown>, Field extends Extrac
     this.setFieldsValue(this.initialState);
   }
 
-  setFieldRules<F extends Field>(field: F, validationRules: FormItemRule<State[F]>[]) {
+  setFieldRules<F extends Field>(field: F, validationRules: ValidationRule<State[F]>[]) {
     if (!validationRules) {
       return
     }
-    this.validationRulesByField[field] = validationRules as FormItemRule<State[Field]>[];
+    this.validationRulesByField[field] = validationRules as ValidationRule<State[Field]>[];
   }
 
-  addFieldRules<F extends Field>(field: F, validationRules: FormItemRule<State[F]>[]) {
+  addFieldRules<F extends Field>(field: F, validationRules: ValidationRule<State[F]>[]) {
     if (!validationRules) {
       return
     }
     const rules = this.validationRulesByField[field] || [];
-    this.validationRulesByField[field] = rules.concat(...validationRules as FormItemRule<State[Field]>[]);
+    this.validationRulesByField[field] = rules.concat(...validationRules as ValidationRule<State[Field]>[]);
   }
 
   async getFieldError<F extends Field>(field: F, trigger?: ValidateTrigger) {
@@ -147,6 +147,11 @@ export class FormApi<State extends Record<string, unknown>, Field extends Extrac
     return () => {
       this.submitSubscribers.delete(cb);
     }
+  }
+
+  setInitialState(state: State) {
+    this.initialState = structuredClone(state);
+    this.setFieldsValue(state);
   }
 
   async submit() {

@@ -23,7 +23,7 @@ export const useFormContext = <F extends FormApi<any> = FormApi<any>>() => {
   return useContext<FormContextState<F>>(FormContext as unknown as React.Context<FormContextState<F>>)
 }
 
-export const useFormInstance = <F extends FormApi<any> = FormApi<any>>() => {
+export const useFormInstance = <S extends Record<string, unknown> = any, F extends FormApi<S> = FormApi<S>>() => {
   const { formApi } = useFormContext<F>();
   return formApi
 }

@@ -2,17 +2,17 @@
   "name": "react-any-shape-form",
   "author": "Eugene Trofimov",
   "license": "ISC",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "description": "Small, type-friendly and flexible react form component.",
   "keywords": [
-    "form",
-    "typescript",
-    "validation",
     "react",
-    "antd",
-    "ant",
-    "styleless",
-    "replacement"
+    "form",
+    "forms",
+    "validation",
+    "form-validation",
+    "react-hooks",
+    "hook",
+    "typescript"
   ],
   "repository": {
     "type": "git",

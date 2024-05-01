@@ -6,7 +6,7 @@ export * from './types.ts';
 export * from './FormArrayItem.tsx';
 export * from './useForm.tsx';
 
-export { useFormContext, createFormContext } from './FormContext.ts';
+export { useFormContext, useFormInstance, createFormContext } from './FormContext.ts';
 
 type InternalFormType = typeof Form;
 

@@ -1,7 +1,7 @@
 import React, { CSSProperties, useCallback, useRef } from 'react';
 import { useDebounce } from 'react-use';
-import { FormContextState, useFormContext } from './FormContext';
-import { FormItemRule, ValidationStatus, ValidationError } from './types';
+import { useFormContext } from './FormContext';
+import { ValidationRule, ValidationStatus, ValidationError } from './types';
 import { useFieldError } from './useForm';
 import { useFieldData } from './helpers/useFieldData';
 
@@ -17,18 +17,17 @@ export type FormItemProps<
   children: Children
   label?: React.ReactNode
   name: FieldName
-  rules?: FormItemRule<Value>[]
+  rules?: ValidationRule<Value>[]
   className?: string
   style?: CSSProperties
   hasFeedback?: boolean
   normalize?: (value: Value) => any,
-  getValueFromEvent?: (...args: any[]) => any
+  getValueFromEvent?: (...args: any[]) => Value
   onChange?: (value: Value, event?: unknown) => unknown
   onInvalid?: (error: ValidationError[], value: Value) => void
   id?: string
   renderLabel?: (value: Value, formItemId?: string) => React.ReactElement
   renderError?: (error: ValidationError<Value>) => React.ReactElement
-  context?: React.Context<FormContextState>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

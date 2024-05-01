@@ -1,6 +1,6 @@
-import { FormItemRule } from './types';
+import { ValidationRule } from './types';
 
-export const checkMin = async <T>(value: T, rule: FormItemRule<T>) => {
+export const checkMin = async <T>(value: T, rule: ValidationRule<T>) => {
   if ('min' in rule && typeof rule.min !== 'number') {
     return;
   }
@@ -15,7 +15,7 @@ export const checkMin = async <T>(value: T, rule: FormItemRule<T>) => {
   }
 };
 
-export const checkMax = async <T>(value: T, rule: FormItemRule<T>) => {
+export const checkMax = async <T>(value: T, rule: ValidationRule<T>) => {
   if ('max' in rule && typeof rule.max !== 'number') {
     return;
   }
@@ -30,7 +30,7 @@ export const checkMax = async <T>(value: T, rule: FormItemRule<T>) => {
   }
 };
 
-export const checkRequired = async <T>(value: T, rule: FormItemRule<T>) => {
+export const checkRequired = async <T>(value: T, rule: ValidationRule<T>) => {
   if (typeof value === 'number' && value === 0) {
     return;
   }
@@ -48,7 +48,7 @@ export const checkRequired = async <T>(value: T, rule: FormItemRule<T>) => {
   }
 };
 
-export const checkPattern = async <T>(value: T, rule: FormItemRule<T>) => {
+export const checkPattern = async <T>(value: T, rule: ValidationRule<T>) => {
   if ('pattern' in rule && typeof value === 'string' && !rule.pattern.test(value)) {
     return Promise.reject(rule.message || 'Invalid format');
   }

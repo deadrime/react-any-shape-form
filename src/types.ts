@@ -10,7 +10,7 @@ export type FieldOnSubmitCb<S> = (state: S) => void
 
 export type RuleType = 'string' | 'number' | 'regexp' | 'email' | 'array';
 
-export type Validator<T = unknown> = (value: T, rule: FormItemRule<T>) => Promise<string | void | Error>;
+export type Validator<T = unknown> = (value: T, rule: ValidationRule<T>) => Promise<string | void | Error>;
 
 export type ValidateTrigger = 'onChange' | 'onFinish'
 
@@ -44,12 +44,12 @@ interface CustomValidatorRule<T> extends BaseRule {
   validator: Validator<T>
 }
 
-export type FormItemRule<T = unknown> = RequiredRule | MinRule | MaxRule | PatternRule | CustomValidatorRule<T>;
+export type ValidationRule<T = unknown> = RequiredRule | MinRule | MaxRule | PatternRule | CustomValidatorRule<T>;
 
 export type ValidationStatus = 'notStarted' | 'validating' | 'success' | 'error'
 
 export type ValidationError<Value = unknown> = {
-  rule: FormItemRule<Value>,
+  rule: ValidationRule<Value>,
   value: Value,
   errorText: string;
 }

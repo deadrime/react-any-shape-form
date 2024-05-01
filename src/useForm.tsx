@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { FormApi } from "./FormApi";
 import { FormApiGenericTypes, ArrayOnly, ArrayOnlyFields } from "./typesHelpers";
-import { FieldUpdate, FormItemRule, ValidationError } from "./types";
+import { FieldUpdate, ValidationRule, ValidationError } from "./types";
 import { Form, FormProps } from "./Form";
 import { FormItem, FormItemProps } from "./FormItem";
 import { FormArrayItem, FormArrayItemProps, useArrayField } from "./FormArrayItem";
@@ -32,7 +32,7 @@ export const createForm = <State extends Record<string, unknown>>(initialState: 
 
   const useFieldErrorHook = <T extends Types['field']>(field: T) => useFieldError(form, field)
 
-  const useArrayFieldHook = <T extends ArrayFields>(field: T, rules?: FormItemRule<Types['state'][T]>[]) => useArrayField(form, field, rules)
+  const useArrayFieldHook = <T extends ArrayFields>(field: T, rules?: ValidationRule<Types['state'][T]>[]) => useArrayField(form, field, rules)
 
   const CompoundForm = FormComponent as typeof FormComponent & {
     Item: typeof FormItemComponent
@@ -55,7 +55,6 @@ export const createForm = <State extends Record<string, unknown>>(initialState: 
   return CompoundForm
 }
 
-
 export const useForm = <State extends Record<string, unknown>>(initialState: State) => {
   const ref = useRef(createForm(initialState));
   return ref.current;
@@ -67,12 +66,11 @@ export const useWatch = <
   State extends Types['state'],
   Field extends Types['field']
 >(form: Form, field: Field) => {
-  const [value, setValue] = useState(form.getFieldValue(field));
-
-  useEffect(() => {
-    const unsubscribe = form.onFieldChange(field, setValue);
-    return unsubscribe
-  }, [field, form])
+  const value = useSyncExternalStore(
+    cb => form.onFieldChange(field, cb),
+    () => form.getFieldValue(field),
+    () => form.getFieldValue(field),
+  )
 
   return value as State[Field]
 }
@@ -83,12 +81,7 @@ export const useField = <
   State extends Types['state'] = Types['state'],
   Field extends Types['field'] = Types['field']
 >(form: Form, field: Field) => {
-  const [value, setValue] = useState(form.getFieldValue(field));
-
-  useEffect(() => {
-    const unsubscribe = form.onFieldChange(field, setValue);
-    return unsubscribe
-  }, [field, form])
+  const value = useWatch(form, field);
 
   const handleUpdateFormField = useCallback((value: FieldUpdate<State[Field]>) => {
     form.setFieldValue(field, value);
@@ -106,8 +99,7 @@ export const useFieldError = <
   const [validationErrors, setValidationErrors] = useState([] as ValidationError<State[Field]>[]);
 
   useEffect(() => {
-    const unsubscribe = form.onFieldError(field, (errors) => setValidationErrors(errors as ValidationError<State[Field]>[]));
-    return unsubscribe;
+    return form.onFieldError(field, (errors) => setValidationErrors(errors as ValidationError<State[Field]>[]));
   }, [field, form])
 
   return validationErrors;

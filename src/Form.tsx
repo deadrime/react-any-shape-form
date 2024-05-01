@@ -2,7 +2,7 @@ import React, { useCallback, CSSProperties, useMemo, useEffect } from 'react';
 
 import { FormContext } from './FormContext';
 import { FormApi } from './FormApi';
-import { useIsomorphicLayoutEffect } from './helpers/useIsomorphicLayoutEffect';
+import { useIsomorphicLayoutEffect } from 'react-use';
 
 type FormBasedOnInitialState<
   InitialState extends Record<string, unknown>,
@@ -52,7 +52,7 @@ export const Form = <
 
   useIsomorphicLayoutEffect(() => {
     if (initialState) {
-      formApi.setFieldsValue(initialState);
+      formApi.setInitialState(initialState);
     }
   }, [])
 
@@ -66,10 +66,7 @@ export const Form = <
     if (!onFinish) {
       return;
     }
-    const unsubscribe = formApi.onSubmit(onFinish)
-    return () => {
-      unsubscribe()
-    }
+    return formApi.onSubmit(onFinish)
   }, [formApi, onFinish])
 
   return (
