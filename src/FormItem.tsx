@@ -81,7 +81,7 @@ export const FormItem = <Value, FieldName extends string = string, Children exte
   }, [setValue, getValueFromEvent, onChange]);
 
   return (
-    <div className={`${className} ${CSSPrefix}__form-item`} style={style}>
+    <div className={`${className || ''} ${CSSPrefix}__form-item`} style={style}>
       <label htmlFor={formItemId} className={`${CSSPrefix}__form-item__label`}>
         {renderLabel ? renderLabel(value, formItemId) : label}
       </label>
