@@ -69,6 +69,7 @@ You can find more examples in [docs](https://react-any-shape-form.vercel.app/?pa
 
 ### Form props
 
+
 | Field        | Type        | Description             | Default     |
 |--------------|-------------|-------------------------|-------------|
 | initialState | `Object`    | Predefined fields value | `{}`        |
@@ -77,6 +78,7 @@ You can find more examples in [docs](https://react-any-shape-form.vercel.app/?pa
 | children     | `ReactNode` |                         |             |
 
 ### Form.Item props
+
 
 | Field             | Type                                                  | Description                                       | Default |
 |-------------------|-------------------------------------------------------|---------------------------------------------------|---------|

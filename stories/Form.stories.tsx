@@ -80,7 +80,7 @@ export const BaseExample: StoryObj<typeof Form> = {
         </MyForm.Item>
         <MyForm.Item name="age">
           {({ value, onChange }) =>
-            <input type="number" value={value} onChange={(e) => onChange(+e.target.value)} />
+            <input type="number" value={String(value)} onChange={(e) => onChange(+e.target.value)} />
           }
         </MyForm.Item>
         <button type="submit">

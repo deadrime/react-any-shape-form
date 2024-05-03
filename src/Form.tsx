@@ -2,7 +2,7 @@ import React, { useCallback, CSSProperties, useMemo, useEffect } from 'react';
 
 import { FormContext } from './FormContext';
 import { FormApi } from './FormApi';
-import { useIsomorphicLayoutEffect } from 'react-use';
+import { useIsomorphicLayoutEffect } from './helpers/useIsomorphicLayoutEffect';
 
 type FormBasedOnInitialState<
   InitialState extends Record<string, unknown>,

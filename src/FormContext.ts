@@ -10,7 +10,7 @@ export type FormContextState<F extends FormApi<any> = FormApi<any>> = {
 
 const formDefaultContext: FormContextState = {
   formApi: new FormApi({} as Record<string, unknown>),
-  CSSPrefix: 'simple-form'
+  CSSPrefix: 'form'
 };
 
 export const createFormContext = <F extends FormApi<any> = FormApi<any>>() => {
