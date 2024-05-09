@@ -1,49 +1,52 @@
 import { ValidationRule } from './types';
 
 export const checkMin = async <T>(value: T, rule: ValidationRule<T>) => {
-  if ('min' in rule && typeof rule.min !== 'number') {
+  if (!('min' in rule)) {
+    return
+  }
+  if (typeof rule.min !== 'number') {
     return;
   }
-  if ('min' in rule && Array.isArray(value) && value.length < rule.min) {
+  if (Array.isArray(value) && value.length < rule.min) {
     return Promise.reject(rule.message);
   }
-  if ('min' in rule && rule.type === 'number' && Number(value) < rule.min) {
+  if (rule.type === 'number' && Number(value) < rule.min) {
     return Promise.reject(rule.message);
   }
-  if ('min' in rule && rule.type === 'string' && String(value).length < rule.min) {
+  if (rule.type === 'string' && String(value).length < rule.min) {
     return Promise.reject(rule.message);
   }
 };
 
 export const checkMax = async <T>(value: T, rule: ValidationRule<T>) => {
-  if ('max' in rule && typeof rule.max !== 'number') {
+  if (!('max' in rule)) {
+    return
+  }
+  if (typeof rule.max !== 'number') {
     return;
   }
-  if ('max' in rule && Array.isArray(value) && value.length > rule.max) {
+  if (Array.isArray(value) && value.length > rule.max) {
     return Promise.reject(rule.message);
   }
-  if ('max' in rule && rule.type === 'number' && Number(value) > rule.max) {
+  if (rule.type === 'number' && Number(value) > rule.max) {
     return Promise.reject(rule.message);
   }
-  if ('max' in rule && rule.type === 'string' && String(value).length > rule.max) {
+  if (rule.type === 'string' && String(value).length > rule.max) {
     return Promise.reject(rule.message);
   }
 };
 
 export const checkRequired = async <T>(value: T, rule: ValidationRule<T>) => {
-  if (typeof value === 'number' && value === 0) {
-    return;
+  if (typeof value === 'undefined') {
+    return Promise.reject(rule.message);
   }
-  if (typeof value === 'boolean') {
-    if (typeof value === 'undefined' || value === null) {
-      return Promise.reject(rule.message);
-    }
+  if (typeof value === 'number' && value === 0) {
     return;
   }
   if (Array.isArray(value) && value.length === 0) {
     return Promise.reject(rule.message);
   }
-  if (!value) {
+  if (!value && typeof value !== 'boolean') {
     return Promise.reject(rule.message);
   }
 };
