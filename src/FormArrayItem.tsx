@@ -64,17 +64,11 @@ export type FormArrayItemProps<FieldName extends string = string, Value extends 
   onChange?: (value: FieldUpdate<Value>, event?: unknown) => unknown
 }
 
-const FormArrayChildren = <Value extends unknown[]>({ name, children }: FormArrayItemProps<string, Value>) => {
-  const form = useFormInstance();
-  const formArray = useArrayField(form, name);
-
-  return children(formArray)
-}
-
 export const FormArrayItem = <FieldName extends string = string, Value extends unknown[] = unknown[]>({ children, ...props }: FormArrayItemProps<FieldName, Value>) => {
+  const form = useFormInstance();
+  const formArray = useArrayField(form, props.name);
+
   return <FormItem {...props}>
-    <FormArrayChildren {...props}>
-      {children}
-    </FormArrayChildren>
+    {() => children(formArray)}
   </FormItem>
 }
