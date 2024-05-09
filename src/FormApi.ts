@@ -1,23 +1,28 @@
 import { getValidationErrors } from "./helpers/getValidationErrors";
-import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, ValidationRule, ValidateTrigger, ValidationError } from "./types";
+import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, ValidationRule, ValidateTrigger, ValidationError, FieldOnValidationStatusChangeCb, ValidationStatus } from "./types";
+import { GetFields } from "./typesHelpers";
 
-export class FormApi<State extends Record<string, unknown>, Field extends Extract<keyof State, string> = Extract<keyof State, string>> {
+export class FormApi<State extends Record<string, unknown>, Field extends GetFields<State> = GetFields<State>> {
   private state: State
   private initialState: State;
   private fieldErrors: Partial<Record<Field, FieldError<State[Field]>[]>>
+  private validationStatusByField: Partial<Record<Field, ValidationStatus>>
   private validationRulesByField: Partial<Record<Field, ValidationRule<State[Field]>[]>>
   private subscribers: Map<Field, FieldOnChangeCb<State[Field]>[]>;
   private errorSubscribers: Map<Field, FieldOnErrorCb<State[Field], State>[]>;
   private submitSubscribers: Set<FieldOnSubmitCb<State>>;
+  private validationSubscribers: Map<Field, FieldOnValidationStatusChangeCb<State[Field]>[]>;
 
   constructor(state: State) {
     this.state = state;
     this.initialState = structuredClone(state);
     this.fieldErrors = {};
+    this.validationStatusByField = {};
     this.validationRulesByField = {};
     this.subscribers = new Map();
     this.errorSubscribers = new Map();
     this.submitSubscribers = new Set();
+    this.validationSubscribers = new Map();
   }
 
   getState() {
@@ -35,11 +40,23 @@ export class FormApi<State extends Record<string, unknown>, Field extends Extrac
 
   private triggerFieldUpdate<F extends Field, V extends State[F]>(field: F, value: V) {
     this.subscribers.get(field)?.forEach(cb => cb(value));
+    // reset validation
+    delete this.fieldErrors[field];
+    this.validationStatusByField[field] = 'validating';
+    this.validationSubscribers.get(field)?.forEach(cb => cb('validating'));
+    this.errorSubscribers.get(field)?.forEach(cb => cb([], this.state));
   }
 
   private triggerFieldError(field: Field, validationErrors: ValidationError<State[Field]>[]) {
     this.fieldErrors[field] = validationErrors;
     this.errorSubscribers.get(field)?.forEach(cb => cb(validationErrors, this.state))
+  }
+
+  private triggerFieldValidation<F extends Field>(field: F, status: ValidationStatus, errors?: ValidationError<State[Field]>[]) {
+    this.validationSubscribers.get(field)?.forEach(cb => cb(status, errors))
+    if (errors) {
+      this.triggerFieldError(field, errors);
+    }
   }
 
   onFieldError<F extends Field>(field: F, cb: FieldOnErrorCb<State[F], State>) {
@@ -49,6 +66,19 @@ export class FormApi<State extends Record<string, unknown>, Field extends Extrac
     return () => {
       this.errorSubscribers.set(field, this.errorSubscribers.get(field)?.filter(i => i !== cb as unknown as FieldOnErrorCb<State[Field], State>) || []);
     }
+  }
+
+  onFieldValidationStatusChange<F extends Field>(field: F, cb: FieldOnValidationStatusChangeCb<State[F]>) {
+    const currentSubscribers = this.validationSubscribers.get(field) || [];
+    this.validationSubscribers.set(field, currentSubscribers.concat(cb as unknown as FieldOnValidationStatusChangeCb<State[Field]>))
+
+    return () => {
+      this.errorSubscribers.set(field, this.errorSubscribers.get(field)?.filter(i => i !== cb as unknown as FieldOnErrorCb<State[Field], State>) || []);
+    }
+  }
+
+  getFieldValidationStatus<F extends Field>(field: F) {
+    return (this.validationStatusByField[field] || 'notStarted') as ValidationStatus
   }
 
   setFieldsValue(update: Partial<State>) {
@@ -107,6 +137,8 @@ export class FormApi<State extends Record<string, unknown>, Field extends Extrac
       return []
     }
 
+    this.triggerFieldValidation(field, 'validating');
+
     const rulesWithKey = rules.map((rule, index) => ({
       ...rule,
       key: String(index),
@@ -115,7 +147,12 @@ export class FormApi<State extends Record<string, unknown>, Field extends Extrac
 
     const validationErrors = await getValidationErrors(this.state[field], rulesWithKey, trigger);
 
-    this.triggerFieldError(field, validationErrors);
+    if (validationErrors.length > 0) {
+      this.triggerFieldValidation(field, 'error', validationErrors);
+    } else {
+      this.triggerFieldValidation(field, 'success');
+    }
+
     // TODO: Fow to fix this type?
     return validationErrors as unknown as ValidationError<State[F]>[]
   }
