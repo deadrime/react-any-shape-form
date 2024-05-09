@@ -9,8 +9,12 @@ export type ArrayOnlyObj<T extends Record<string, unknown>> = {
   [P in keyof T as T[P] extends Array<any> ? P : never]: T[P]
 }
 
+export type GetFields<T extends Record<string, unknown>> = Extract<keyof T, string>
+
+export type PickBy<Obj extends Record<string, unknown>, Predicate> = {
+  [Property in keyof Obj as Obj[Property] extends Predicate ? Property : never]: Obj[Property]
+}
+
 export type ArrayOnlyFields<
 Obj extends Record<string, unknown>,
-ArrayOnly extends ArrayOnlyObj<Obj> = ArrayOnlyObj<Obj>,
-Field extends Extract<keyof ArrayOnly, string> = Extract<keyof ArrayOnly, string>
-> = Field
+> = GetFields<PickBy<Obj, unknown[]>>
