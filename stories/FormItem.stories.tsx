@@ -9,7 +9,6 @@ const meta: Meta<typeof FormItem> = {
   </Form>,
   args: {
     name: 'field',
-    children: <input />,
     rules: [{
       required: true,
     }]
@@ -32,12 +31,6 @@ const meta: Meta<typeof FormItem> = {
       control: 'object',
       description: 'validation rules'
     },
-    getValueFromEvent: {
-      description: 'if you component dispatch some custom event you need to specify how value can be extracted'
-    },
-    normalize: {
-      description: 'if you want to transform value before display it'
-    },
     renderError: {
       description: 'if you want to customize error. You also can just just specify some CSS for `form__form-item__error`'
     },
@@ -59,7 +52,9 @@ export const BaseExample: StoryObj<typeof FormItem> = {
             console.log(error, value)
           }}
         >
-          <input placeholder="some placeholder" />
+          {({ value, onChange }) =>
+            <input value={value} onChange={e => onChange(e.target.value)} />
+          }
         </FormItem>
         <button type="submit">Submit</button>
       </Form>

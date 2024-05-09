@@ -4,11 +4,13 @@ export type FieldError<Value> = ValidationError<Value>
 
 export type FieldOnChangeCb<T> = (value: T) => void
 
+export type FieldOnValidationStatusChangeCb<T> = (validationStatus: ValidationStatus, validationErrors?: ValidationError<T>[]) => void
+
 export type FieldOnErrorCb<T, S> = (validationErrors: ValidationError<T>[], state: S) => void
 
 export type FieldOnSubmitCb<S> = (state: S) => void
 
-export type RuleType = 'string' | 'number' | 'regexp' | 'email' | 'array';
+export type RuleType = 'string' | 'number' | 'regexp' | 'email' | 'array'
 
 export type Validator<T = unknown> = (value: T, rule: ValidationRule<T>) => Promise<string | void | Error>;
 

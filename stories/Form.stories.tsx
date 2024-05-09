@@ -78,7 +78,12 @@ export const BaseExample: StoryObj<typeof Form> = {
             <input value={value} onChange={e => onChange(e.target.value)} />
           }
         </MyForm.Item>
-        <MyForm.Item name="age">
+        <MyForm.Item name="age" rules={[{
+          type: 'number',
+          min: 18,
+          max: 40,
+          message: 'Age must be between 18 and 40'
+        }]}>
           {({ value, onChange }) =>
             <input type="number" value={String(value)} onChange={(e) => onChange(+e.target.value)} />
           }
@@ -172,7 +177,7 @@ export const UseWatchExample: StoryObj<typeof Form> = {
             },
           ]}
         >
-          <input />
+          {({ value, onChange }) => <input value={value} onChange={e => onChange(e.target.value)} />}
         </MyForm.Item>
         <MyForm.Item
           name="age"
@@ -194,7 +199,7 @@ export const UseWatchExample: StoryObj<typeof Form> = {
             }
           ]}
         >
-          <input />
+          {({ value, onChange }) => <input value={value} onChange={e => onChange(+e.target.value)} />}
         </MyForm.Item>
         <button type="submit">
           Submit button
@@ -241,7 +246,7 @@ export const UsingFormApi: StoryObj = {
             validateTrigger: ['onFinish']
           }]}
         >
-          <input />
+          {({ value, onChange }) => <input value={value} onChange={e => onChange(e.target.value)} />}
         </MyForm.Item>
         <MyForm.Item
           name="field2"
@@ -252,7 +257,7 @@ export const UsingFormApi: StoryObj = {
             validateTrigger: ['onFinish']
           }]}
         >
-          <input />
+          {({ value, onChange }) => <input value={value} onChange={e => onChange(+e.target.value)} />}
         </MyForm.Item>
         <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
           <button type="button" onClick={() => {
@@ -349,13 +354,22 @@ export const ArrayHookExample: StoryObj<typeof Form> = {
   render: () => {
     const Form = useForm({ userIds: [] as string[] });
 
-    const { fields, update, append, remove } = Form.useArrayField('userIds', [{
-      type: 'array',
-      min: 1,
-      message: 'Add at least one userId'
-    }]);
+    const { fields, update, append, remove } = Form.useArrayField('userIds', [
+      {
+        type: 'array',
+        min: 1,
+        message: 'Add at least one userId'
+      },
+      {
+        validator: async (value) => {
+          if (!value.every(Boolean)) {
+            return Promise.reject('Some field is empty')
+          }
+        }
+      }
+    ]);
 
-    const errors = Form.useFieldError('userIds');
+    const { errors } = Form.useFieldErrors('userIds');
 
     return (
       <Form onFinish={state => {
@@ -412,14 +426,16 @@ export const TransformExample: StoryObj<typeof Form> = {
       <Form onFinish={state => {
         alert(JSON.stringify(state, undefined, 2))
       }}>
-        <Form.Item
-          name='test'
-          getValueFromEvent={e => {
-            const value = convertToFloat(e.target.value, 'ru');
-            return isNaN(value) ? Form.formApi.getFieldValue('test') : value
-          }}
-          normalize={value => formatNumber(value, 'ru')}>
-          <input />
+        <Form.Item name='test'>
+          {({ value, onChange }) =>
+            <input
+              value={formatNumber(value, 'ru')}
+              onChange={(e) => {
+                const value = convertToFloat(e.target.value, 'ru');
+                onChange(isNaN(value) ? Form.formApi.getFieldValue('test') : value)
+              }}
+            />
+          }
         </Form.Item>
 
         <button type="submit">

@@ -30,7 +30,7 @@ export const createForm = <State extends Record<string, unknown>>(initialState: 
 
   const useFieldHook = <T extends Types['field']>(field: T) => useField(form, field)
 
-  const useFieldErrorHook = <T extends Types['field']>(field: T) => useFieldError(form, field)
+  const useFieldErrorsHook = <T extends Types['field']>(field: T) => useFieldValidation(form, field)
 
   const useArrayFieldHook = <T extends ArrayFields>(field: T, rules?: ValidationRule<Types['state'][T]>[]) => useArrayField(form, field, rules)
 
@@ -40,7 +40,7 @@ export const createForm = <State extends Record<string, unknown>>(initialState: 
     useField: typeof useFieldHook,
     ArrayItem: typeof ArrayItemComponent,
     formApi: typeof form,
-    useFieldError: typeof useFieldErrorHook,
+    useFieldErrors: typeof useFieldErrorsHook,
     useArrayField: typeof useArrayFieldHook,
   }
 
@@ -50,7 +50,7 @@ export const createForm = <State extends Record<string, unknown>>(initialState: 
   CompoundForm.useWatch = useWatchHook;
   CompoundForm.useField = useFieldHook;
   CompoundForm.useArrayField = useArrayFieldHook;
-  CompoundForm.useFieldError = useFieldErrorHook;
+  CompoundForm.useFieldErrors = useFieldErrorsHook;
 
   return CompoundForm
 }
@@ -66,13 +66,13 @@ export const useWatch = <
   State extends Types['state'],
   Field extends Types['field']
 >(form: Form, field: Field) => {
-  const value = useSyncExternalStore(
+  const value = useSyncExternalStore<State[Field]>(
     cb => form.onFieldChange(field, cb),
     () => form.getFieldValue(field),
     () => form.getFieldValue(field),
   )
 
-  return value as State[Field]
+  return value;
 }
 
 export const useField = <
@@ -90,17 +90,21 @@ export const useField = <
   return [value as State[Field], handleUpdateFormField] as const;
 }
 
-export const useFieldError = <
+export const useFieldValidation = <
   Form extends FormApi<any>,
   Types extends FormApiGenericTypes<Form> = FormApiGenericTypes<Form>,
   State extends Types['state'] = Types['state'],
   Field extends Types['field'] = Types['field']
 >(form: Form, field: Field) => {
-  const [validationErrors, setValidationErrors] = useState([] as ValidationError<State[Field]>[]);
+  const [errors, setErrors] = useState([] as ValidationError<State[Field]>[]);
+  const [status, setStatus] = useState(() => form.getFieldValidationStatus(field));
 
   useEffect(() => {
-    return form.onFieldError(field, (errors) => setValidationErrors(errors as ValidationError<State[Field]>[]));
+    return form.onFieldValidationStatusChange(field, (status, errors) => {
+      setStatus(status);
+      setErrors(errors || []);
+    })
   }, [field, form])
 
-  return validationErrors;
+  return { errors, status };
 }
