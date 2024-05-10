@@ -109,13 +109,14 @@ export const BaseExample: StoryObj<typeof Form> = {
 export const CustomValidatorExample: StoryObj<typeof Form> = {
   render: (args) => {
     const Form = createForm({
-      custom: 0,
+      answer: 0,
+      username: '',
     });
 
     return (
       <Form onFinish={args.onFinish}>
         <Form.Item
-          name="custom"
+          name="answer"
           label={"Answer of Universe"}
           rules={[
             {
@@ -134,9 +135,36 @@ export const CustomValidatorExample: StoryObj<typeof Form> = {
           {({ value, onChange }) =>
             <input
               type="number"
-              value={value}
+              value={String(value)}
               onChange={e => onChange(+e.target.value)}
             />
+          }
+        </Form.Item>
+        <Form.Item
+          name="username"
+          label={"Username ('foo' and 'bar' already registered)"}
+          rules={[
+            {
+              validator: async (value) => {
+                await new Promise((res) => setTimeout(res, 500))
+                if (!['foo', 'bar'].includes(value)) {
+                  return
+                } else {
+                  return Promise.reject(`User with username '${value}' already registered`);
+                }
+              },
+              validateTrigger: ['onChange', 'onFinish'],
+            },
+          ]}
+        >
+          {({ value, onChange, validationStatus }) =>
+            <div>
+              <input
+                value={value}
+                onChange={e => onChange(e.target.value)}
+              />
+              {validationStatus}
+            </div>
           }
         </Form.Item>
         <button type="submit">

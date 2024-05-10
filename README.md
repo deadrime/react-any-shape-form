@@ -85,10 +85,8 @@ You can find more examples in [docs](https://react-any-shape-form.vercel.app/?pa
 | children          | `FC` or `ReactElement`                                | Function/component with `value`, `onChange` props | `{}`    |
 | label             | `ReactNode`                                           | Field label                                       |         |
 | rules             | `ValidationRule[]`                                    | Validation rule                                   |         |
-| normalize         | `(value: Value) => any`                               | Transform value before display it                 |         |
-| getValueFromEvent | `(...args: any[]) => Value`                           | Get value from `onChange` cb                      |         |
 | onChange          | `(value: Value, event?: unknown)` => any              | Triggers on field state changes                   |         |
-| onInvalid         | `(error: ValidationError[], value: Value) => void`    | Triggers on validation error                      |         |
+| onInvalid         | `(errors: ValidationError[], value: Value) => void`    | Triggers on validation error                      |         |
 | renderLabel       | `(value: Value, formItemId?: string) => ReactElement` | Customize label                                   |         |
 | renderError       | `(error: ValidationError<Value>) => ReactElement`     | Customize error                                   |         |
 
@@ -168,7 +166,6 @@ const SomeComponent = () => {
   const name = MyForm.useWatch('name');
   ...
 }
-
 ```
 
 - `Form.useField` - get control over field state
@@ -177,7 +174,11 @@ const SomeComponent = () => {
 const [name, setName] = MyForm.useField('name');
 ```
 
-- `Form.useFieldError` - get actual field validation errors
+- `Form.useFieldErrors` - get actual field validation errors and validation status
+
+```tsx
+const { errors, status } = MyForm.useFieldErrors('name');
+```
 
 - `Form.useArrayField` - get control over array field
 
@@ -203,5 +204,4 @@ const SomeComponent = () => {
     </>
   )
 }
-
 ```

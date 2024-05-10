@@ -1,4 +1,4 @@
-import { getValidationErrors } from "./helpers/getValidationErrors";
+import { getValidationErrors, prepareRules } from "./helpers/getValidationErrors";
 import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, ValidationRule, ValidateTrigger, ValidationError, FieldOnValidationStatusChangeCb, ValidationStatus } from "./types";
 import { GetFields } from "./typesHelpers";
 
@@ -40,15 +40,22 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
 
   private triggerFieldUpdate<F extends Field, V extends State[F]>(field: F, value: V) {
     this.subscribers.get(field)?.forEach(cb => cb(value));
+
+    // reset errors
+    if (this.fieldErrors[field]) {
+      delete this.fieldErrors[field];
+      this.errorSubscribers.get(field)?.forEach(cb => cb([], this.state));
+    }
     // reset validation
-    delete this.fieldErrors[field];
-    this.validationStatusByField[field] = 'validating';
-    this.validationSubscribers.get(field)?.forEach(cb => cb('validating'));
-    this.errorSubscribers.get(field)?.forEach(cb => cb([], this.state));
+    if (this.getFieldValidationStatus(field) !== 'notStarted') {
+      this.validationStatusByField[field] = 'notStarted';
+      this.validationSubscribers.get(field)?.forEach(cb => cb('notStarted'));
+    }
   }
 
   private triggerFieldError(field: Field, validationErrors: ValidationError<State[Field]>[]) {
     this.fieldErrors[field] = validationErrors;
+    this.validationStatusByField[field] = 'error';
     this.errorSubscribers.get(field)?.forEach(cb => cb(validationErrors, this.state))
   }
 
@@ -137,15 +144,15 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
       return []
     }
 
+    const preparedRules = prepareRules(rules, trigger);
+
+    if (preparedRules.length === 0) {
+      return []
+    }
+
     this.triggerFieldValidation(field, 'validating');
 
-    const rulesWithKey = rules.map((rule, index) => ({
-      ...rule,
-      key: String(index),
-      validateTrigger: rule.validateTrigger || ['onChange', 'onFinish'],
-    }))
-
-    const validationErrors = await getValidationErrors(this.state[field], rulesWithKey, trigger);
+    const validationErrors = await getValidationErrors(this.state[field], preparedRules);
 
     if (validationErrors.length > 0) {
       this.triggerFieldValidation(field, 'error', validationErrors);

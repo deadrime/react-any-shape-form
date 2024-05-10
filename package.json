@@ -2,7 +2,7 @@
   "name": "react-any-shape-form",
   "author": "Eugene Trofimov",
   "license": "ISC",
-  "version": "2.0.6",
+  "version": "2.1.0",
   "description": "Small, type-friendly and flexible react form component.",
   "keywords": [
     "react",

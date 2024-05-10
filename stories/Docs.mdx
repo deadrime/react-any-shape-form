@@ -344,7 +344,7 @@ const MyForm = () => (
     message: 'Add at least one userId'
   }]);
 
-  const errors = Form.useFieldError('userIds');
+  const { errors } = Form.useFieldErrors('userIds');
 
   return (
     <Form onFinish={state => {

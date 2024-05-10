@@ -2,59 +2,62 @@ import { checkRequired, checkMin, checkMax, checkPattern } from "../basicValidat
 import { ValidationRule, ValidateTrigger, ValidationError, Validator } from "../types";
 import { filterOnlyRejectedPromises } from "./promises";
 
-// I know it's bad, use <input type="email">
-const emailRegex =
-  /* eslint-disable-next-line no-useless-escape */
-  /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const emailRegex = /^[^@]+@[^@]+\.[^@]+$/;
 
-export const getValidationErrors = async <Value,>(
-  value: Value,
-  rules: (ValidationRule<Value> & { validateTrigger: ValidateTrigger[] })[],
+type PreparedRule<Value> = {
+  rule: ValidationRule<Value> & { validateTrigger: ValidateTrigger[] },
+  validator: Validator<Value>
+}
+
+export const prepareRules = <Value,>(
+  rules: (ValidationRule<Value>)[],
   trigger?: ValidateTrigger
 ) => {
-  const result = [] as {
-    rule: typeof rules[number],
-    validator: Validator<Value>
-  }[];
+  const result: PreparedRule<Value>[] = [];
 
   for (const rule of rules) {
-    if (trigger && !rule.validateTrigger.includes(trigger)) {
+    const validateTrigger = rule.validateTrigger || ['onChange', 'onFinish']
+    const preparedRule = {
+      ...rule,
+      validateTrigger,
+    } 
+    if (trigger && !validateTrigger.includes(trigger)) {
       continue
     }
     if (rule.required) {
       result.push({
-        rule,
+        rule: preparedRule,
         validator: checkRequired,
       });
     }
     if ('min' in rule) {
       result.push({
-        rule,
+        rule: preparedRule,
         validator: checkMin,
       });
     }
     if ('max' in rule) {
       result.push({
-        rule,
+        rule: preparedRule,
         validator: checkMax,
       });
     }
     if ('validator' in rule) {
       result.push({
-        rule,
+        rule: preparedRule,
         validator: rule.validator,
       });
     }
     if (rule.type === 'regexp' && 'pattern' in rule) {
       result.push({
-        rule,
+        rule: preparedRule,
         validator: checkPattern,
       });
     }
     if (rule.type === 'email') {
       result.push({
         rule: {
-          ...rule,
+          ...preparedRule,
           type: 'regexp',
           pattern: emailRegex,
         },
@@ -63,8 +66,15 @@ export const getValidationErrors = async <Value,>(
     }
   }
 
+  return result;
+}
+
+export const getValidationErrors = async <Value,>(
+  value: Value,
+  rules: PreparedRule<Value>[]
+) => {
   const settledPromises = await Promise.allSettled(
-    result.map(({ validator, rule }) =>
+    rules.map(({ validator, rule }) =>
       validator(value, rule)
         .catch(error => {
           const errorText = rule.message || String(error);
