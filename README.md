@@ -11,7 +11,7 @@ Lightweight form library focused on ease of use. This library was inspired by `a
 - Ease to use, you need only `createForm` method to get all the functionality
 - Build in promise based validation, you can easy use your own promise function to validate fields
 - No extra re-renders
-- `useWatch`, `useField`, `useArrayField`, `useFieldError` hooks
+- `useWatch`, `useField`, `useArrayField`, `useFieldErrors` hooks
 - Access to form state in any place of application, even outside of form component
 
 Docs and examples - https://react-any-shape-form.vercel.app/
