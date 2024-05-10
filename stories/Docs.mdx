@@ -152,7 +152,9 @@ const MyForm = () => (
           },
         ]}
       >
-        <input />
+        {({ value, onChange }) =>
+          <input value={value} onChange={e => onChange(e.target.value)} />
+        }
       </Form.Item>
       <Form.Item
         name="age"
@@ -174,7 +176,9 @@ const MyForm = () => (
           }
         ]}
       >
-        <input />
+        {({ value, onChange }) =>
+          <input value={String(value)} onChange={e => onChange(+e.target.value)} />
+        }
       </Form.Item>
       <button type="submit">
         Submit button
@@ -405,14 +409,16 @@ const MyForm = () => (
     <Form onFinish={state => {
       alert(JSON.stringify(state, undefined, 2))
     }}>
-      <Form.Item
-        name='amount'
-        getValueFromEvent={e => {
-          const value = convertToFloat(e.target.value, 'ru');
-          return isNaN(value) ? Form.formApi.getFieldValue('test') : value
-        }}
-        normalize={value => formatNumber(value, 'ru')}>
-        <input />
+      <Form.Item name='amount'>
+        {({ value, onChange }) =>
+          <input
+            value={formatNumber(value, 'ru')}
+            onChange={(e) => {
+              const value = convertToFloat(e.target.value, 'ru');
+              onChange(isNaN(value) ? Form.formApi.getFieldValue('test') : value)
+            }}
+          />
+        }
       </Form.Item>
 
       <button type="submit">
