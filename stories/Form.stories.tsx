@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { createForm, useForm } from '@/useForm';
 import { Form } from '@/Form'
+import { useState } from 'react';
 
 const meta: Meta<any> = {
   component: Form,
@@ -91,6 +92,111 @@ export const BaseExample: StoryObj<typeof Form> = {
         <button type="submit">
           Submit button
         </button>
+      </MyForm>
+    );
+  },
+  argTypes: {
+    initialState: {
+      control: 'object',
+    },
+  },
+  args: {
+    onFinish: (state) => {
+      alert(JSON.stringify(state, undefined, 2))
+    }
+  }
+};
+
+
+type MyFormType = {
+  name: string,
+  age: number,
+  extra?: string
+}
+
+const MyForm = createForm<MyFormType>({
+  name: 'Rina',
+  age: 24,
+})
+
+export const StepsExample: StoryObj<typeof Form> = {
+  render: () => {
+    const [step, setStep] = useState(1);
+    const [visible, setVisible] = useState(false);
+
+    return (
+      <MyForm onFinish={(state) => {
+        alert(JSON.stringify(state, undefined, 2));
+      }}>
+        {step === 1 && <>
+          <MyForm.Item
+            name="name"
+            label="Name"
+            onChange={value => value}
+            rules={[
+              {
+                required: true,
+                message: 'Name is required',
+                validateTrigger: ['onFinish']
+              },
+            ]}
+          >
+            {({ value, onChange }) =>
+              <input value={value} onChange={e => onChange(e.target.value)} />
+            }
+          </MyForm.Item>
+          <div>
+            <span>Show extra field</span>
+            <input type='checkbox' checked={visible} onChange={(e) => {
+              const checked = e.target.checked;
+              setVisible(checked);
+              if (!checked) {
+                MyForm.formApi.setFieldValue('extra', undefined);
+              }
+            }} />
+          </div>
+          {visible && <MyForm.Item
+            name="extra"
+            label="Extra field"
+            onChange={value => value}
+            rules={[
+              {
+                required: true,
+                message: 'Extra is required',
+                validateTrigger: ['onFinish']
+              },
+            ]}
+          >
+            {({ value, onChange }) =>
+              <input value={value} onChange={e => onChange(e.target.value)} />
+            }
+          </MyForm.Item>}
+        </>}
+        {step === 2 && <MyForm.Item name="age" rules={[{
+          type: 'number',
+          min: 18,
+          max: 40,
+          message: 'Age must be between 18 and 40'
+        }]}>
+          {({ value, onChange }) =>
+            <input type="number" value={String(value)} onChange={(e) => onChange(+e.target.value)} />
+          }
+        </MyForm.Item>}
+        <button type="button" onClick={async () => {
+          if (step === 1) {
+            await MyForm.formApi.validateFields();
+            setStep(2);
+          } else {
+            await MyForm.formApi.submit();
+          }
+        }}>
+          {step === 1 ? 'Next' : 'Submit'}
+        </button>
+        {step === 2 && <button type="button" onClick={async () => {
+          setStep(1);
+        }}>
+          Back
+        </button>}
       </MyForm>
     );
   },

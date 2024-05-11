@@ -72,6 +72,108 @@ const MyComponent = () =>
   sourceState={'shown'}
 />
 
+## Conditional render example
+<Canvas
+  of={FormStories.ArrayHookExample}
+  sourceState={'hidden'}
+  source={{
+    code: `
+import { createForm } from 'react-any-shape-form';
+
+type MyFormType = {
+  name: string,
+  age: number,
+  extra?: string
+}
+
+const MyForm = createForm<MyFormType>({
+  name: 'Rina',
+  age: 24,
+})
+
+const MyForm = () => {
+  const [step, setStep] = useState(1);
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <MyForm onFinish={(state) => {
+      alert(JSON.stringify(state, undefined, 2));
+    }}>
+      {step === 1 && <>
+        <MyForm.Item
+          name="name"
+          label="Name"
+          onChange={value => value}
+          rules={[
+            {
+              required: true,
+              message: 'Name is required',
+              validateTrigger: ['onFinish']
+            },
+          ]}
+        >
+          {({ value, onChange }) =>
+            <input value={value} onChange={e => onChange(e.target.value)} />
+          }
+        </MyForm.Item>
+        <div>
+          <span>Show extra field</span>
+          <input type='checkbox' checked={visible} onChange={(e) => {
+            const checked = e.target.checked;
+            setVisible(checked);
+            if (!checked) {
+              MyForm.formApi.setFieldValue('extra', undefined);
+            }
+          }} />
+        </div>
+        {visible && <MyForm.Item
+          name="extra"
+          label="Extra field"
+          onChange={value => value}
+          rules={[
+            {
+              required: true,
+              message: 'Extra is required',
+              validateTrigger: ['onFinish']
+            },
+          ]}
+        >
+          {({ value, onChange }) =>
+            <input value={value} onChange={e => onChange(e.target.value)} />
+          }
+        </MyForm.Item>}
+      </>}
+      {step === 2 && <MyForm.Item name="age" rules={[{
+        type: 'number',
+        min: 18,
+        max: 40,
+        message: 'Age must be between 18 and 40'
+      }]}>
+        {({ value, onChange }) =>
+          <input type="number" value={String(value)} onChange={(e) => onChange(+e.target.value)} />
+        }
+      </MyForm.Item>}
+      <button type="button" onClick={async () => {
+        if (step === 1) {
+          await MyForm.formApi.validateFields();
+          setStep(2);
+        } else {
+          await MyForm.formApi.submit();
+        }
+      }}>
+        {step === 1 ? 'Next' : 'Submit'}
+      </button>
+      {step === 2 && <button type="button" onClick={async () => {
+        setStep(1);
+      }}>
+        Back
+      </button>}
+    </MyForm>
+  );
+}
+  `
+}} />
+
 ## Custom validator example
 <Canvas
   of={FormStories.CustomValidatorExample}
@@ -84,7 +186,7 @@ const Form = createForm({
   name: '',
 });
 
-const MyForm = () => (
+const MyForm = () => {
   return (
     <Form onFinish={args.onFinish}>
       <Form.Item
@@ -117,7 +219,7 @@ const MyForm = () => (
       </button>
     </Form>
   );
-)
+}
   `
 }} />
 
@@ -139,7 +241,7 @@ const AgeLabel = () => {
   return <span>{name} age</span>
 }
 
-const MyForm = () => (
+const MyForm = () => {
   return (
     <Form onFinish={args.onFinish}>
       <Form.Item
@@ -185,7 +287,7 @@ const MyForm = () => (
       </button>
     </Form >
   );
-)
+}
   `
 }} />
 
@@ -202,7 +304,7 @@ const Form = createForm({
   field2: 123,
 });
 
-const MyForm = () => (
+const MyForm = () => {
   return (
     <Form
       onFinish={(fields) => {
@@ -266,7 +368,7 @@ const MyForm = () => (
       </div>
     </Form>
   );
-)
+}
   `
 }} />
 
@@ -282,7 +384,7 @@ const Form = createForm({
   userIds: [] as string[],
 });
 
-const MyForm = () => (
+const MyForm = () => {
   return (
     <Form onFinish={state => {
       alert(JSON.stringify(state, undefined, 2))
@@ -325,7 +427,7 @@ const MyForm = () => (
       </button>
     </Form>
   );
-)
+}
   `
 }} />
 
@@ -341,7 +443,7 @@ const Form = createForm({
   userIds: [] as string[],
 });
 
-const MyForm = () => (
+const MyForm = () => {
   const { fields, update, append, remove } = Form.useArrayField('userIds', [{
     type: 'array',
     min: 1,
@@ -376,7 +478,8 @@ const MyForm = () => (
         Submit button
       </button>
     </Form>
-  );
+  )
+}
   `
 }} />
 
@@ -404,7 +507,7 @@ const convertToFloat = (number: string, locale = 'en-IN') => {
 
 const formatNumber = (number, locale = 'en-IN') => new Intl.NumberFormat(locale).format(number)
 
-const MyForm = () => (
+const MyForm = () => {
   return (
     <Form onFinish={state => {
       alert(JSON.stringify(state, undefined, 2))
@@ -426,6 +529,6 @@ const MyForm = () => (
       </button>
     </Form>
   );
-)
+}
   `
 }} />

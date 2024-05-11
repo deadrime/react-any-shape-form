@@ -12,6 +12,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   private errorSubscribers: Map<Field, FieldOnErrorCb<State[Field], State>[]>;
   private submitSubscribers: Set<FieldOnSubmitCb<State>>;
   private validationSubscribers: Map<Field, FieldOnValidationStatusChangeCb<State[Field]>[]>;
+  private visibleFields: Set<Field>
 
   constructor(state: State) {
     this.state = state;
@@ -23,6 +24,15 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     this.errorSubscribers = new Map();
     this.submitSubscribers = new Set();
     this.validationSubscribers = new Map();
+    this.visibleFields = new Set();
+  }
+
+  setFieldVisible<F extends Field>(field: F, visible: boolean) {
+    if (visible) {
+      this.visibleFields.add(field);
+    } else {
+      this.visibleFields.delete(field);
+    }
   }
 
   getState() {
@@ -178,7 +188,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   }
 
   async validateFields(fieldNames?: Field[], trigger?: ValidateTrigger) {
-    const errors = await this.getFieldsError(fieldNames, trigger);
+    const errors = await this.getFieldsError(fieldNames || [...this.visibleFields.values()], trigger);
     if (errors.length > 0) {
       return Promise.reject('reject');
     }

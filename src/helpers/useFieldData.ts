@@ -14,6 +14,12 @@ export const useInitField = <Value, T extends string = string>(formApi: FormApi<
     if (!(field in formApi.getState())) {
       formApi.setFieldValue(field, undefined);
     }
+
+    formApi.setFieldVisible(field, true);
+
+    return () => {
+      formApi.setFieldVisible(field, false);
+    }
     // reset maybe?
   }, [field, formApi, rules])
 }
