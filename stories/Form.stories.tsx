@@ -119,7 +119,7 @@ const MyForm = createForm<MyFormType>({
   age: 24,
 })
 
-export const StepsExample: StoryObj<typeof Form> = {
+export const ConditionalRenderExample: StoryObj<typeof Form> = {
   render: () => {
     const [step, setStep] = useState(1);
     const [visible, setVisible] = useState(false);
