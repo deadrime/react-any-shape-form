@@ -182,7 +182,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   async validateField(field: Field, trigger?: ValidateTrigger) {
     const errors = await this.getFieldError(field, trigger);
     if (errors.length > 0) {
-      return Promise.reject('reject');
+      return Promise.reject(errors);
     }
     return Promise.resolve()
   }
@@ -190,7 +190,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   async validateFields(fieldNames?: Field[], trigger?: ValidateTrigger) {
     const errors = await this.getFieldsError(fieldNames || [...this.visibleFields.values()], trigger);
     if (errors.length > 0) {
-      return Promise.reject('reject');
+      return Promise.reject(errors);
     }
     return Promise.resolve()
   }
