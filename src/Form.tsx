@@ -59,7 +59,11 @@ export const Form = <
   const handleSubmit = useCallback(async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    formApi.submit();
+    try {
+      await formApi.submit();
+    } catch (error) {
+      console.error(error);
+    }
   }, [formApi]);
 
   useEffect(() => {
