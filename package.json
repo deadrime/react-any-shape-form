@@ -26,7 +26,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "test": "vitest --typecheck"
   },
   "module": "dist/bundle.es.js",
   "exports": {
@@ -53,16 +54,18 @@
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
-    "@storybook/addon-storysource": "^8.0.9",
-    "@storybook/test": "^8.0.9",
     "@storybook/addon-docs": "^8.0.9",
     "@storybook/addon-essentials": "^8.0.9",
     "@storybook/addon-interactions": "^8.0.9",
     "@storybook/addon-links": "^8.0.9",
     "@storybook/addon-onboarding": "^8.0.9",
+    "@storybook/addon-storysource": "^8.0.9",
     "@storybook/blocks": "^8.0.9",
     "@storybook/react": "^8.0.9",
     "@storybook/react-vite": "^8.0.9",
+    "@storybook/test": "^8.0.9",
+    "@testing-library/jest-dom": "^6.4.5",
+    "@testing-library/react": "^15.0.7",
     "@types/cross-spawn": "^6.0.6",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
@@ -73,12 +76,14 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "eslint-plugin-storybook": "^0.8.0",
+    "jsdom": "^24.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "storybook": "^8.0.9",
     "terser": "^5.26.0",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
-    "vite-plugin-dts": "^3.5.2"
+    "vite-plugin-dts": "^3.5.2",
+    "vitest": "^1.6.0"
   }
 }
