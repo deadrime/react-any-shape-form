@@ -38,6 +38,10 @@ interface PatternRule extends BaseRule {
   pattern: RegExp;
 }
 
+interface EmailRule extends BaseRule {
+  type: 'email'
+}
+
 interface RequiredRule extends BaseRule {
   required: boolean;
 }
@@ -46,7 +50,13 @@ interface CustomValidatorRule<T> extends BaseRule {
   validator: Validator<T>
 }
 
-export type ValidationRule<T = unknown> = RequiredRule | MinRule | MaxRule | PatternRule | CustomValidatorRule<T>;
+export type ValidationRule<T = unknown> = 
+RequiredRule |
+MinRule |
+MaxRule |
+PatternRule |
+EmailRule | 
+CustomValidatorRule<T>;
 
 export type ValidationStatus = 'notStarted' | 'validating' | 'success' | 'error'
 
