@@ -22,5 +22,6 @@ CompoundedForm.Item = FormItem
 export default CompoundedForm
 
 export {
-  CompoundedForm as Form
+  CompoundedForm as Form,
+  FormItem,
 }
