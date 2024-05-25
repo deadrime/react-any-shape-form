@@ -1,4 +1,4 @@
-import React, { CSSProperties, useCallback, useRef } from 'react';
+import React, { CSSProperties, useCallback, useRef, memo } from 'react';
 import { useDebounce } from 'react-use';
 import { useFormContext } from './FormContext';
 import { ValidationRule, ValidationStatus, ValidationError } from './types';
@@ -28,7 +28,7 @@ export type FormItemProps<
   validationDebounceDelay?: number
 }
 
-export const FormItem = <Value, FieldName extends string = string, Children extends FormItemChildren = FormItemChildren>(props: FormItemProps<FieldName, Value, Children>) => {
+const FormItem = <Value, FieldName extends string = string, Children extends FormItemChildren = FormItemChildren>(props: FormItemProps<FieldName, Value, Children>) => {
   const {
     children,
     name,
@@ -86,3 +86,5 @@ export const FormItem = <Value, FieldName extends string = string, Children exte
 };
 
 FormItem.displayName = 'FormItem';
+
+export default memo(FormItem) as typeof FormItem

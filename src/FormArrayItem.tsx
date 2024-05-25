@@ -1,5 +1,5 @@
-import React, { useCallback } from "react"
-import { FormItem, FormItemProps } from "./FormItem"
+import React, { memo, useCallback } from "react"
+import FormItem, { FormItemProps } from "./FormItem"
 import { FieldUpdate, FieldUpdateCb, ValidationRule } from "./types"
 import { useField } from "./useForm"
 import { FormApi } from "./FormApi"
@@ -64,7 +64,7 @@ export type FormArrayItemProps<FieldName extends string = string, Value extends 
   onChange?: (value: FieldUpdate<Value>, event?: unknown) => unknown
 }
 
-export const FormArrayItem = <FieldName extends string = string, Value extends unknown[] = unknown[]>({ children, ...props }: FormArrayItemProps<FieldName, Value>) => {
+const FormArrayItem = <FieldName extends string = string, Value extends unknown[] = unknown[]>({ children, ...props }: FormArrayItemProps<FieldName, Value>) => {
   const form = useFormInstance();
   const formArray = useArrayField(form, props.name);
 
@@ -72,3 +72,5 @@ export const FormArrayItem = <FieldName extends string = string, Value extends u
     {() => children(formArray)}
   </FormItem>
 }
+
+export default memo(FormArrayItem) as typeof FormArrayItem

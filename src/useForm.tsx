@@ -3,8 +3,8 @@ import { FormApi } from "./FormApi";
 import { FormApiGenericTypes, ArrayOnly, ArrayOnlyFields } from "./typesHelpers";
 import { FieldUpdate, ValidationRule, ValidationError } from "./types";
 import { Form, FormProps } from "./Form";
-import { FormItem, FormItemProps } from "./FormItem";
-import { FormArrayItem, FormArrayItemProps, useArrayField } from "./FormArrayItem";
+import FormItem, { FormItemProps } from "./FormItem";
+import FormArrayItem, { FormArrayItemProps, useArrayField } from "./FormArrayItem";
 
 export const useCreateForm = <State extends Record<string, unknown>>(initialState: State) => {
   const formApiRef = React.useRef<FormApi<State>>(new FormApi(initialState));

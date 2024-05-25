@@ -1,5 +1,6 @@
 import Form from './Form.tsx';
-import { FormItem, FormItemProps } from './FormItem.tsx';
+import FormItem, { FormItemProps } from './FormItem.tsx';
+export { default as FormArrayItem } from './FormArrayItem.tsx';
 export * from './Form.tsx';
 export * from './FormItem.tsx';
 export * from './types.ts';

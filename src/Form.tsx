@@ -1,4 +1,4 @@
-import React, { useCallback, CSSProperties, useMemo, useEffect } from 'react';
+import React, { useCallback, CSSProperties, useMemo, useEffect, memo } from 'react';
 
 import { FormContext } from './FormContext';
 import { FormApi } from './FormApi';
@@ -94,4 +94,4 @@ export const Form = <
   );
 }
 
-export default Form;
+export default memo(Form) as typeof Form;
