@@ -43,7 +43,7 @@ const FormItem = <Value, FieldName extends string = string, Children extends For
     renderLabel,
     validationDebounceDelay = 300,
   } = props;
-  const { formApi } = useFormContext()
+  const { formApi, onFieldChange } = useFormContext()
   const { value, setValue, id, CSSPrefix } = useFieldData<Value>(name, rules);
   const { errors, status } = useFieldValidation(formApi, name);
   const formItemId = idFromProps || id;
@@ -64,7 +64,8 @@ const FormItem = <Value, FieldName extends string = string, Children extends For
     stateRef.current.valueChanged = true;
     setValue(value);
     onChange?.(value);
-  }, [setValue, onChange]);
+    onFieldChange?.(name, value)
+  }, [setValue, onChange, name]);
 
   return (
     <div className={`${className || ''} ${CSSPrefix}__form-item`} style={style}>

@@ -6,6 +6,7 @@ export type FormContextState<F extends FormApi<any> = FormApi<any>> = {
   formApi: F
   formId?: string
   CSSPrefix?: string
+  onFieldChange?: (field: string, value: any) => void
 }
 
 const formDefaultContext: FormContextState = {

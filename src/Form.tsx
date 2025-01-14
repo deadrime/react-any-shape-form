@@ -21,6 +21,7 @@ export type FormProps<
   initialState?: State
   children: React.ReactNode
   onFinish?: (state: State) => void
+  onFieldChange?: (field: keyof State, value: State[keyof State]) => void;
   className?: string
   style?: CSSProperties
   id?: string
@@ -37,6 +38,7 @@ export const Form = <
   const {
     children,
     onFinish,
+    onFieldChange,
     className,
     initialState,
     style,
@@ -79,6 +81,7 @@ export const Form = <
         formApi,
         formId: id,
         CSSPrefix,
+        onFieldChange,
       }}
     >
       <form
