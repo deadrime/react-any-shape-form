@@ -20,9 +20,10 @@ describe('test Form', () => {
 
     const formItemOnChangeCb = vi.fn();
     const formOnFinishCb = vi.fn();
+    const formOnFieldChangeCb = vi.fn();
 
     const MyFormJsx = (
-      <MyForm id={formId} onFinish={formOnFinishCb}>
+      <MyForm id={formId} onFinish={formOnFinishCb} onFieldChange={formOnFieldChangeCb}>
         <MyForm.Item name="name" onChange={formItemOnChangeCb}>
           {({ value, onChange }) => <input data-testid={inputTestId} value={value} onChange={e => onChange(e.target.value)} />}
         </MyForm.Item>
@@ -59,6 +60,11 @@ describe('test Form', () => {
     test('input trigger form item onChange cb', async () => {
       await userEvent.type(input, 'Rina')
       expect(formItemOnChangeCb).toBeCalledWith('Rina')
+    })
+
+    test('onField callback works', async () => {
+      await userEvent.type(input, 'Test');
+      expect(formOnFieldChangeCb).toBeCalledWith('name', 'Test');
     })
 
     test('form submit', async () => {
