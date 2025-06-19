@@ -65,7 +65,7 @@ const FormItem = <Value, FieldName extends string = string, Children extends For
     setValue(value);
     onChange?.(value);
     onFieldChange?.(name, value)
-  }, [setValue, onChange, name]);
+  }, [setValue, onChange, onFieldChange, name]);
 
   return (
     <div className={`${className || ''} ${CSSPrefix}__form-item`} style={style}>
