@@ -12,7 +12,7 @@ export type FieldOnSubmitCb<S> = (state: S) => void
 
 export type RuleType = 'string' | 'number' | 'regexp' | 'email' | 'array'
 
-export type Validator<T = unknown> = (value: T, rule: ValidationRule<T>) => Promise<string | void | Error>;
+export type Validator<T = unknown, S = Record<string, unknown>> = (value: T, rule: ValidationRule<T>, formState: S) => Promise<string | void | Error>;
 
 export type ValidateTrigger = 'onChange' | 'onFinish'
 

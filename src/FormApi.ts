@@ -162,10 +162,10 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
 
     this.triggerFieldValidation(field, 'validating');
 
-    const validationErrors = await getValidationErrors(this.state[field], preparedRules);
+    const validationErrors = await getValidationErrors(this.state[field], preparedRules, this.state);
 
     if (validationErrors.length > 0) {
-      this.triggerFieldValidation(field, 'error', validationErrors);
+      this.triggerFieldValidation(field, 'error', validationErrors as unknown as ValidationError<State[Field]>[]);
     } else {
       this.triggerFieldValidation(field, 'success');
     }

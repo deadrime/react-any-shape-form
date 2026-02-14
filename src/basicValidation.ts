@@ -1,6 +1,6 @@
 import { ValidationRule } from './types';
 
-export const checkMin = async <T>(value: T, rule: ValidationRule<T>) => {
+export const checkMin = async <T>(value: T, rule: ValidationRule<T>, _formState: Record<string, unknown>) => {
   if (!('min' in rule)) {
     return
   }
@@ -21,7 +21,7 @@ export const checkMin = async <T>(value: T, rule: ValidationRule<T>) => {
   }
 };
 
-export const checkMax = async <T>(value: T, rule: ValidationRule<T>) => {
+export const checkMax = async <T>(value: T, rule: ValidationRule<T>, _formState: Record<string, unknown>) => {
   if (!('max' in rule) || typeof rule?.max !== 'number') {
     return
   }
@@ -39,7 +39,7 @@ export const checkMax = async <T>(value: T, rule: ValidationRule<T>) => {
   }
 };
 
-export const checkRequired = async <T>(value: T, rule: ValidationRule<T>) => {
+export const checkRequired = async <T>(value: T, rule: ValidationRule<T>, _formState: Record<string, unknown>) => {
   if (typeof value === 'undefined') {
     return Promise.reject(rule.message);
   }
@@ -54,7 +54,7 @@ export const checkRequired = async <T>(value: T, rule: ValidationRule<T>) => {
   }
 };
 
-export const checkPattern = async <T>(value: T, rule: ValidationRule<T>) => {
+export const checkPattern = async <T>(value: T, rule: ValidationRule<T>, _formState: Record<string, unknown>) => {
   if (!('pattern' in rule)) {
     return
   }

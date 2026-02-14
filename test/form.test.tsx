@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ValidationRule, createForm } from "../src/index";
 import React from "react";
@@ -78,6 +78,7 @@ describe("test Form", () => {
       await userEvent.click(submit);
       expect(formOnFinishCb).toBeCalledWith({ name: "Rina" });
     });
+
   });
 
   describe("test validation", () => {
@@ -88,7 +89,7 @@ describe("test Form", () => {
       name: "",
     });
 
-    const formWithRules = (rules) => (
+    const formWithRules = (rules: ValidationRule<string>[]) => (
       <MyForm>
         <MyForm.Item name="name" rules={rules} onChange={formItemOnChangeCb}>
           {({ value, onChange, errors }) => {
@@ -139,6 +140,140 @@ describe("test Form", () => {
         await userEvent.click(submit);
         expect(onErrorCb).not.toBeCalled();
       });
+    });
+  });
+
+  describe("test cross-field validation with formState", () => {
+    const MyForm = createForm({
+      password: "",
+      confirmPassword: "",
+    });
+
+    test("validator receives formState for cross-field validation", async () => {
+      const crossFieldValidator = vi.fn(async (value: string, _rule, formState) => {
+        if (value && formState.password && value !== formState.password) {
+          return Promise.reject("Passwords do not match");
+        }
+      });
+
+      const onErrorCb = vi.fn();
+
+      const { getByTestId } = render(
+        <MyForm>
+          <MyForm.Item name="password">
+            {({ value, onChange }) => (
+              <input
+                data-testid="password-input"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+              />
+            )}
+          </MyForm.Item>
+          <MyForm.Item
+            name="confirmPassword"
+            rules={[{ validator: crossFieldValidator, message: "Passwords do not match", validateTrigger: ["onFinish"] }]}
+          >
+            {({ value, onChange, errors }) => {
+              errors.forEach((e) => onErrorCb(e));
+              return (
+                <input
+                  data-testid="confirm-password-input"
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+              );
+            }}
+          </MyForm.Item>
+          <button
+            data-testid="submit-btn"
+            onClick={() => MyForm.formApi.submit().catch(() => {})}
+          >
+            Submit
+          </button>
+        </MyForm>
+      );
+
+      const passwordInput = getByTestId("password-input");
+      const confirmInput = getByTestId("confirm-password-input");
+      const submitBtn = getByTestId("submit-btn");
+
+      await userEvent.type(passwordInput, "abc");
+      await userEvent.type(confirmInput, "xyz");
+      await userEvent.click(submitBtn);
+
+      expect(crossFieldValidator).toHaveBeenCalled();
+      const lastCall = crossFieldValidator.mock.calls[crossFieldValidator.mock.calls.length - 1];
+      expect(lastCall[2]).toHaveProperty("password", "abc");
+      expect(lastCall[2]).toHaveProperty("confirmPassword", "xyz");
+      expect(onErrorCb).toHaveBeenCalledWith(
+        expect.objectContaining({ errorText: "Passwords do not match" })
+      );
+    });
+  });
+
+  describe("test initial state", () => {
+    test("createForm with pre-filled state", () => {
+      const MyForm = createForm({ name: "John" });
+
+      const { getByTestId } = render(
+        <MyForm>
+          <MyForm.Item name="name">
+            {({ value, onChange }) => (
+              <input
+                data-testid={inputTestId}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+              />
+            )}
+          </MyForm.Item>
+        </MyForm>
+      );
+
+      expect((getByTestId(inputTestId) as HTMLInputElement).value).toBe("John");
+    });
+
+    test("initialState prop on Form component", () => {
+      const MyForm = createForm({ name: "" });
+
+      const { getByTestId } = render(
+        <MyForm initialState={{ name: "John" }}>
+          <MyForm.Item name="name">
+            {({ value, onChange }) => (
+              <input
+                data-testid={inputTestId}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+              />
+            )}
+          </MyForm.Item>
+        </MyForm>
+      );
+
+      expect((getByTestId(inputTestId) as HTMLInputElement).value).toBe("John");
+    });
+
+    test("formApi.setInitialState()", () => {
+      const MyForm = createForm({ name: "" });
+
+      const { getByTestId } = render(
+        <MyForm>
+          <MyForm.Item name="name">
+            {({ value, onChange }) => (
+              <input
+                data-testid={inputTestId}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+              />
+            )}
+          </MyForm.Item>
+        </MyForm>
+      );
+
+      act(() => {
+        MyForm.formApi.setInitialState({ name: "John" });
+      });
+
+      expect((getByTestId(inputTestId) as HTMLInputElement).value).toBe("John");
     });
   });
 });

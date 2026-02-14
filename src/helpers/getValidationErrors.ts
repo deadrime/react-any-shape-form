@@ -69,13 +69,14 @@ export const prepareRules = <Value,>(
   return result;
 }
 
-export const getValidationErrors = async <Value,>(
+export const getValidationErrors = async <Value, State extends Record<string, unknown> = Record<string, unknown>>(
   value: Value,
-  rules: PreparedRule<Value>[]
+  rules: PreparedRule<Value>[],
+  formState: State
 ) => {
   const settledPromises = await Promise.allSettled(
     rules.map(({ validator, rule }) =>
-      validator(value, rule)
+      validator(value, rule, formState)
         .catch(error => {
           const errorText = rule.message || String(error);
           return Promise.reject<ValidationError>({
