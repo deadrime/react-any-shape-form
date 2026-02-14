@@ -4,7 +4,11 @@ import { FieldUpdate, ValidationRule } from "@/types";
 import { useField } from "@/useForm";
 import { useIsomorphicLayoutEffect } from "./useIsomorphicLayoutEffect";
 
-export const useInitField = <Value, T extends string = string>(formApi: FormApi<any>, field: T, rules?: ValidationRule<Value>[]) => {
+export const useInitField = <Value, T extends string = string>(
+  formApi: FormApi<any>,
+  field: T,
+  rules?: ValidationRule<Value>[],
+) => {
   useIsomorphicLayoutEffect(() => {
     if (rules) {
       formApi.setFieldRules(field, rules);
@@ -19,13 +23,16 @@ export const useInitField = <Value, T extends string = string>(formApi: FormApi<
 
     return () => {
       formApi.setFieldVisible(field, false);
-    }
+    };
     // reset maybe?
-  }, [field, formApi, rules])
-}
+  }, [field, formApi, rules]);
+};
 
-export const useFieldData = <Value, T extends string = string>(field: T, rules?: ValidationRule<Value>[]) => {
-  const { formApi, formId, CSSPrefix } = useFormContext()
+export const useFieldData = <Value, T extends string = string>(
+  field: T,
+  rules?: ValidationRule<Value>[],
+) => {
+  const { formApi, formId } = useFormContext();
   const [value, setValue] = useField(formApi, field);
 
   useInitField(formApi, field, rules);
@@ -34,6 +41,5 @@ export const useFieldData = <Value, T extends string = string>(field: T, rules?:
     value: value as Value,
     setValue: setValue as (value: FieldUpdate<Value>) => void,
     id: formId ? `${formId}:${field}` : undefined,
-    CSSPrefix,
   };
 };

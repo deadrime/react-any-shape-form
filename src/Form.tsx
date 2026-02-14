@@ -1,32 +1,32 @@
-import React, { useCallback, CSSProperties, useMemo, useEffect, memo } from 'react';
+import React, { useMemo, useEffect, memo } from "react";
 
-import { FormContext } from './FormContext';
-import { FormApi } from './FormApi';
-import { useIsomorphicLayoutEffect } from './helpers/useIsomorphicLayoutEffect';
+import { FormContext } from "./FormContext";
+import { FormApi } from "./FormApi";
+import { useIsomorphicLayoutEffect } from "./helpers/useIsomorphicLayoutEffect";
 
 type FormBasedOnInitialState<
   InitialState extends Record<string, unknown>,
-  Form extends FormApi<any>
+  Form extends FormApi<any>,
 > = Form extends undefined
-  ? FormApi<InitialState extends undefined ? Record<string, undefined> : InitialState>
-  : Form
+  ? FormApi<
+      InitialState extends undefined ? Record<string, undefined> : InitialState
+    >
+  : Form;
 
 export type FormProps<
   InitialState extends Record<string, unknown>,
   F extends FormApi<any>,
-  Form extends FormBasedOnInitialState<InitialState, F> = FormBasedOnInitialState<InitialState, F>,
-  State = ReturnType<Form['getState']>
+  Form extends FormBasedOnInitialState<InitialState, F> =
+    FormBasedOnInitialState<InitialState, F>,
+  State = ReturnType<Form["getState"]>,
 > = {
-  form?: Form
-  initialState?: State
-  children: React.ReactNode
-  onFinish?: (state: State) => void
+  form?: Form;
+  initialState?: State;
+  children: React.ReactNode;
+  onFinish?: (state: State) => void;
   onFieldChange?: (field: keyof State, value: State[keyof State]) => void;
-  className?: string
-  style?: CSSProperties
-  id?: string
-  CSSPrefix?: string
-}
+  id?: string;
+};
 
 export const Form = <
   InitialState extends Record<string, unknown>,
@@ -35,66 +35,41 @@ export const Form = <
 >(
   props: FormProps<InitialState, F, Form>,
 ) => {
-  const {
-    children,
-    onFinish,
-    onFieldChange,
-    className,
-    initialState,
-    style,
-    id,
-    CSSPrefix = 'form',
-  } = props;
+  const { children, onFinish, onFieldChange, initialState, id } = props;
 
   const formApi = useMemo<Form>(
-    () => (props?.form ? props.form : new FormApi(props.initialState || {})) as Form,
+    () =>
+      (props?.form
+        ? props.form
+        : new FormApi(props.initialState || {})) as Form,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [props.form]
+    [props.form],
   );
 
   useIsomorphicLayoutEffect(() => {
     if (initialState) {
       formApi.setInitialState(initialState);
     }
-  }, [])
-
-  const handleSubmit = useCallback(async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      await formApi.submit();
-    } catch (error) {
-      console.error(error);
-    }
-  }, [formApi]);
+  }, []);
 
   useEffect(() => {
     if (!onFinish) {
       return;
     }
-    return formApi.onSubmit(onFinish)
-  }, [formApi, onFinish])
+    return formApi.onSubmit(onFinish);
+  }, [formApi, onFinish]);
 
   return (
     <FormContext.Provider
       value={{
         formApi,
         formId: id,
-        CSSPrefix,
         onFieldChange,
       }}
     >
-      <form
-        onSubmit={handleSubmit}
-        className={`${className || ''} ${CSSPrefix}`}
-        style={style}
-        noValidate
-        id={id}
-      >
-        {children}
-      </form>
+      {children}
     </FormContext.Provider>
   );
-}
+};
 
 export default memo(Form) as typeof Form;

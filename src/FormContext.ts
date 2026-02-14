@@ -1,30 +1,35 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext } from "react";
 
-import { FormApi } from './FormApi';
+import { FormApi } from "./FormApi";
 
 export type FormContextState<F extends FormApi<any> = FormApi<any>> = {
-  formApi: F
-  formId?: string
-  CSSPrefix?: string
-  onFieldChange?: (field: string, value: any) => void
-}
+  formApi: F;
+  formId?: string;
+  onFieldChange?: (field: string, value: any) => void;
+};
 
 const formDefaultContext: FormContextState = {
   formApi: new FormApi({} as Record<string, unknown>),
-  CSSPrefix: 'form'
 };
 
 export const createFormContext = <F extends FormApi<any> = FormApi<any>>() => {
-  return createContext<FormContextState<F>>(formDefaultContext as unknown as FormContextState<F>)
-}
+  return createContext<FormContextState<F>>(
+    formDefaultContext as unknown as FormContextState<F>,
+  );
+};
 
-export const FormContext = createContext<FormContextState>(formDefaultContext)
+export const FormContext = createContext<FormContextState>(formDefaultContext);
 
 export const useFormContext = <F extends FormApi<any> = FormApi<any>>() => {
-  return useContext<FormContextState<F>>(FormContext as unknown as React.Context<FormContextState<F>>)
-}
+  return useContext<FormContextState<F>>(
+    FormContext as unknown as React.Context<FormContextState<F>>,
+  );
+};
 
-export const useFormInstance = <S extends Record<string, unknown> = any, F extends FormApi<S> = FormApi<S>>() => {
+export const useFormInstance = <
+  S extends Record<string, unknown> = any,
+  F extends FormApi<S> = FormApi<S>,
+>() => {
   const { formApi } = useFormContext<F>();
-  return formApi
-}
+  return formApi;
+};

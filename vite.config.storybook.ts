@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 import dts from 'vite-plugin-dts';
 import path from 'path';
 import terser from '@rollup/plugin-terser';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -19,6 +20,7 @@ export default defineConfig({
     dts({
       insertTypesEntry: true,
     }),
+    tailwindcss(),
   ],
   optimizeDeps: {
     include: ['react/jsx-runtime'],

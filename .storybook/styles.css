@@ -1,14 +1,16 @@
-.form__form-item__label {
+@import "tailwindcss";
+
+.form-item__label {
   font-size: 20px;
 }
 
-.form__form-item {
+.form-item {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.form__form-item + .form__form-item{
+.form-item + .form-item{
   margin-top: 16px;
 }
 
@@ -16,7 +18,7 @@
   margin-top: 16px;
 }
 
-.form__form-item__error {
+.form-item__error {
   color: red;
 
   animation-name: slideIn;
