@@ -39,13 +39,15 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     return this.state
   }
 
-  onFieldChange<F extends Field>(field: F, cb: FieldOnChangeCb<State[F]>) {
-    const currentSubscribers = this.subscribers.get(field) || [];
-    this.subscribers.set(field, currentSubscribers.concat(cb as FieldOnChangeCb<State[Field]>));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private addSubscriber(map: Map<Field, any[]>, field: Field, cb: unknown) {
+    const subs = map.get(field) || [];
+    map.set(field, subs.concat(cb));
+    return () => { map.set(field, map.get(field)?.filter(i => i !== cb) || []); };
+  }
 
-    return () => {
-      this.subscribers.set(field, this.subscribers.get(field)?.filter(i => i !== cb) || []);
-    }
+  onFieldChange<F extends Field>(field: F, cb: FieldOnChangeCb<State[F]>) {
+    return this.addSubscriber(this.subscribers, field, cb);
   }
 
   private triggerFieldUpdate<F extends Field, V extends State[F]>(field: F, value: V) {
@@ -77,21 +79,11 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   }
 
   onFieldError<F extends Field>(field: F, cb: FieldOnErrorCb<State[F], State>) {
-    const currentSubscribers = this.errorSubscribers.get(field) || [];
-    this.errorSubscribers.set(field, currentSubscribers.concat(cb as unknown as FieldOnErrorCb<State[Field], State>))
-
-    return () => {
-      this.errorSubscribers.set(field, this.errorSubscribers.get(field)?.filter(i => i !== cb as unknown as FieldOnErrorCb<State[Field], State>) || []);
-    }
+    return this.addSubscriber(this.errorSubscribers, field, cb);
   }
 
   onFieldValidationStatusChange<F extends Field>(field: F, cb: FieldOnValidationStatusChangeCb<State[F]>) {
-    const currentSubscribers = this.validationSubscribers.get(field) || [];
-    this.validationSubscribers.set(field, currentSubscribers.concat(cb as unknown as FieldOnValidationStatusChangeCb<State[Field]>))
-
-    return () => {
-      this.errorSubscribers.set(field, this.errorSubscribers.get(field)?.filter(i => i !== cb as unknown as FieldOnErrorCb<State[Field], State>) || []);
-    }
+    return this.addSubscriber(this.validationSubscribers, field, cb);
   }
 
   getFieldValidationStatus<F extends Field>(field: F) {
@@ -118,7 +110,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   }
 
   getFieldValue<F extends Field>(field: F) {
-    return this.getState()[field];
+    return this.state[field];
   }
 
   getFieldsValue(fields?: Field[]) {
@@ -144,7 +136,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
       return
     }
     const rules = this.validationRulesByField[field] || [];
-    this.validationRulesByField[field] = rules.concat(...validationRules as ValidationRule<State[Field]>[]);
+    this.validationRulesByField[field] = rules.concat(validationRules as ValidationRule<State[Field]>[]);
   }
 
   async getFieldError<F extends Field>(field: F, trigger?: ValidateTrigger) {
@@ -181,18 +173,12 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
 
   async validateField(field: Field, trigger?: ValidateTrigger) {
     const errors = await this.getFieldError(field, trigger);
-    if (errors.length > 0) {
-      return Promise.reject(errors);
-    }
-    return Promise.resolve()
+    if (errors.length > 0) throw errors;
   }
 
   async validateFields(fieldNames?: Field[], trigger?: ValidateTrigger) {
     const errors = await this.getFieldsError(fieldNames || [...this.visibleFields.values()], trigger);
-    if (errors.length > 0) {
-      return Promise.reject(errors);
-    }
-    return Promise.resolve()
+    if (errors.length > 0) throw errors;
   }
 
   onSubmit(cb: FieldOnSubmitCb<State>) {

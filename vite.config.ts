@@ -27,10 +27,13 @@ export default defineConfig({
   build: {
     sourcemap: false,
     lib: {
-      entry: path.resolve(__dirname, 'src/index.ts'),
-      name: 'bundle',
+      entry: {
+        index: path.resolve(__dirname, 'src/index.ts'),
+        core: path.resolve(__dirname, 'src/core.ts'),
+        array: path.resolve(__dirname, 'src/array.ts'),
+      },
       formats: ['es'],
-      fileName: (format) => `bundle.${format}.js`,
+      fileName: (format, entryName) => `${entryName}.${format}.js`,
     },
     rollupOptions: {
       external: ['react', 'react-dom'],
@@ -44,7 +47,7 @@ export default defineConfig({
       plugins: [terser({
         sourceMap: false,
         format: {
-          comments: false,         
+          comments: false,
         },
         mangle: true,
       }) as any]

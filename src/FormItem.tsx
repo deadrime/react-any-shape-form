@@ -1,9 +1,9 @@
 import React, { useCallback, useRef, memo } from "react";
-import { useDebounce } from "react-use";
+import { useDebounce } from "./helpers/useDebounce";
 import { useFormContext } from "./FormContext";
 import { ValidationRule, ValidationStatus, ValidationError } from "./types";
-import { useFieldValidation } from "./useForm";
-import { useFieldData } from "./helpers/useFieldData";
+import { useFieldValidation, useField } from "./useForm";
+import { useInitField } from "./helpers/useFieldData";
 
 export type FormItemChildrenProps<V = any> = {
   value: V;
@@ -27,7 +27,6 @@ export type FormItemProps<
   rules?: ValidationRule<Value>[];
   onChange?: (value: Value) => unknown;
   onInvalid?: (error: ValidationError[], value: Value) => void;
-  id?: string;
   validationDebounceDelay?: number;
 };
 
@@ -44,13 +43,13 @@ const FormItem = <
     rules = [],
     onChange,
     onInvalid,
-    id: idFromProps,
     validationDebounceDelay = 300,
   } = props;
-  const { formApi, onFieldChange } = useFormContext();
-  const { value, setValue, id } = useFieldData<Value>(name, rules);
+  const { formApi, formId, onFieldChange } = useFormContext();
+  const [value, setValue] = useField(formApi, name);
+  useInitField(formApi, name, rules);
   const { errors, status } = useFieldValidation(formApi, name);
-  const formItemId = idFromProps || id;
+  const formItemId = formId ? `${formId}:${name}` : undefined;
   const stateRef = useRef<{ valueChanged: boolean }>({ valueChanged: false });
 
   useDebounce(

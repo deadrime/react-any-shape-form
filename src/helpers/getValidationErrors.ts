@@ -1,6 +1,5 @@
 import { checkRequired, checkMin, checkMax, checkPattern } from "../basicValidation";
 import { ValidationRule, ValidateTrigger, ValidationError, Validator } from "../types";
-import { filterOnlyRejectedPromises } from "./promises";
 
 const emailRegex = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -74,18 +73,15 @@ export const getValidationErrors = async <Value, State extends Record<string, un
   rules: PreparedRule<Value>[],
   formState: State
 ) => {
-  const settledPromises = await Promise.allSettled(
+  const results = await Promise.all(
     rules.map(({ validator, rule }) =>
       validator(value, rule, formState)
-        .catch(error => {
-          const errorText = rule.message || String(error);
-          return Promise.reject<ValidationError>({
-            errorText,
-            value,
-            rule,
-          })
-        })
+        .then(() => null, error => ({
+          errorText: rule.message || String(error),
+          value,
+          rule,
+        } as ValidationError<Value>))
     ));
 
-  return filterOnlyRejectedPromises<ValidationError<Value>>(settledPromises).map(i => i.reason);
+  return results.filter(Boolean) as ValidationError<Value>[];
 }

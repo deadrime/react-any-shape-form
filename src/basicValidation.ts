@@ -1,56 +1,31 @@
 import { ValidationRule } from './types';
 
-export const checkMin = async <T>(value: T, rule: ValidationRule<T>, _formState: Record<string, unknown>) => {
-  if (!('min' in rule)) {
-    return
-  }
-  if (typeof rule.min !== 'number') {
-    return;
-  }
-  if (typeof value === 'undefined') {
-    return Promise.reject(rule.message);
-  }
-  if (Array.isArray(value) && value.length < rule.min) {
-    return Promise.reject(rule.message);
-  }
-  if (rule.type === 'number' && Number(value) < rule.min) {
-    return Promise.reject(rule.message);
-  }
-  if (rule.type === 'string' && String(value).length < rule.min) {
-    return Promise.reject(rule.message);
-  }
-};
+const checkBound = (key: 'min' | 'max', cmp: (a: number, b: number) => boolean) =>
+  async <T>(value: T, rule: ValidationRule<T>, _formState: Record<string, unknown>) => {
+    if (!(key in rule)) return;
+    const bound = (rule as unknown as Record<string, unknown>)[key];
+    if (typeof bound !== 'number') return;
+    if (typeof value === 'undefined') throw rule.message;
+    if (Array.isArray(value) && cmp(value.length, bound)) throw rule.message;
+    if (rule.type === 'number' && cmp(Number(value), bound)) throw rule.message;
+    if (rule.type === 'string' && cmp(String(value).length, bound)) throw rule.message;
+  };
 
-export const checkMax = async <T>(value: T, rule: ValidationRule<T>, _formState: Record<string, unknown>) => {
-  if (!('max' in rule) || typeof rule?.max !== 'number') {
-    return
-  }
-  if (typeof value === 'undefined') {
-    return Promise.reject(rule.message);
-  }
-  if (Array.isArray(value) && value.length > rule.max) {
-    return Promise.reject(rule.message);
-  }
-  if (rule.type === 'number' && Number(value) > rule.max) {
-    return Promise.reject(rule.message);
-  }
-  if (rule.type === 'string' && String(value).length > rule.max) {
-    return Promise.reject(rule.message);
-  }
-};
+export const checkMin = checkBound('min', (a, b) => a < b);
+export const checkMax = checkBound('max', (a, b) => a > b);
 
 export const checkRequired = async <T>(value: T, rule: ValidationRule<T>, _formState: Record<string, unknown>) => {
   if (typeof value === 'undefined') {
-    return Promise.reject(rule.message);
+    throw rule.message;
   }
   if (typeof value === 'number' && value === 0) {
     return;
   }
   if (Array.isArray(value) && value.length === 0) {
-    return Promise.reject(rule.message);
+    throw rule.message;
   }
   if (!value && typeof value !== 'boolean') {
-    return Promise.reject(rule.message);
+    throw rule.message;
   }
 };
 
@@ -59,7 +34,7 @@ export const checkPattern = async <T>(value: T, rule: ValidationRule<T>, _formSt
     return
   }
   if (typeof value === 'string' && rule.pattern.test(value)) {
-    return 
+    return
   }
-  return Promise.reject(rule.message || 'Invalid format');
+  throw rule.message || 'Invalid format';
 };
