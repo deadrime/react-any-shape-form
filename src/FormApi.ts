@@ -13,6 +13,8 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   private submitSubscribers: Set<FieldOnSubmitCb<State>>;
   private validationSubscribers: Map<Field, FieldOnValidationStatusChangeCb<State[Field]>[]>;
   private visibleFields: Set<Field>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private childForms: Map<Field, FormApi<any>>
 
   constructor(state: State) {
     this.state = state;
@@ -25,6 +27,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     this.submitSubscribers = new Set();
     this.validationSubscribers = new Map();
     this.visibleFields = new Set();
+    this.childForms = new Map();
   }
 
   setFieldVisible<F extends Field>(field: F, visible: boolean) {
@@ -35,8 +38,25 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     }
   }
 
-  getState() {
-    return this.state
+  getState(): State {
+    if (this.childForms.size === 0) {
+      return this.state
+    }
+    const merged = { ...this.state };
+    for (const [field, childForm] of this.childForms) {
+      (merged as Record<string, unknown>)[field] = childForm.getState();
+    }
+    return merged
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  addChildForm<F extends Field>(field: F, childForm: FormApi<any>): () => void {
+    this.childForms.set(field, childForm);
+    return () => { this.childForms.delete(field); };
+  }
+
+  removeChildForm<F extends Field>(field: F) {
+    this.childForms.delete(field);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -178,7 +198,18 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
 
   async validateFields(fieldNames?: Field[], trigger?: ValidateTrigger) {
     const errors = await this.getFieldsError(fieldNames || [...this.visibleFields.values()], trigger);
-    if (errors.length > 0) throw errors;
+
+    const childErrors: ValidationError[] = [];
+    for (const [, childForm] of this.childForms) {
+      try {
+        await childForm.validateFields(undefined, trigger);
+      } catch (errs) {
+        childErrors.push(...(errs as ValidationError[]));
+      }
+    }
+
+    const allErrors = [...errors, ...childErrors];
+    if (allErrors.length > 0) throw allErrors;
   }
 
   onSubmit(cb: FieldOnSubmitCb<State>) {
@@ -196,7 +227,8 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
 
   async submit() {
     await this.validateFields();
-    this.submitSubscribers.forEach(cb => cb(this.state))
-    return this.state
+    const state = this.getState();
+    this.submitSubscribers.forEach(cb => cb(state))
+    return state
   }
 }

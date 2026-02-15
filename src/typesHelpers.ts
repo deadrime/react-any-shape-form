@@ -18,3 +18,12 @@ export type PickBy<Obj extends Record<string, unknown>, Predicate> = {
 export type ArrayOnlyFields<
 Obj extends Record<string, unknown>,
 > = GetFields<PickBy<Obj, unknown[]>>
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CompoundFormLike = { formApi: FormApi<any> }
+
+export type ExtractFormState<T> = T extends { formApi: FormApi<infer S> } ? S : never
+
+export type ResolveState<T extends Record<string, unknown>> = {
+  [K in keyof T]: T[K] extends CompoundFormLike ? ExtractFormState<T[K]> : T[K]
+}

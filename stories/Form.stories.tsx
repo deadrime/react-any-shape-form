@@ -4,6 +4,7 @@ import { createForm, useForm } from "@/useForm";
 import { Form } from "@/Form";
 import { ComponentProps, useState } from "react";
 import { FormItemChildrenProps } from "@/FormItem";
+import "./stories.css";
 
 const meta: Meta = {
   component: Form,
@@ -59,26 +60,38 @@ export const BaseExample: StoryObj<typeof Form> = {
           alert(JSON.stringify(state, undefined, 2));
         }}
       >
-        <MyForm.Item name="name">
-          {({ value, onChange }) => (
-            <input
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="Name"
-            />
-          )}
-        </MyForm.Item>
-        <MyForm.Item name="age">
-          {({ value, onChange }) => (
-            <input
-              type="number"
-              value={value}
-              onChange={(e) => onChange(+e.target.value)}
-              placeholder="Age"
-            />
-          )}
-        </MyForm.Item>
-        <button type="button" onClick={() => MyForm.formApi.submit()}>Submit</button>
+        <div className="form">
+          <MyForm.Item name="name">
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Name</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder="Name"
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MyForm.Item>
+          <MyForm.Item name="age">
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Age</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  type="number"
+                  value={value}
+                  onChange={(e) => onChange(+e.target.value)}
+                  placeholder="Age"
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MyForm.Item>
+          <button className="btn" type="button" onClick={() => MyForm.formApi.submit()}>Submit</button>
+        </div>
       </MyForm>
     );
   },
@@ -220,106 +233,127 @@ export const ConditionalRenderExample: StoryObj<typeof Form> = {
           alert(JSON.stringify(state, undefined, 2));
         }}
       >
-        {step === 1 && (
-          <>
-            <MyForm.Item
-              name="name"
-              onChange={(value) => value}
-              rules={[
-                {
-                  required: true,
-                  message: "Name is required",
-                  validateTrigger: ["onFinish"],
-                },
-              ]}
-            >
-              {({ value, onChange }) => (
-                <input
-                  value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                />
-              )}
-            </MyForm.Item>
-            <div>
-              <span>Show extra field</span>
-              <input
-                type="checkbox"
-                checked={visible}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setVisible(checked);
-                  if (!checked) {
-                    MyForm.formApi.setFieldValue("extra", undefined);
-                  }
-                }}
-              />
-            </div>
-            {visible && (
+        <div className="form">
+          {step === 1 && (
+            <>
               <MyForm.Item
-                name="extra"
+                name="name"
                 onChange={(value) => value}
                 rules={[
                   {
                     required: true,
-                    message: "Extra is required",
+                    message: "Name is required",
                     validateTrigger: ["onFinish"],
                   },
                 ]}
               >
-                {({ value, onChange }) => (
-                  <input
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                  />
+                {({ value, onChange, errors, validationStatus }) => (
+                  <div>
+                    <label>Name</label>
+                    <input
+                      className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                      value={value}
+                      onChange={(e) => onChange(e.target.value)}
+                    />
+                    {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+                  </div>
                 )}
               </MyForm.Item>
+              <div className="checkbox-row">
+                <span>Show extra field</span>
+                <input
+                  type="checkbox"
+                  checked={visible}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setVisible(checked);
+                    if (!checked) {
+                      MyForm.formApi.setFieldValue("extra", undefined);
+                    }
+                  }}
+                />
+              </div>
+              {visible && (
+                <MyForm.Item
+                  name="extra"
+                  onChange={(value) => value}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Extra is required",
+                      validateTrigger: ["onFinish"],
+                    },
+                  ]}
+                >
+                  {({ value, onChange, errors, validationStatus }) => (
+                    <div>
+                      <label>Extra</label>
+                      <input
+                        className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                      />
+                      {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+                    </div>
+                  )}
+                </MyForm.Item>
+              )}
+            </>
+          )}
+          {step === 2 && (
+            <MyForm.Item
+              name="age"
+              rules={[
+                {
+                  type: "number",
+                  min: 18,
+                  max: 40,
+                  message: "Age must be between 18 and 40",
+                },
+              ]}
+            >
+              {({ value, onChange, errors, validationStatus }) => (
+                <div>
+                  <label>Age</label>
+                  <input
+                    className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                    type="number"
+                    value={String(value)}
+                    onChange={(e) => onChange(+e.target.value)}
+                  />
+                  {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+                </div>
+              )}
+            </MyForm.Item>
+          )}
+          <div className="btn-group">
+            <button
+              className="btn"
+              type="button"
+              onClick={async () => {
+                if (step === 1) {
+                  await MyForm.formApi.validateFields();
+                  setStep(2);
+                } else {
+                  await MyForm.formApi.submit();
+                }
+              }}
+            >
+              {step === 1 ? "Next" : "Submit"}
+            </button>
+            {step === 2 && (
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={async () => {
+                  setStep(1);
+                }}
+              >
+                Back
+              </button>
             )}
-          </>
-        )}
-        {step === 2 && (
-          <MyForm.Item
-            name="age"
-            rules={[
-              {
-                type: "number",
-                min: 18,
-                max: 40,
-                message: "Age must be between 18 and 40",
-              },
-            ]}
-          >
-            {({ value, onChange }) => (
-              <input
-                type="number"
-                value={String(value)}
-                onChange={(e) => onChange(+e.target.value)}
-              />
-            )}
-          </MyForm.Item>
-        )}
-        <button
-          type="button"
-          onClick={async () => {
-            if (step === 1) {
-              await MyForm.formApi.validateFields();
-              setStep(2);
-            } else {
-              await MyForm.formApi.submit();
-            }
-          }}
-        >
-          {step === 1 ? "Next" : "Submit"}
-        </button>
-        {step === 2 && (
-          <button
-            type="button"
-            onClick={async () => {
-              setStep(1);
-            }}
-          >
-            Back
-          </button>
-        )}
+          </div>
+        </div>
       </MyForm>
     );
   },
@@ -344,56 +378,69 @@ export const CustomValidatorExample: StoryObj<typeof Form> = {
 
     return (
       <Form onFinish={args.onFinish}>
-        <Form.Item
-          name="answer"
-          rules={[
-            {
-              validator: async (value) => {
-                if (value === 42) {
-                  return;
-                } else {
-                  return Promise.reject();
-                }
+        <div className="form">
+          <Form.Item
+            name="answer"
+            rules={[
+              {
+                validator: async (value) => {
+                  if (value === 42) {
+                    return;
+                  } else {
+                    return Promise.reject();
+                  }
+                },
+                validateTrigger: ["onFinish"],
+                message: "Wrong!",
               },
-              validateTrigger: ["onFinish"],
-              message: "Wrong!",
-            },
-          ]}
-        >
-          {({ value, onChange }) => (
-            <input
-              type="number"
-              value={String(value)}
-              onChange={(e) => onChange(+e.target.value)}
-            />
-          )}
-        </Form.Item>
-        <Form.Item
-          name="username"
-          rules={[
-            {
-              validator: async (value) => {
-                await new Promise((res) => setTimeout(res, 500));
-                if (!["foo", "bar"].includes(value)) {
-                  return;
-                } else {
-                  return Promise.reject(
-                    `User with username '${value}' already registered`,
-                  );
-                }
+            ]}
+          >
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>What is the answer to life, the universe, and everything?</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  type="number"
+                  value={String(value)}
+                  onChange={(e) => onChange(+e.target.value)}
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </Form.Item>
+          <Form.Item
+            name="username"
+            rules={[
+              {
+                validator: async (value) => {
+                  await new Promise((res) => setTimeout(res, 500));
+                  if (!["foo", "bar"].includes(value)) {
+                    return;
+                  } else {
+                    return Promise.reject(
+                      `User with username '${value}' already registered`,
+                    );
+                  }
+                },
+                validateTrigger: ["onChange", "onFinish"],
               },
-              validateTrigger: ["onChange", "onFinish"],
-            },
-          ]}
-        >
-          {({ value, onChange, validationStatus }) => (
-            <div>
-              <input value={value} onChange={(e) => onChange(e.target.value)} />
-              {validationStatus}
-            </div>
-          )}
-        </Form.Item>
-        <button type="button" onClick={() => Form.formApi.submit()}>Submit button</button>
+            ]}
+          >
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Username</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+                <span className="status">{validationStatus}</span>
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </Form.Item>
+          <button className="btn" type="button" onClick={() => Form.formApi.submit()}>Submit button</button>
+        </div>
       </Form>
     );
   },
@@ -419,45 +466,63 @@ export const UseWatchExample: StoryObj<typeof Form> = {
 
     return (
       <MyForm onFinish={args.onFinish}>
-        <MyForm.Item
-          name="name"
-          rules={[
-            {
-              required: true,
-              message: "Name is required",
-            },
-          ]}
-        >
-          {({ value, onChange }) => (
-            <input value={value} onChange={(e) => onChange(e.target.value)} />
-          )}
-        </MyForm.Item>
-        <MyForm.Item
-          name="age"
-          rules={[
-            {
-              required: true,
-              message: "Age is required",
-            },
-            {
-              min: 18,
-              type: "number",
-              message: "You are too young :(",
-            },
-            {
-              max: 100,
-              type: "number",
-              message: "You are too old :(",
-            },
-          ]}
-        >
-          {({ value, onChange }) => (
-            <input value={value} onChange={(e) => onChange(+e.target.value)} />
-          )}
-        </MyForm.Item>
-        <button type="button" onClick={() => MyForm.formApi.submit()}>
-          Submit button
-        </button>
+        <div className="form">
+          <MyForm.Item
+            name="name"
+            rules={[
+              {
+                required: true,
+                message: "Name is required",
+              },
+            ]}
+          >
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Name</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MyForm.Item>
+          <MyForm.Item
+            name="age"
+            rules={[
+              {
+                required: true,
+                message: "Age is required",
+              },
+              {
+                min: 18,
+                type: "number",
+                message: "You are too young :(",
+              },
+              {
+                max: 100,
+                type: "number",
+                message: "You are too old :(",
+              },
+            ]}
+          >
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Age</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(+e.target.value)}
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MyForm.Item>
+          <button className="btn" type="button" onClick={() => MyForm.formApi.submit()}>
+            Submit button
+          </button>
+        </div>
       </MyForm>
     );
   },
@@ -491,80 +556,103 @@ export const UsingFormApi: StoryObj = {
         }}
         id="myForm"
       >
-        <MyForm.Item
-          name="field1"
-          rules={[
-            {
-              required: true,
-              message: "Field1 is required",
-              validateTrigger: ["onFinish"],
-            },
-          ]}
-        >
-          {({ value, onChange }) => (
-            <input value={value} onChange={(e) => onChange(e.target.value)} />
-          )}
-        </MyForm.Item>
-        <MyForm.Item
-          name="field2"
-          rules={[
-            {
-              required: true,
-              message: "Field2 is required",
-              validateTrigger: ["onFinish"],
-            },
-          ]}
-        >
-          {({ value, onChange }) => (
-            <input value={value} onChange={(e) => onChange(+e.target.value)} />
-          )}
-        </MyForm.Item>
-        <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-          <button
-            type="button"
-            onClick={() => {
-              MyForm.formApi.setFieldsValue({
-                field1: "Some",
-                field2: 123,
-              });
-            }}
+        <div className="form">
+          <MyForm.Item
+            name="field1"
+            rules={[
+              {
+                required: true,
+                message: "Field1 is required",
+                validateTrigger: ["onFinish"],
+              },
+            ]}
           >
-            Fill
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              MyForm.formApi.resetFields();
-            }}
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Field 1</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MyForm.Item>
+          <MyForm.Item
+            name="field2"
+            rules={[
+              {
+                required: true,
+                message: "Field2 is required",
+                validateTrigger: ["onFinish"],
+              },
+            ]}
           >
-            Reset
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              Promise.resolve().then(() => {
-                MyForm.formApi.submit();
-              });
-            }}
-          >
-            Custom submit
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              MyForm.formApi.validateFields();
-            }}
-          >
-            Run all fields validation
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              MyForm.formApi.validateFields(["field2"]);
-            }}
-          >
-            Run validation only for field 2
-          </button>
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Field 2</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(+e.target.value)}
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MyForm.Item>
+          <div className="btn-group">
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                MyForm.formApi.setFieldsValue({
+                  field1: "Some",
+                  field2: 123,
+                });
+              }}
+            >
+              Fill
+            </button>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => {
+                MyForm.formApi.resetFields();
+              }}
+            >
+              Reset
+            </button>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                Promise.resolve().then(() => {
+                  MyForm.formApi.submit();
+                });
+              }}
+            >
+              Custom submit
+            </button>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => {
+                MyForm.formApi.validateFields();
+              }}
+            >
+              Run all fields validation
+            </button>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => {
+                MyForm.formApi.validateFields(["field2"]);
+              }}
+            >
+              Run validation only for field 2
+            </button>
+          </div>
         </div>
       </MyForm>
     );
@@ -574,6 +662,7 @@ export const UsingFormApi: StoryObj = {
 export const ArrayExample: StoryObj<typeof Form> = {
   render: () => {
     const Form = useForm({ userIds: [] as string[], test: 0 });
+    const { errors } = Form.useFieldErrors("userIds");
 
     return (
       <Form
@@ -581,44 +670,49 @@ export const ArrayExample: StoryObj<typeof Form> = {
           alert(JSON.stringify(state, undefined, 2));
         }}
       >
-        <Form.ArrayItem
-          name="userIds"
-          rules={[
-            {
-              required: true,
-              message: "Add at least one userId",
-            },
-            {
-              validator: async (value) => {
-                if (!value.every(Boolean)) {
-                  return Promise.reject("Some field is empty");
-                }
+        <div className="form">
+          <label>User IDs</label>
+          <Form.ArrayItem
+            name="userIds"
+            rules={[
+              {
+                required: true,
+                message: "Add at least one userId",
               },
-            },
-          ]}
-        >
-          {({ fields, update, append, remove }) => (
-            <div>
+              {
+                validator: async (value) => {
+                  if (!value.every(Boolean)) {
+                    return Promise.reject("Some field is empty");
+                  }
+                },
+              },
+            ]}
+          >
+            {({ fields, update, append, remove }) => (
               <div>
-                {fields.map((field, index) => (
-                  <div key={index}>
-                    <input
-                      value={field}
-                      onChange={(e) => update(index, e.target.value)}
-                    />
-                    <button type="button" onClick={() => remove(index)}>
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                <div className="array-list">
+                  {fields.map((field, index) => (
+                    <div className="array-row" key={index}>
+                      <input
+                        className="input"
+                        value={field}
+                        onChange={(e) => update(index, e.target.value)}
+                      />
+                      <button className="btn btn-danger" type="button" onClick={() => remove(index)}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button className="btn btn-secondary" type="button" onClick={() => append("")} style={{ marginTop: 8 }}>
+                  Add
+                </button>
               </div>
-              <button type="button" onClick={() => append("")}>
-                Add
-              </button>
-            </div>
-          )}
-        </Form.ArrayItem>
-        <button type="button" onClick={() => Form.formApi.submit()}>Submit button</button>
+            )}
+          </Form.ArrayItem>
+          {errors.length > 0 && <div className="error">{errors.map((e) => e.errorText).join(', ')}</div>}
+          <button className="btn" type="button" onClick={() => Form.formApi.submit()}>Submit button</button>
+        </div>
       </Form>
     );
   },
@@ -656,32 +750,34 @@ export const ArrayHookExample: StoryObj<typeof Form> = {
           alert(JSON.stringify(state, undefined, 2));
         }}
       >
-        <div>
-          <div>
+        <div className="form">
+          <label>User IDs</label>
+          <div className="array-list">
             {fields.map((field, index) => (
-              <div key={index}>
+              <div className="array-row" key={index}>
                 <input
+                  className="input"
                   value={field}
                   onChange={(e) => update(index, e.target.value)}
                 />
-                <button type="button" onClick={() => remove(index)}>
+                <button className="btn btn-danger" type="button" onClick={() => remove(index)}>
                   Remove
                 </button>
               </div>
             ))}
           </div>
-          <button type="button" onClick={() => append("")}>
+          <button className="btn btn-secondary" type="button" onClick={() => append("")}>
             Add
           </button>
-        </div>
 
-        <div>
-          {errors.map(({ errorText }) => (
-            <div className="form__form-item__error">{errorText}</div>
-          ))}
-        </div>
+          {errors.length > 0 && (
+            <div className="error">
+              {errors.map(({ errorText }) => errorText).join(', ')}
+            </div>
+          )}
 
-        <button type="button" onClick={() => Form.formApi.submit()}>Submit button</button>
+          <button className="btn" type="button" onClick={() => Form.formApi.submit()}>Submit button</button>
+        </div>
       </Form>
     );
   },
@@ -719,21 +815,26 @@ export const TransformExample: StoryObj<typeof Form> = {
           alert(JSON.stringify(state, undefined, 2));
         }}
       >
-        <Form.Item name="test">
-          {({ value, onChange }) => (
-            <input
-              value={formatNumber(value, "ru")}
-              onChange={(e) => {
-                const value = convertToFloat(e.target.value, "ru");
-                onChange(
-                  isNaN(value) ? Form.formApi.getFieldValue("test") : value,
-                );
-              }}
-            />
-          )}
-        </Form.Item>
-
-        <button type="button" onClick={() => Form.formApi.submit()}>Submit button</button>
+        <div className="form">
+          <Form.Item name="test">
+            {({ value, onChange }) => (
+              <div>
+                <label>Number (Russian format)</label>
+                <input
+                  className="input"
+                  value={formatNumber(value, "ru")}
+                  onChange={(e) => {
+                    const value = convertToFloat(e.target.value, "ru");
+                    onChange(
+                      isNaN(value) ? Form.formApi.getFieldValue("test") : value,
+                    );
+                  }}
+                />
+              </div>
+            )}
+          </Form.Item>
+          <button className="btn" type="button" onClick={() => Form.formApi.submit()}>Submit button</button>
+        </div>
       </Form>
     );
   },
@@ -741,6 +842,204 @@ export const TransformExample: StoryObj<typeof Form> = {
     initialState: {
       control: "object",
     },
+  },
+};
+
+export const NestedFormExample: StoryObj<typeof Form> = {
+  render: () => {
+    const AddressForm = createForm({
+      city: "",
+      street: "",
+      zip: "",
+    });
+
+    const MainForm = createForm({
+      name: "",
+      email: "",
+      address: AddressForm,
+    });
+
+    return (
+      <MainForm
+        onFinish={(state) => {
+          alert(JSON.stringify(state, undefined, 2));
+        }}
+      >
+        <div className="form">
+          <MainForm.Item name="name" rules={[{ required: true, message: "Name is required" }]}>
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Name</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder="Name"
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MainForm.Item>
+          <MainForm.Item name="email" rules={[{ required: true, message: "Email is required" }, { type: "email", message: "Invalid email" }]}>
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Email</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder="Email"
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MainForm.Item>
+
+          <fieldset className="fieldset">
+            <legend>Address</legend>
+            <AddressForm>
+              <div className="form">
+                <AddressForm.Item name="city" rules={[{ required: true, message: "City is required" }]}>
+                  {({ value, onChange, errors, validationStatus }) => (
+                    <div>
+                      <label>City</label>
+                      <input
+                        className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="City"
+                      />
+                      {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+                    </div>
+                  )}
+                </AddressForm.Item>
+                <AddressForm.Item name="street" rules={[{ required: true, message: "Street is required" }]}>
+                  {({ value, onChange, errors, validationStatus }) => (
+                    <div>
+                      <label>Street</label>
+                      <input
+                        className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="Street"
+                      />
+                      {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+                    </div>
+                  )}
+                </AddressForm.Item>
+                <AddressForm.Item name="zip" rules={[{ type: "regexp", pattern: /^\d{5,6}$/, message: "Invalid zip code" }]}>
+                  {({ value, onChange, errors, validationStatus }) => (
+                    <div>
+                      <label>Zip Code</label>
+                      <input
+                        className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="Zip code"
+                      />
+                      {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+                    </div>
+                  )}
+                </AddressForm.Item>
+              </div>
+            </AddressForm>
+          </fieldset>
+
+          <button className="btn" type="button" onClick={() => MainForm.formApi.submit()}>
+            Submit
+          </button>
+        </div>
+      </MainForm>
+    );
+  },
+};
+
+export const NestedFormDynamicExample: StoryObj<typeof Form> = {
+  render: () => {
+    const ProfileForm = useForm({
+      bio: "",
+      website: "",
+    });
+
+    const MainForm = useForm({
+      username: "",
+      profile: {} as { bio: string; website: string },
+    });
+
+    MainForm.useChildForm("profile", ProfileForm.formApi);
+
+    return (
+      <MainForm
+        onFinish={(state) => {
+          alert(JSON.stringify(state, undefined, 2));
+        }}
+      >
+        <div className="form">
+          <MainForm.Item name="username" rules={[{ required: true, message: "Username is required" }]}>
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Username</label>
+                <input
+                  className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder="Username"
+                />
+                {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+              </div>
+            )}
+          </MainForm.Item>
+
+          <fieldset className="fieldset">
+            <legend>Profile</legend>
+            <ProfileForm>
+              <div className="form">
+                <ProfileForm.Item name="bio" rules={[{ required: true, message: "Bio is required" }]}>
+                  {({ value, onChange, errors, validationStatus }) => (
+                    <div>
+                      <label>Bio</label>
+                      <textarea
+                        className={`textarea ${validationStatus === 'error' ? 'textarea-invalid' : ''}`}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="Tell us about yourself"
+                      />
+                      {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+                    </div>
+                  )}
+                </ProfileForm.Item>
+                <ProfileForm.Item name="website" rules={[{ type: "regexp", pattern: /^https?:\/\//, message: "Must start with http:// or https://" }]}>
+                  {({ value, onChange, errors, validationStatus }) => (
+                    <div>
+                      <label>Website</label>
+                      <input
+                        className={`input ${validationStatus === 'error' ? 'input-invalid' : ''}`}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="https://example.com"
+                      />
+                      {errors.length > 0 && <div className="error">{errors.map(e => e.errorText).join(', ')}</div>}
+                    </div>
+                  )}
+                </ProfileForm.Item>
+              </div>
+            </ProfileForm>
+          </fieldset>
+
+          <div className="btn-group">
+            <button className="btn" type="button" onClick={() => MainForm.formApi.submit()}>
+              Submit
+            </button>
+            <button className="btn btn-secondary" type="button" onClick={() => {
+              MainForm.formApi.resetFields();
+              ProfileForm.formApi.resetFields();
+            }}>
+              Reset All
+            </button>
+          </div>
+        </div>
+      </MainForm>
+    );
   },
 };
 

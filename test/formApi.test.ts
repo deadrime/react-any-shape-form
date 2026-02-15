@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import { FormApi } from "../src/FormApi";
 import { ValidationRule } from "../src";
+import { createForm } from "../src/useForm";
 
 describe('test FormApi', () => {
   const defaultState = {
@@ -376,6 +377,128 @@ describe('test FormApi', () => {
         api.setFieldValue('strField', 'abcd');
         expect(api.validateField('strField')).resolves.empty
       })
+    })
+  })
+
+  describe('child forms', () => {
+    type ParentState = { name: string; address: { city: string; zip: string } }
+    let parent: FormApi<ParentState>
+    let child: FormApi<{ city: string; zip: string }>
+
+    beforeEach(() => {
+      parent = new FormApi<ParentState>({ name: '', address: { city: '', zip: '' } })
+      child = new FormApi<{ city: string; zip: string }>({ city: 'NY', zip: '10001' })
+    })
+
+    test('getState merges child state', () => {
+      parent.addChildForm('address', child)
+      expect(parent.getState()).toEqual({ name: '', address: { city: 'NY', zip: '10001' } })
+    })
+
+    test('getState returns own state when no children', () => {
+      expect(parent.getState()).toEqual({ name: '', address: { city: '', zip: '' } })
+    })
+
+    test('cleanup removes child form', () => {
+      const cleanup = parent.addChildForm('address', child)
+      cleanup()
+      expect(parent.getState()).toEqual({ name: '', address: { city: '', zip: '' } })
+    })
+
+    test('removeChildForm removes child', () => {
+      parent.addChildForm('address', child)
+      parent.removeChildForm('address')
+      expect(parent.getState()).toEqual({ name: '', address: { city: '', zip: '' } })
+    })
+
+    test('submit returns merged state', async () => {
+      parent.addChildForm('address', child)
+      const state = await parent.submit()
+      expect(state).toEqual({ name: '', address: { city: 'NY', zip: '10001' } })
+    })
+
+    test('submit validates child forms', async () => {
+      child.setFieldRules('city', [{ required: true, message: 'City required' }])
+      child.setFieldVisible('city', true)
+      child.setFieldValue('city', '')
+      parent.addChildForm('address', child)
+      await expect(parent.submit()).rejects.toBeDefined()
+    })
+
+    test('submit calls onSubmit with merged state', async () => {
+      parent.addChildForm('address', child)
+      const onSubmit = vi.fn()
+      parent.onSubmit(onSubmit)
+      await parent.submit()
+      expect(onSubmit).toBeCalledWith({ name: '', address: { city: 'NY', zip: '10001' } })
+    })
+
+    test('child onSubmit is not triggered by parent submit', async () => {
+      parent.addChildForm('address', child)
+      const childOnSubmit = vi.fn()
+      child.onSubmit(childOnSubmit)
+      await parent.submit()
+      expect(childOnSubmit).not.toBeCalled()
+    })
+
+    test('recursive nesting works', async () => {
+      type MiddleState = { city: string; geo: { lat: number; lng: number } }
+      const middle = new FormApi<MiddleState>({ city: 'NY', geo: { lat: 0, lng: 0 } })
+      const inner = new FormApi<{ lat: number; lng: number }>({ lat: 40, lng: -74 })
+      middle.addChildForm('geo', inner)
+      parent.addChildForm('address' as any, middle)
+      const state = await parent.submit()
+      expect((state.address as any).geo).toEqual({ lat: 40, lng: -74 })
+    })
+  })
+
+  describe('createForm with nested forms in initial state', () => {
+    test('auto-registers child forms and merges state', async () => {
+      const AddressForm = createForm({ city: 'NY', zip: '10001' })
+      const ParentForm = createForm({
+        name: 'John',
+        address: AddressForm,
+      })
+
+      const state = ParentForm.formApi.getState()
+      expect(state).toEqual({ name: 'John', address: { city: 'NY', zip: '10001' } })
+    })
+
+    test('submit validates nested createForm children', async () => {
+      const AddressForm = createForm({ city: '', zip: '' })
+      AddressForm.formApi.setFieldRules('city', [{ required: true, message: 'City required' }])
+      AddressForm.formApi.setFieldVisible('city', true)
+
+      const ParentForm = createForm({
+        name: 'John',
+        address: AddressForm,
+      })
+
+      await expect(ParentForm.formApi.submit()).rejects.toBeDefined()
+    })
+
+    test('submit returns merged state from nested createForm', async () => {
+      const AddressForm = createForm({ city: 'NY', zip: '10001' })
+      const ParentForm = createForm({
+        name: 'John',
+        address: AddressForm,
+      })
+
+      const onSubmit = vi.fn()
+      ParentForm.formApi.onSubmit(onSubmit)
+      await ParentForm.formApi.submit()
+      expect(onSubmit).toBeCalledWith({ name: 'John', address: { city: 'NY', zip: '10001' } })
+    })
+
+    test('type inference resolves nested form state', () => {
+      const AddressForm = createForm({ city: '', zip: '' })
+      const ParentForm = createForm({
+        name: '',
+        address: AddressForm,
+      })
+
+      type State = ReturnType<typeof ParentForm.formApi.getState>
+      expectTypeOf<State>().toEqualTypeOf<{ name: string; address: { city: string; zip: string } }>()
     })
   })
 })

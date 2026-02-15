@@ -29,4 +29,7 @@ export type {
   GetFields,
   PickBy,
   ArrayOnlyObj,
+  CompoundFormLike,
+  ExtractFormState,
+  ResolveState,
 } from './typesHelpers';

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { FormApi } from "./FormApi";
-import { FormApiGenericTypes, ArrayOnly, ArrayOnlyFields } from "./typesHelpers";
+import { FormApiGenericTypes, ArrayOnly, ArrayOnlyFields, CompoundFormLike, ResolveState } from "./typesHelpers";
 import { FieldUpdate, ValidationRule, ValidationError } from "./types";
 import { Form, FormProps } from "./Form";
 import FormItem, { FormItemProps } from "./FormItem";
@@ -12,8 +12,29 @@ export const useCreateForm = <State extends Record<string, unknown>>(initialStat
   return [formApiRef.current] as const
 }
 
+const isCompoundForm = (value: unknown): value is CompoundFormLike =>
+  value !== null && (typeof value === 'object' || typeof value === 'function') && 'formApi' in value && value.formApi instanceof FormApi
+
 export const createForm = <State extends Record<string, unknown>>(initialState: State) => {
-  const form = new FormApi(initialState);
+  type Resolved = ResolveState<State>;
+
+  const resolvedInitial = {} as Record<string, unknown>;
+  const childEntries: [string, FormApi<any>][] = [];
+
+  for (const [key, value] of Object.entries(initialState)) {
+    if (isCompoundForm(value)) {
+      resolvedInitial[key] = value.formApi.getState();
+      childEntries.push([key, value.formApi]);
+    } else {
+      resolvedInitial[key] = value;
+    }
+  }
+
+  const form = new FormApi(resolvedInitial as Resolved);
+
+  for (const [key, childFormApi] of childEntries) {
+    form.addChildForm(key as FormApiGenericTypes<typeof form>['field'], childFormApi);
+  }
 
   type Types = FormApiGenericTypes<typeof form>;
 
@@ -34,6 +55,13 @@ export const createForm = <State extends Record<string, unknown>>(initialState: 
 
   const useArrayFieldHook = <T extends ArrayFields>(field: T, rules?: ValidationRule<Types['state'][T]>[]) => useArrayField(form, field, rules)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const useChildFormHook = <T extends Types['field']>(field: T, childForm: FormApi<any>) => {
+    useEffect(() => {
+      return form.addChildForm(field, childForm);
+    }, [field, childForm])
+  }
+
   const CompoundForm = FormComponent as typeof FormComponent & {
     Item: typeof FormItemComponent
     useWatch: typeof useWatchHook,
@@ -42,6 +70,7 @@ export const createForm = <State extends Record<string, unknown>>(initialState: 
     formApi: typeof form,
     useFieldErrors: typeof useFieldErrorsHook,
     useArrayField: typeof useArrayFieldHook,
+    useChildForm: typeof useChildFormHook,
   }
 
   CompoundForm.formApi = form;
@@ -51,6 +80,7 @@ export const createForm = <State extends Record<string, unknown>>(initialState: 
   CompoundForm.useField = useFieldHook;
   CompoundForm.useArrayField = useArrayFieldHook;
   CompoundForm.useFieldErrors = useFieldErrorsHook;
+  CompoundForm.useChildForm = useChildFormHook;
 
   return CompoundForm
 }
