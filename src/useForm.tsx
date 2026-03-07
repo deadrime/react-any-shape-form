@@ -13,6 +13,7 @@ import {
   Prettify,
   MergeAddonStates,
   HasArrayAddon,
+  HasNestedAddon,
   GetFields,
 } from "./typesHelpers";
 import {
@@ -108,13 +109,14 @@ export type CreateFormReturn<
     errors: ValidationError<FullFormState<State, Addons>[T]>[];
     status: ValidationStatus;
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useChildForm: <T extends GetFields<FullFormState<State, Addons>>>(
-    field: T,
-    childForm: FormApi<any>,
-  ) => void;
 } & (HasArrayAddon<Addons> extends true
   ? ArrayCompoundFormExtension<FullFormState<State, Addons>>
+  : Record<never, never>)
+  & (HasNestedAddon<Addons> extends true
+  ? {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      useChildForm: <T extends GetFields<FullFormState<State, Addons>>>(field: T, childForm: FormApi<any>) => void;
+    }
   : Record<never, never>);
 
 // ---------------------------------------------------------------------------
@@ -175,23 +177,12 @@ export const createForm = <
   const useFieldErrorsHook = <T extends Types["field"]>(field: T) =>
     useFieldValidation(form, field);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const useChildFormHook = <T extends Types["field"]>(
-    field: T,
-    childForm: FormApi<any>,
-  ) => {
-    useEffect(() => {
-      return form.addChildForm(field, childForm);
-    }, [field, childForm]);
-  };
-
   const CompoundForm = FormComponent as typeof FormComponent & {
     Item: typeof FormItemComponent;
     useWatch: typeof useWatchHook;
     useField: typeof useFieldHook;
     formApi: typeof form;
     useFieldErrors: typeof useFieldErrorsHook;
-    useChildForm: typeof useChildFormHook;
   };
 
   CompoundForm.formApi = form;
@@ -199,7 +190,6 @@ export const createForm = <
   CompoundForm.useWatch = useWatchHook;
   CompoundForm.useField = useFieldHook;
   CompoundForm.useFieldErrors = useFieldErrorsHook;
-  CompoundForm.useChildForm = useChildFormHook;
 
   for (const addon of addons) {
     addon._extend?.(CompoundForm, form);

@@ -97,6 +97,25 @@ export type FormArrayAPI<T extends unknown[]> = {
   validationStatus: ValidationStatus | undefined;
 };
 
+// Plugin system — lifecycle hooks for extending FormApi behavior
+export type FormApiPlugin = {
+  onFieldUpdate?(field: string, value: unknown): void;
+  onGetState?(state: Record<string, unknown>): Record<string, unknown>;
+  onValidateFields?(fields: string[], trigger?: ValidateTrigger): Promise<ValidationError[]>;
+};
+
+// Interface for the array items plugin (used by FormArrayItem without importing the concrete class)
+export type IArrayPlugin = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setArrayItemRules(field: string, rules: ValidationRule<any>[]): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onArrayItemError(field: string, cb: (errors: ArrayItemError<any>[]) => void): () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getArrayItemErrors(field: string): ArrayItemError<any>[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  validateArrayItems(field: string, trigger?: ValidateTrigger): Promise<ArrayItemError<any>[]>;
+};
+
 // Addon system — each addon carries _addonState for type inference and optional lifecycle hooks
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type FormAddon<ExtraState extends Record<string, unknown> = Record<never, never>> = {

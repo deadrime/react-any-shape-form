@@ -1,0 +1,86 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+
+<Meta
+  title="Documentation/Hooks/useField"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# useField
+
+Get a field's value and a setter function for updating it.
+
+## Signature
+
+```tsx
+const [value, setValue] = MyForm.useField(fieldName);
+```
+
+## Parameters
+
+- `fieldName` - The name of the field (type-safe)
+
+## Returns
+
+A tuple containing:
+1. `value` - Current field value
+2. `setValue` - Function to update the field value
+
+## Example
+
+```tsx
+const MyForm = useForm({
+  count: 0
+});
+
+function Counter() {
+  const [count, setCount] = MyForm.useField("count");
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+      <button onClick={() => setCount(0)}>Reset</button>
+    </div>
+  );
+}
+```
+
+## Use Cases
+
+- Create custom input components
+- Build reusable field controllers
+- Implement complex UI controls (sliders, color pickers, etc.)
+- Access form state outside Form.Item
+
+## Type Safety
+
+The return value is correctly typed based on your form state:
+
+```tsx
+const MyForm = useForm({
+  age: 0,          // number
+  name: "",        // string
+  tags: [] as string[]  // string[]
+});
+
+const [age, setAge] = MyForm.useField("age");
+// age: number
+// setAge: (value: number) => void
+
+const [tags, setTags] = MyForm.useField("tags");
+// tags: string[]
+// setTags: (value: string[]) => void
+```
+
+## See Also
+
+- **[useWatch](/docs/documentation-hooks-usewatch--docs)** - Subscribe to field changes
+- **[useFieldValidation](/docs/documentation-hooks-usefieldvalidation--docs)** - Get validation errors
+- **[Array Fields](/docs/documentation-array-fields--docs)** - Working with arrays

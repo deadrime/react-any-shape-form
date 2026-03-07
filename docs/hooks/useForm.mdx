@@ -1,0 +1,289 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+
+<Meta
+  title="Documentation/Hooks/useForm"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# useForm
+
+`useForm` is the main entry point for creating a form instance. It returns a compound component that provides everything you need to build forms: the Form component, formApi for programmatic access, and hooks for field manipulation.
+
+## Basic Usage
+
+```tsx
+import { useForm } from 'react-any-shape-form';
+
+const MyForm = useForm({
+  name: "",
+  email: "",
+});
+
+function MyComponent() {
+  return (
+    <MyForm onSubmit={(state) => console.log(state)}>
+      <MyForm.Item name="name">
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </MyForm.Item>
+
+      <MyForm.Item name="email">
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </MyForm.Item>
+
+      <button type="submit">Submit</button>
+    </MyForm>
+  );
+}
+```
+
+## Return Value
+
+The `useForm` function returns a compound component with the following properties:
+
+### Form
+
+The main form component that handles submission and validation:
+
+```tsx
+<MyForm onSubmit={(state) => console.log(state)}>
+  {/* Form fields */}
+</MyForm>
+```
+
+**Props:**
+- `onSubmit` — Callback fired when form passes validation
+- `onError` — Callback fired when validation fails
+- `validateTrigger` — When to trigger validation (`"onChange"` | `"onFinish"`)
+
+### formApi
+
+Programmatic access to form state and methods:
+
+```tsx
+const { formApi } = MyForm;
+
+// Get field value
+const name = formApi.getFieldValue("name");
+
+// Set field value
+formApi.setFieldValue("name", "John");
+
+// Get all form state
+const state = formApi.getState();
+
+// Validate specific fields
+await formApi.validateFields(["email", "name"]);
+
+// Reset form to initial values
+formApi.reset();
+```
+
+**Key Methods:**
+- `getFieldValue(field)` — Get value of a field
+- `setFieldValue(field, value)` — Set value of a field
+- `getState()` — Get all form values
+- `reset()` — Reset form to initial values
+- `validateFields(fields?)` — Validate specific fields or all
+- `subscribe(field, callback)` — Subscribe to field changes
+- `getFieldErrors(field)` — Get validation errors for a field
+- `getFieldValidationStatus(field)` — Get validation status
+
+### Item
+
+The FormItem component for rendering fields:
+
+```tsx
+<MyForm.Item name="email" rules={[{ type: "email", message: "Invalid email" }]}>
+  {({ value, onChange, errors }) => (
+    <>
+      <input value={value} onChange={(e) => onChange(e.target.value)} />
+      {errors.map((e) => <span key={e.errorText}>{e.errorText}</span>)}
+    </>
+  )}
+</MyForm.Item>
+```
+
+**Props:**
+- `name` — Field name (type-safe)
+- `rules` — Validation rules
+- `validateTrigger` — When to validate
+
+For detailed FormItem documentation, see the [Basics](/docs/documentation-basics--docs) guide.
+
+## Hooks
+
+All hooks are accessed via the form instance:
+
+### useWatch
+
+Subscribe to a field's value and re-render when it changes:
+
+```tsx
+const email = MyForm.useWatch("email");
+```
+
+For detailed usage, see [Hooks: useWatch](/docs/documentation-hooks--docs#usewatch).
+
+### useField
+
+Get and set a field's value:
+
+```tsx
+const [value, setValue] = MyForm.useField("name");
+```
+
+For detailed usage, see [Hooks: useField](/docs/documentation-hooks--docs#usefield).
+
+### useFieldErrors
+
+Get validation state and errors for a field:
+
+```tsx
+const { errors, validationStatus } = MyForm.useFieldErrors("email");
+```
+
+For detailed usage, see [Hooks: useFieldValidation](/docs/documentation-hooks--docs#usefieldvalidation).
+
+## Addons
+
+Addons extend the form with additional functionality. They are passed as the second argument to `useForm`.
+
+### Array Fields
+
+For managing dynamic lists and collections:
+
+```tsx
+import { useForm } from 'react-any-shape-form';
+import { withArrayFields } from 'react-any-shape-form/addons/array';
+
+const MyForm = useForm(
+  { tags: [] as string[] },
+  withArrayFields(),
+);
+
+function TagList() {
+  const { value, append, remove, update } = MyForm.useArrayField("tags");
+
+  return (
+    <div>
+      {value.map((tag, index) => (
+        <div key={index}>
+          <input value={tag} onChange={(e) => update(index, e.target.value)} />
+          <button onClick={() => remove(index)}>Remove</button>
+        </div>
+      ))}
+      <button onClick={() => append("")}>Add Tag</button>
+    </div>
+  );
+}
+```
+
+**Available:**
+- `MyForm.ArrayItem` — Component for rendering arrays
+- `MyForm.useArrayField(field)` — Hook for array operations
+- `append`, `prepend`, `remove`, `update`, `move` — Array methods
+
+For detailed array documentation, see [Array Fields](/docs/documentation-array-fields--docs).
+
+### Nested Forms
+
+For composing multiple forms together with reusable components.
+
+For detailed documentation, see [Nested Forms](/docs/documentation-hooks-nestedforms--docs).
+
+## Type Safety
+
+The library provides full TypeScript support with automatic type inference:
+
+```tsx
+// Define your form state shape
+interface FormState {
+  name: string;
+  age: number;
+  email: string;
+  tags: string[];
+}
+
+const MyForm = useForm<FormState>({
+  name: "",
+  age: 0,
+  email: "",
+  tags: [],
+});
+
+// TypeScript knows the correct types
+const [name, setName] = MyForm.useField("name");
+// name: string
+// setName: (value: string) => void
+
+const [age, setAge] = MyForm.useField("age");
+// age: number
+// setAge: (value: number) => void
+
+// Array fields are type-safe
+const { value: tags } = MyForm.useArrayField("tags");
+// tags: string[]
+
+// Non-array fields cause TypeScript errors
+MyForm.useArrayField("name"); // Error: 'name' is not an array
+```
+
+## Creating Outside Components
+
+You can create forms outside of React components for reuse:
+
+```tsx
+// forms/userForm.ts
+import { createForm } from 'react-any-shape-form';
+
+export const UserForm = createForm({
+  name: "",
+  email: "",
+  age: 0,
+});
+
+// In components
+import { UserForm } from './forms/userForm';
+
+function Register() {
+  return (
+    <UserForm onSubmit={(state) => console.log(state)}>
+      <UserForm.Item name="name">
+        {({ value, onChange }) => <input value={value} onChange={e => onChange(e.target.value)} />}
+      </UserForm.Item>
+      {/* ... */}
+    </UserForm>
+  );
+}
+
+function Profile() {
+  return (
+    <UserForm onSubmit={(state) => console.log(state)}>
+      <UserForm.Item name="name">
+        {({ value, onChange }) => <input value={value} onChange={e => onChange(e.target.value)} />}
+      </UserForm.Item>
+      {/* ... */}
+    </UserForm>
+  );
+}
+```
+
+`createForm` works exactly like `useForm`, but doesn't require React hooks — making forms easy to share across components.
+
+## See Also
+
+- **[Basics](/docs/documentation-basics--docs)** — Introduction to the library
+- **[Hooks](/docs/documentation-hooks--docs)** — Detailed hook documentation
+- **[Array Fields](/docs/documentation-array-fields--docs)** — Managing dynamic arrays
+- **[Validation](/docs/documentation-validation--docs)** — Validation rules and patterns
+- **[Advanced Patterns](/docs/documentation-advanced--docs)** — Complex form scenarios

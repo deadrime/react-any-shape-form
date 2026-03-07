@@ -170,14 +170,12 @@ const currentState = LoginForm.formApi.getState();
 
 ### When to Use Which?
 
-| Scenario | Use |
-|----------|-----|
-| Simple form in one component | `useForm` |
-| Multi-step wizard | `createForm` |
-| Form shared across routes | `createForm` |
-| Need to access form outside React | `createForm` |
-| Form state should persist on unmount | `createForm` |
-| Quick prototype or simple use case | `useForm` |
+- **Simple form in one component** — `useForm`
+- **Multi-step wizard** — `createForm`
+- **Form shared across routes** — `createForm`
+- **Access form outside React** — `createForm`
+- **Persist state on unmount** — `createForm`
+- **Quick prototype** — `useForm`
 
 ## Styling is Your Responsibility
 
@@ -186,7 +184,7 @@ This library provides **zero built-in styles**. You have complete freedom to:
 - Implement custom designs
 - Control every aspect of the UI
 
-Here's an example using Tailwind CSS:
+Here's an example with custom CSS:
 
 <Canvas of={FormStylesStories.StylesExample} />
 

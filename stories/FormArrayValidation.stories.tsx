@@ -19,20 +19,25 @@ export const ArrayItemValidationExample: StoryObj<typeof Form> = {
     const { append, remove } = MyForm.useArrayField("emails");
 
     return (
-      <MyForm>
+      <MyForm onSubmit={(values) => alert(JSON.stringify(values, null, 2))}>
         <div className="form">
           <MyForm.ArrayItem
             name="emails"
+            itemRules={[
+              {
+                type: 'email',
+                message: 'Please enter a valid email address',
+              }
+            ]}
             rules={[
               {
-                required: true,
-              },
-              {
-                type: "email",
+                type: 'array',
+                min: 2,
+                message: 'At least 2 email addresses are required',
               },
             ]}
           >
-            {({ items }) => (
+            {({ items, errors }) => (
               <div className="form-item">
                 <label>Email Addresses</label>
                 <div className="array-list">
@@ -65,10 +70,13 @@ export const ArrayItemValidationExample: StoryObj<typeof Form> = {
                 >
                   Add Email
                 </button>
+                {errors.length > 0 && (
+                  <div className="error">{errors.map(err => err.errorText).join(', ')}</div>
+                )}
               </div>
             )}
           </MyForm.ArrayItem>
-          <button className="btn" type="button" onClick={() => MyForm.formApi.submit()}>
+          <button className="btn" onClick={() => MyForm.formApi.submit()}>
             Submit
           </button>
         </div>

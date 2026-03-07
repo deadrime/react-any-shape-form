@@ -74,3 +74,11 @@ export type HasArrayAddon<Addons extends readonly unknown[]> =
       ? true
       : HasArrayAddon<Tail>
     : false;
+
+/** Returns `true` if any addon in the tuple has `_addonType === 'nested'`. */
+export type HasNestedAddon<Addons extends readonly unknown[]> =
+  Addons extends readonly [infer Head, ...infer Tail]
+    ? Head extends { readonly _addonType: 'nested' }
+      ? true
+      : HasNestedAddon<Tail>
+    : false;

@@ -1,6 +1,44 @@
-import { FormApi } from "@/FormApi";
-import { FormAddon } from "../types";
+import { useEffect } from 'react';
+import { FormApi } from "../FormApi";
+import { FormAddon, FormApiPlugin, ValidationError, ValidateTrigger } from "../types";
 import { CompoundFormLike, NestedForms, ResolvedNestedState } from "../typesHelpers";
+import { NESTED_FORMS_PLUGIN_KEY } from "../pluginKeys";
+
+export class ChildFormsPlugin implements FormApiPlugin {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private childForms = new Map<string, FormApi<any>>();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  addChildForm(field: string, childForm: FormApi<any>): () => void {
+    this.childForms.set(field, childForm);
+    return () => { this.childForms.delete(field); };
+  }
+
+  removeChildForm(field: string) {
+    this.childForms.delete(field);
+  }
+
+  onGetState(state: Record<string, unknown>): Record<string, unknown> {
+    if (this.childForms.size === 0) return state;
+    const merged = { ...state };
+    for (const [field, child] of this.childForms) {
+      merged[field] = child.getState();
+    }
+    return merged;
+  }
+
+  async onValidateFields(_fields: string[], trigger?: ValidateTrigger): Promise<ValidationError[]> {
+    const errors: ValidationError[] = [];
+    for (const [, child] of this.childForms) {
+      try {
+        await child.validateFields(undefined, trigger);
+      } catch (errs) {
+        errors.push(...(errs as ValidationError[]));
+      }
+    }
+    return errors;
+  }
+}
 
 export type NestedFormsAddon<ExtraState extends Record<string, unknown>> =
   FormAddon<ExtraState> & {
@@ -18,9 +56,20 @@ export function withNestedForms<N extends NestedForms>(
     _addonType: "nested" as const,
     _addonState: addonState,
     _setup(formApi: FormApi<any>) {
+      const plugin = new ChildFormsPlugin();
       for (const [key, compoundForm] of Object.entries(forms)) {
-        formApi.addChildForm(key, (compoundForm as CompoundFormLike).formApi);
+        plugin.addChildForm(key, (compoundForm as CompoundFormLike).formApi);
       }
+      formApi.installPlugin(NESTED_FORMS_PLUGIN_KEY, plugin);
+    },
+    _extend(compoundForm: any, formApi: FormApi<any>) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      compoundForm.useChildForm = (field: string, childForm: FormApi<any>) => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useEffect(() => {
+          return formApi.getPlugin<ChildFormsPlugin>(NESTED_FORMS_PLUGIN_KEY)?.addChildForm(field, childForm);
+        }, [field, childForm]);
+      };
     },
   };
 }

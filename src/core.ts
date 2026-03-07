@@ -39,4 +39,5 @@ export type {
   ResolveState,
   MergeAddonStates,
   HasArrayAddon,
+  HasNestedAddon,
 } from './typesHelpers';

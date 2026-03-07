@@ -1,0 +1,259 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+
+<Meta
+  title="Documentation/Hooks/useArrayField"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# useArrayField
+
+Manage array fields with add, remove, and update operations. Requires `withArrayFields()` addon.
+
+## Setup
+
+```tsx
+import { useForm } from 'react-any-shape-form';
+import { withArrayFields } from 'react-any-shape-form/addons/array';
+
+const MyForm = useForm(
+  { tags: [] as string[] },
+  withArrayFields(),
+);
+```
+
+## Signature
+
+```tsx
+const {
+  value,
+  append,
+  prepend,
+  remove,
+  update,
+  move,
+  itemErrors
+} = MyForm.useArrayField(fieldName, rules?, itemRules?);
+```
+
+## Parameters
+
+- `fieldName` - The name of the array field (type-safe, only array fields allowed)
+- `rules` (optional) - Validation rules for the entire array
+- `itemRules` (optional) - Validation rules for each array element
+
+## Returns
+
+An object containing:
+- `value` - Array of current values
+- `append` - Add item to the end
+- `prepend` - Add item to the beginning
+- `remove` - Remove item by index
+- `update` - Update item by index
+- `move` - Move item from one index to another
+- `itemErrors` - Array of validation errors for individual items
+
+## Basic Example
+
+```tsx
+const MyForm = useForm(
+  { todos: [] as string[] },
+  withArrayFields(),
+);
+
+function TodoList() {
+  const { value, append, remove, update } = MyForm.useArrayField("todos");
+
+  return (
+    <div>
+      {value.map((todo, index) => (
+        <div key={index}>
+          <input
+            value={todo}
+            onChange={(e) => update(index, e.target.value)}
+          />
+          <button onClick={() => remove(index)}>Delete</button>
+        </div>
+      ))}
+      <button onClick={() => append("")}>Add Todo</button>
+    </div>
+  );
+}
+```
+
+## Array Operations
+
+### append
+
+Add an item to the end of the array:
+
+```tsx
+append("New item");
+append({ name: "John", age: 30 }); // For object arrays
+```
+
+### prepend
+
+Add an item to the beginning of the array:
+
+```tsx
+prepend("First item");
+```
+
+### remove
+
+Remove an item by index:
+
+```tsx
+remove(0); // Remove first item
+remove(value.length - 1); // Remove last item
+```
+
+### update
+
+Update an item by index:
+
+```tsx
+update(0, "Updated value");
+update(1, { name: "Jane", age: 25 }); // For object arrays
+```
+
+### move
+
+Move an item from one index to another:
+
+```tsx
+move(0, 2); // Move first item to third position
+```
+
+## Working with Different Data Types
+
+### String Arrays
+
+```tsx
+const MyForm = useForm(
+  { tags: [] as string[] },
+  withArrayFields(),
+);
+
+function TagInput() {
+  const { value, append, remove, update } = MyForm.useArrayField("tags");
+
+  return (
+    <div>
+      {value.map((tag, index) => (
+        <div key={index}>
+          <input value={tag} onChange={(e) => update(index, e.target.value)} />
+          <button onClick={() => remove(index)}>×</button>
+        </div>
+      ))}
+      <button onClick={() => append("")}>Add Tag</button>
+    </div>
+  );
+}
+```
+
+### Object Arrays
+
+```tsx
+interface Contact {
+  name: string;
+  email: string;
+}
+
+const MyForm = useForm(
+  { contacts: [] as Contact[] },
+  withArrayFields(),
+);
+
+function ContactList() {
+  const { value, append, remove, update } = MyForm.useArrayField("contacts");
+
+  return (
+    <div>
+      {value.map((contact, index) => (
+        <div key={index}>
+          <input
+            placeholder="Name"
+            value={contact.name}
+            onChange={(e) => update(index, (prev) => ({ ...prev, name: e.target.value }))}
+          />
+          <input
+            placeholder="Email"
+            value={contact.email}
+            onChange={(e) => update(index, (prev) => ({ ...prev, email: e.target.value }))}
+          />
+          <button onClick={() => remove(index)}>Delete</button>
+        </div>
+      ))}
+      <button onClick={() => append({ name: "", email: "" })}>Add Contact</button>
+    </div>
+  );
+}
+```
+
+> **Note:** For complex object arrays with many fields, consider using **[Nested Forms](/docs/documentation-hooks-nestedforms--docs)** instead. Nested forms provide better separation of concerns and reusable form components for each item.
+
+## Validation
+
+### Array-Level Validation
+
+```tsx
+const { value, append, remove } = MyForm.useArrayField(
+  "emails",
+  [{ type: "array", min: 1, message: "Add at least one email" }],
+);
+```
+
+### Item-Level Validation
+
+```tsx
+const { value, append, remove, itemErrors } = MyForm.useArrayField(
+  "emails",
+  // Array-level rules
+  [{ type: "array", min: 1, max: 10, message: "Between 1 and 10 emails" }],
+  // Item-level rules
+  [
+    { required: true, message: "Email is required" },
+    { type: "email", message: "Invalid email format" }
+  ],
+);
+```
+
+## Type Safety
+
+`useArrayField` only accepts fields that are arrays:
+
+```tsx
+const MyForm = useForm({
+  name: "",           // Not an array
+  tags: [] as string[]  // Array
+});
+
+// ✓ Valid - tags is an array
+const { value } = MyForm.useArrayField("tags");
+
+// ✗ Error - name is not an array
+const { value } = MyForm.useArrayField("name");  // TypeScript error!
+```
+
+## Use Cases
+
+- Todo lists
+- Tag inputs
+- Multi-email inputs
+- Dynamic form sections
+- Shopping cart items
+- Contact lists
+
+## See Also
+
+- **[Array Fields](/docs/documentation-array-fields--docs)** - Detailed array documentation
+- **[Array Item Validation](/docs/documentation-array-item-validation--docs)** - Validation guide
+- **[useWatch](/docs/documentation-hooks-usewatch--docs)** - Watch array changes
+- **[useField](/docs/documentation-hooks-usefield--docs)** - Get/set array value

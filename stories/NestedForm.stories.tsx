@@ -14,6 +14,132 @@ const meta: Meta<typeof Form> = {
 
 export default meta;
 
+export const UserAndAddressExample: StoryObj<typeof Form> = {
+  tags: ["!dev", "!autodocs"],
+  render: () => {
+    // Create separate form instances
+    const UserForm = createForm({
+      name: "",
+      email: "",
+    });
+
+    const AddressForm = createForm({
+      street: "",
+      city: "",
+      zipCode: "",
+    });
+
+    // Compose nested forms together
+    const MyForm = createForm(
+      {},
+      withNestedForms({
+        user: UserForm,
+        address: AddressForm,
+      }),
+    );
+
+    function UserSection() {
+      return (
+        <div className="form-section">
+          <h3>User Info</h3>
+          <UserForm.Item name="name" rules={[{ required: true, message: "Name is required" }]}>
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Name</label>
+                <input
+                  className={`input ${validationStatus === "error" ? "input-invalid" : ""}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+                {errors[0] && <div className="error">{errors[0].errorText}</div>}
+              </div>
+            )}
+          </UserForm.Item>
+          <UserForm.Item name="email" rules={[{ required: true, message: "Email is required" }, { type: "email", message: "Invalid email" }]}>
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Email</label>
+                <input
+                  className={`input ${validationStatus === "error" ? "input-invalid" : ""}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+                {errors[0] && <div className="error">{errors[0].errorText}</div>}
+              </div>
+            )}
+          </UserForm.Item>
+        </div>
+      );
+    }
+
+    function AddressSection() {
+      return (
+        <div className="form-section">
+          <h3>Address</h3>
+          <AddressForm.Item name="street" rules={[{ required: true, message: "Street is required" }]}>
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>Street</label>
+                <input
+                  className={`input ${validationStatus === "error" ? "input-invalid" : ""}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+                {errors[0] && <div className="error">{errors[0].errorText}</div>}
+              </div>
+            )}
+          </AddressForm.Item>
+          <AddressForm.Item name="city" rules={[{ required: true, message: "City is required" }]}>
+            {({ value, onChange, errors, validationStatus }) => (
+              <div>
+                <label>City</label>
+                <input
+                  className={`input ${validationStatus === "error" ? "input-invalid" : ""}`}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+                {errors[0] && <div className="error">{errors[0].errorText}</div>}
+              </div>
+            )}
+          </AddressForm.Item>
+          <AddressForm.Item name="zipCode">
+            {({ value, onChange }) => (
+              <div>
+                <label>Zip Code (optional)</label>
+                <input
+                  className="input"
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                />
+              </div>
+            )}
+          </AddressForm.Item>
+        </div>
+      );
+    }
+
+    return (
+      <MyForm
+        onSubmit={(state) => {
+          alert(JSON.stringify(state, undefined, 2));
+        }}
+      >
+        <div className="form">
+          <UserForm>
+            <UserSection />
+          </UserForm>
+          <AddressForm>
+            <AddressSection />
+          </AddressForm>
+          <button className="btn" type="button" onClick={() => MyForm.formApi.submit()}>
+            Submit
+          </button>
+        </div>
+      </MyForm>
+    );
+  },
+};
+
 export const NestedFormExample: StoryObj<typeof Form> = {
   tags: ["!dev", "!autodocs"],
   render: () => {

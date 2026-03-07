@@ -1,0 +1,227 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import * as NestedFormStories from '../stories/NestedForm.stories';
+
+
+<Meta
+  title="Documentation/Nested Forms"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# Nested Forms
+
+Compose multiple form instances together into a single form. Nested forms allow you to split complex forms into reusable, self-contained components.
+
+## Interactive Example
+
+<Canvas of={NestedFormStories.UserAndAddressExample} />
+
+## Setup
+
+```tsx
+import { useForm } from 'react-any-shape-form';
+import { withNestedForms } from 'react-any-shape-form/addons/nestedForm';
+```
+
+## Basic Usage
+
+```tsx
+import { useForm } from 'react-any-shape-form';
+import { withNestedForms } from 'react-any-shape-form/addons/nestedForm';
+
+// Create separate form instances
+const UserForm = useForm({
+  name: "",
+  email: "",
+});
+
+const AddressForm = useForm({
+  street: "",
+  city: "",
+  zipCode: "",
+});
+
+// Reusable components for each nested form
+function UserSection() {
+  return (
+    <div className="section">
+      <h3>User Info</h3>
+      <UserForm.Item name="name" rules={[{ required: true, message: "Name is required" }]}>
+        {({ value, onChange, errors }) => (
+          <div>
+            <label>Name</label>
+            <input value={value} onChange={(e) => onChange(e.target.value)} />
+            {errors[0] && <span className="error">{errors[0].errorText}</span>}
+          </div>
+        )}
+      </UserForm.Item>
+      <UserForm.Item name="email" rules={[{ required: true, message: "Email is required" }, { type: "email", message: "Invalid email" }]}>
+        {({ value, onChange, errors }) => (
+          <div>
+            <label>Email</label>
+            <input value={value} onChange={(e) => onChange(e.target.value)} />
+            {errors[0] && <span className="error">{errors[0].errorText}</span>}
+          </div>
+        )}
+      </UserForm.Item>
+    </div>
+  );
+}
+
+function AddressSection() {
+  return (
+    <div className="section">
+      <h3>Address</h3>
+      <AddressForm.Item name="street" rules={[{ required: true, message: "Street is required" }]}>
+        {({ value, onChange, errors }) => (
+          <div>
+            <label>Street</label>
+            <input value={value} onChange={(e) => onChange(e.target.value)} />
+            {errors[0] && <span className="error">{errors[0].errorText}</span>}
+          </div>
+        )}
+      </AddressForm.Item>
+      <AddressForm.Item name="city" rules={[{ required: true, message: "City is required" }]}>
+        {({ value, onChange, errors }) => (
+          <div>
+            <label>City</label>
+            <input value={value} onChange={(e) => onChange(e.target.value)} />
+            {errors[0] && <span className="error">{errors[0].errorText}</span>}
+          </div>
+        )}
+      </AddressForm.Item>
+      <AddressForm.Item name="zipCode">
+        {({ value, onChange }) => (
+          <div>
+            <label>Zip Code (optional)</label>
+            <input value={value} onChange={(e) => onChange(e.target.value)} />
+          </div>
+        )}
+      </AddressForm.Item>
+    </div>
+  );
+}
+
+// Compose nested forms together
+const MyForm = useForm(
+  {},
+  withNestedForms({
+    user: UserForm,
+    address: AddressForm,
+  }),
+);
+
+function MyComponent() {
+  return (
+    <MyForm onSubmit={(state) => console.log(state)}>
+      <UserForm>
+        <UserSection />
+      </UserForm>
+      <AddressForm>
+        <AddressSection />
+      </AddressForm>
+      <button type="submit">Submit</button>
+    </MyForm>
+  );
+}
+```
+
+## Why Nested Forms?
+
+### Reusable Form Components
+
+Create self-contained form components that can be reused across your app:
+
+```tsx
+// Reusable form component
+const AddressForm = useForm({
+  street: "",
+  city: "",
+  zipCode: "",
+});
+
+// Use same form in multiple places
+function ShippingAddress() {
+  return <AddressForm.Form>...</AddressForm.Form>;
+}
+
+function BillingAddress() {
+  return <AddressForm.Form>...</AddressForm.Form>;
+}
+
+// Compose in parent form
+const OrderForm = useForm(
+  {},
+  withNestedForms({
+    shipping: AddressForm,
+    billing: AddressForm,
+  }),
+);
+```
+
+### Complex Object Arrays
+
+For object arrays with many fields, nested forms provide better organization than `useArrayField`:
+
+```tsx
+const contactForm = useForm({
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+});
+
+const MyForm = useForm(
+  { contacts: [] as any[] },
+  withArrayFields(),
+  withNestedForms({
+    // Dynamic nested forms for each contact
+  }),
+);
+```
+
+### Validation
+
+All nested forms validate together:
+
+```tsx
+const MyForm = useForm(
+  {},
+  withNestedForms({
+    user: userForm,
+    address: addressForm,
+  }),
+);
+
+// Validates all nested forms
+<MyForm onSubmit={handleSubmit} />
+```
+
+## API
+
+### withNestedForms
+
+```tsx
+withNestedForms(forms: {
+  [key: string]: CompoundForm;
+})
+```
+
+- `forms` - Object containing form instances to nest
+
+## Benefits
+
+- **Merge multiple form states into one** — Parent form's state includes all nested form values
+- **Validate all nested forms at once** — Single submit validates everything
+- **Reusable form components** — Create library of form components
+- **Better organization** — Complex forms split into manageable pieces
+
+## See Also
+
+- **[useForm](/docs/documentation-hooks-useform--docs)** - Form creation
+- **[Array Fields](/docs/documentation-array-fields--docs)** - For simple arrays
+- **[Validation](/docs/documentation-validation--docs)** - Validation rules

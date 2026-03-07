@@ -10,7 +10,12 @@ const preview: Preview = {
   parameters: {
     options: {
       storySort: {
-        order: ["Welcome", "Documentation/Basics", "*"],
+        order: [
+          "Welcome",
+          "Documentation",
+          ["Basics", "Validation", "Nested Forms", "Arrays", "Hooks", "Advanced", "*"],
+          "*",
+        ],
       },
     },
     controls: {

@@ -1,0 +1,118 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+
+<Meta
+  title="Documentation/Hooks/useWatch"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# useWatch
+
+Subscribe to a field's value and re-render when it changes.
+
+## Signature
+
+```tsx
+// Watch single field
+const value = MyForm.useWatch(fieldName);
+
+// Watch multiple fields
+const values = MyForm.useWatch(['field1', 'field2']);
+```
+
+## Parameters
+
+- `fieldName` - The name of the field to watch (type-safe)
+- `fieldNames` - Array of field names to watch (type-safe)
+
+## Returns
+
+- For single field: The current value of the field
+- For multiple fields: An object with selected fields
+
+## Example
+
+```tsx
+const MyForm = useForm({
+  email: "",
+  password: ""
+});
+
+function EmailDisplay() {
+  // Component re-renders only when email changes
+  const email = MyForm.useWatch("email");
+
+  return <div>Current email: {email}</div>;
+}
+
+function MyComponent() {
+  return (
+    <MyForm onSubmit={(state) => console.log(state)}>
+      <MyForm.Item name="email">
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </MyForm.Item>
+
+      <EmailDisplay />
+    </MyForm>
+  );
+}
+```
+
+## Watch Multiple Fields
+
+You can watch multiple fields at once by passing an array:
+
+```tsx
+const MyForm = useForm({
+  firstName: "",
+  lastName: "",
+  age: 0
+});
+
+function FullNameDisplay() {
+  const { firstName, lastName } = MyForm.useWatch(["firstName", "lastName"]);
+
+  return (
+    <div>
+      Full name: {firstName} {lastName}
+    </div>
+  );
+}
+
+function UserProfile() {
+  // Watch multiple fields for conditional rendering
+  const { firstName, age } = MyForm.useWatch(["firstName", "age"]);
+
+  return (
+    <div>
+      {age >= 18 && <span>Welcome, {firstName}!</span>}
+      {age < 18 && <span>{firstName} is a minor</span>}
+    </div>
+  );
+}
+```
+
+## Use Cases
+
+- Display field values in other components
+- Show character counters
+- Conditional rendering based on field values
+- Real-time form previews
+
+## Performance Note
+
+`useWatch` only triggers re-renders when the watched field changes, not when other form fields change. This makes it highly efficient for large forms.
+
+## See Also
+
+- **[useField](/docs/documentation-hooks-usefield--docs)** - Get and set field values
+- **[useFieldValidation](/docs/documentation-hooks-usefieldvalidation--docs)** - Get validation errors
+- **[Array Fields](/docs/documentation-array-fields--docs)** - Managing arrays with useArrayField
+- **[Form.Item](/docs/documentation-basics--docs)** - Basic form usage

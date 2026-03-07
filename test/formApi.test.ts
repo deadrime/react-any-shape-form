@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import { FormApi } from "../src/FormApi";
 import { ValidationRule } from "../src";
 import { createForm } from "../src/useForm";
-import { withNestedForms } from "../src/addons/nestedForm";
+import { ChildFormsPlugin, withNestedForms } from "../src/addons/nestedForm";
+import { NESTED_FORMS_PLUGIN_KEY } from "../src/pluginKeys";
 
 describe("test FormApi", () => {
   const defaultState = {
@@ -483,6 +484,7 @@ describe("test FormApi", () => {
     type ParentState = { name: string; address: { city: string; zip: string } };
     let parent: FormApi<ParentState>;
     let child: FormApi<{ city: string; zip: string }>;
+    let parentPlugin: ChildFormsPlugin;
 
     beforeEach(() => {
       parent = new FormApi<ParentState>({
@@ -493,10 +495,12 @@ describe("test FormApi", () => {
         city: "NY",
         zip: "10001",
       });
+      parentPlugin = new ChildFormsPlugin();
+      parent.installPlugin(NESTED_FORMS_PLUGIN_KEY, parentPlugin);
     });
 
     test("getState merges child state", () => {
-      parent.addChildForm("address", child);
+      parentPlugin.addChildForm("address", child);
       expect(parent.getState()).toEqual({
         name: "",
         address: { city: "NY", zip: "10001" },
@@ -511,7 +515,7 @@ describe("test FormApi", () => {
     });
 
     test("cleanup removes child form", () => {
-      const cleanup = parent.addChildForm("address", child);
+      const cleanup = parentPlugin.addChildForm("address", child);
       cleanup();
       expect(parent.getState()).toEqual({
         name: "",
@@ -520,8 +524,8 @@ describe("test FormApi", () => {
     });
 
     test("removeChildForm removes child", () => {
-      parent.addChildForm("address", child);
-      parent.removeChildForm("address");
+      parentPlugin.addChildForm("address", child);
+      parentPlugin.removeChildForm("address");
       expect(parent.getState()).toEqual({
         name: "",
         address: { city: "", zip: "" },
@@ -529,7 +533,7 @@ describe("test FormApi", () => {
     });
 
     test("submit returns merged state", async () => {
-      parent.addChildForm("address", child);
+      parentPlugin.addChildForm("address", child);
       const state = await parent.submit();
       expect(state).toEqual({
         name: "",
@@ -543,12 +547,12 @@ describe("test FormApi", () => {
       ]);
       child.setFieldVisible("city", true);
       child.setFieldValue("city", "");
-      parent.addChildForm("address", child);
+      parentPlugin.addChildForm("address", child);
       await expect(parent.submit()).rejects.toBeDefined();
     });
 
     test("submit calls onSubmit with merged state", async () => {
-      parent.addChildForm("address", child);
+      parentPlugin.addChildForm("address", child);
       const onSubmit = vi.fn();
       parent.onSubmit(onSubmit);
       await parent.submit();
@@ -559,7 +563,7 @@ describe("test FormApi", () => {
     });
 
     test("child onSubmit is not triggered by parent submit", async () => {
-      parent.addChildForm("address", child);
+      parentPlugin.addChildForm("address", child);
       const childOnSubmit = vi.fn();
       child.onSubmit(childOnSubmit);
       await parent.submit();
@@ -576,8 +580,10 @@ describe("test FormApi", () => {
         lat: 40,
         lng: -74,
       });
-      middle.addChildForm("geo", inner);
-      parent.addChildForm("address", middle);
+      const middlePlugin = new ChildFormsPlugin();
+      middle.installPlugin(NESTED_FORMS_PLUGIN_KEY, middlePlugin);
+      middlePlugin.addChildForm("geo", inner);
+      parentPlugin.addChildForm("address", middle);
       const state = await parent.submit();
       expect((state.address as any).geo).toEqual({ lat: 40, lng: -74 });
     });

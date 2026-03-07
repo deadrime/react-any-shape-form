@@ -1,5 +1,5 @@
 import { getValidationErrors, prepareRules } from "./helpers/getValidationErrors";
-import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, ValidationRule, ValidateTrigger, ValidationError, FieldOnValidationStatusChangeCb, ValidationStatus, ArrayItemError } from "./types";
+import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, ValidationRule, ValidateTrigger, ValidationError, FieldOnValidationStatusChangeCb, ValidationStatus, FormApiPlugin } from "./types";
 import { GetFields } from "./typesHelpers";
 
 export class FormApi<State extends Record<string, unknown>, Field extends GetFields<State> = GetFields<State>> {
@@ -13,15 +13,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   private submitSubscribers: Set<FieldOnSubmitCb<State>>;
   private validationSubscribers: Map<Field, FieldOnValidationStatusChangeCb<State[Field]>[]>;
   private visibleFields: Set<Field>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private childForms: Map<Field, FormApi<any>>
-  // Array item validation support
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private arrayItemValidationRules: Map<Field, ValidationRule<any>[]>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private arrayItemErrors: Map<Field, ArrayItemError<any>[]>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private arrayItemErrorSubscribers: Map<Field, ((errors: ArrayItemError<any>[]) => void)[]>
+  private readonly _plugins = new Map<symbol, FormApiPlugin>();
 
   constructor(state: State) {
     this.state = state;
@@ -34,10 +26,15 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     this.submitSubscribers = new Set();
     this.validationSubscribers = new Map();
     this.visibleFields = new Set();
-    this.childForms = new Map();
-    this.arrayItemValidationRules = new Map();
-    this.arrayItemErrors = new Map();
-    this.arrayItemErrorSubscribers = new Map();
+  }
+
+  installPlugin(key: symbol, plugin: FormApiPlugin): void {
+    this._plugins.set(key, plugin);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getPlugin<P = any>(key: symbol): P | undefined {
+    return this._plugins.get(key) as P | undefined;
   }
 
   setFieldVisible<F extends Field>(field: F, visible: boolean) {
@@ -49,24 +46,11 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   }
 
   getState(): State {
-    if (this.childForms.size === 0) {
-      return this.state
+    let state = { ...this.state } as Record<string, unknown>;
+    for (const plugin of this._plugins.values()) {
+      state = plugin.onGetState?.(state) ?? state;
     }
-    const merged = { ...this.state };
-    for (const [field, childForm] of this.childForms) {
-      (merged as Record<string, unknown>)[field] = childForm.getState();
-    }
-    return merged
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  addChildForm<F extends Field>(field: F, childForm: FormApi<any>): () => void {
-    this.childForms.set(field, childForm);
-    return () => { this.childForms.delete(field); };
-  }
-
-  removeChildForm<F extends Field>(field: F) {
-    this.childForms.delete(field);
+    return state as State;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,15 +72,14 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
       delete this.fieldErrors[field];
       this.errorSubscribers.get(field)?.forEach(cb => cb([], this.state));
     }
-    // reset array item errors
-    if (this.arrayItemErrors.has(field)) {
-      this.arrayItemErrors.delete(field);
-      this.arrayItemErrorSubscribers.get(field)?.forEach(cb => cb([]));
-    }
     // reset validation
     if (this.getFieldValidationStatus(field) !== 'notStarted') {
       this.validationStatusByField[field] = 'notStarted';
       this.validationSubscribers.get(field)?.forEach(cb => cb('notStarted'));
+    }
+    // notify plugins
+    for (const plugin of this._plugins.values()) {
+      plugin.onFieldUpdate?.(field, value);
     }
   }
 
@@ -174,66 +157,6 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     this.validationRulesByField[field] = rules.concat(validationRules as ValidationRule<State[Field]>[]);
   }
 
-  // Array item validation methods
-  setArrayItemRules<F extends Field>(field: F, validationRules: ValidationRule<State[F] extends (infer Item)[] ? Item : never>[]) {
-    if (!validationRules) {
-      return
-    }
-    this.arrayItemValidationRules.set(field, validationRules);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onArrayItemError<F extends Field>(field: F, cb: (errors: ArrayItemError<any>[]) => void) {
-    return this.addSubscriber(this.arrayItemErrorSubscribers, field, cb);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getArrayItemErrors<F extends Field>(field: F): ArrayItemError<any>[] {
-    return this.arrayItemErrors.get(field) || [];
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async validateArrayItems<F extends Field>(field: F, trigger?: ValidateTrigger): Promise<ArrayItemError<any>[]> {
-    const rules = this.arrayItemValidationRules.get(field);
-    const value = this.state[field];
-
-    if (!rules || !Array.isArray(value)) {
-      return [];
-    }
-
-    const preparedRules = prepareRules(rules, trigger);
-
-    if (preparedRules.length === 0) {
-      return [];
-    }
-
-    const itemErrors = await Promise.all(
-      (value as any[]).map(async (item, index) => {
-        const validationErrors = await getValidationErrors(item, preparedRules, this.state);
-        if (validationErrors.length > 0) {
-          return {
-            index,
-            errors: validationErrors
-          };
-        }
-        return null;
-      })
-    );
-
-    const errors = itemErrors.filter((e): e is ArrayItemError<any> => e !== null);
-
-    // Store and notify subscribers
-    if (errors.length > 0) {
-      this.arrayItemErrors.set(field, errors);
-      this.arrayItemErrorSubscribers.get(field)?.forEach(cb => cb(errors));
-    } else {
-      this.arrayItemErrors.delete(field);
-      this.arrayItemErrorSubscribers.get(field)?.forEach(cb => cb([]));
-    }
-
-    return errors;
-  }
-
   async getFieldError<F extends Field>(field: F, trigger?: ValidateTrigger) {
     const rules = this.validationRulesByField[field];
 
@@ -272,35 +195,17 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   }
 
   async validateFields(fieldNames?: Field[], trigger?: ValidateTrigger) {
-    const fields = fieldNames || [...this.visibleFields.values()];
-    const errors = await this.getFieldsError(fields, trigger);
+    const fields = (fieldNames || [...this.visibleFields.values()]) as string[];
+    const errors = await this.getFieldsError(fields as Field[], trigger);
 
-    // Validate array items
-    const arrayItemErrorsResults = await Promise.all(
-      fields.map(field => this.validateArrayItems(field, trigger))
-    );
-    const arrayItemErrors = arrayItemErrorsResults.flat();
-
-    const childErrors: ValidationError[] = [];
-    for (const [, childForm] of this.childForms) {
-      try {
-        await childForm.validateFields(undefined, trigger);
-      } catch (errs) {
-        childErrors.push(...(errs as ValidationError[]));
-      }
+    const pluginErrors: ValidationError[] = [];
+    for (const plugin of this._plugins.values()) {
+      const errs = await plugin.onValidateFields?.(fields, trigger) ?? [];
+      pluginErrors.push(...errs);
     }
 
-    const allErrors = [...errors, ...childErrors];
-
-    // Convert array item errors to validation errors for throwing
-    const arrayValidationErrors: ValidationError[] = arrayItemErrors.map(itemError => ({
-      rule: itemError.errors[0]?.rule || {} as ValidationRule,
-      value: itemError.errors[0]?.value,
-      errorText: `Item ${itemError.index}: ${itemError.errors.map(e => e.errorText).join(', ')}`
-    })) as ValidationError[];
-
-    if (allErrors.length > 0 || arrayValidationErrors.length > 0) {
-      throw [...allErrors, ...arrayValidationErrors];
+    if ([...errors, ...pluginErrors].length > 0) {
+      throw [...errors, ...pluginErrors];
     }
   }
 

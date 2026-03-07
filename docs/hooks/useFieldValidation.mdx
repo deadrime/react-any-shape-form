@@ -1,0 +1,97 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+
+<Meta
+  title="Documentation/Hooks/useFieldValidation"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# useFieldValidation
+
+Get validation state and errors for a specific field.
+
+## Signature
+
+```tsx
+const { errors, validationStatus } = MyForm.useFieldValidation(fieldName);
+```
+
+## Parameters
+
+- `fieldName` - The name of the field (type-safe)
+
+## Returns
+
+An object containing:
+- `errors` - Array of validation errors
+- `validationStatus` - Validation state: `'notStarted' | 'validating' | 'success' | 'error'`
+
+## Example
+
+```tsx
+const MyForm = useForm({
+  email: ""
+});
+
+function EmailValidationStatus() {
+  const { errors, validationStatus } = MyForm.useFieldValidation("email");
+
+  return (
+    <div>
+      {validationStatus === "validating" && (
+        <span>Validating email...</span>
+      )}
+
+      {validationStatus === "success" && (
+        <span className="success">✓ Email is valid</span>
+      )}
+
+      {validationStatus === "error" && errors.length > 0 && (
+        <div className="error">
+          {errors.map((e, i) => (
+            <div key={i}>{e.errorText}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MyComponent() {
+  return (
+    <MyForm onSubmit={(state) => console.log(state)}>
+      <MyForm.Item
+        name="email"
+        rules={[
+          { type: "email", validateTrigger: ["onChange"] }
+        ]}
+      >
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </MyForm.Item>
+
+      <EmailValidationStatus />
+    </MyForm>
+  );
+}
+```
+
+## Use Cases
+
+- Display validation status in separate components
+- Show loading indicators during async validation
+- Build custom error display components
+- Create validation summary components
+
+## See Also
+
+- **[useWatch](/docs/documentation-hooks-usewatch--docs)** - Subscribe to field changes
+- **[useField](/docs/documentation-hooks-usefield--docs)** - Get and set field values
+- **[Validation](/docs/documentation-validation--docs)** - Validation rules and patterns
+- **[Array Fields](/docs/documentation-array-fields--docs)** - Array validation
