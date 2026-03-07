@@ -10,17 +10,116 @@ import {
   FormApiGenericTypes,
   ArrayOnly,
   ArrayOnlyFields,
-  CompoundFormLike,
   Prettify,
-  ExtractFormState,
+  MergeAddonStates,
+  HasArrayAddon,
+  GetFields,
 } from "./typesHelpers";
-import { FieldUpdate, ValidationRule, ValidationError, ValidationStatus, ArrayItemError } from "./types";
+import {
+  FieldUpdate,
+  ValidationRule,
+  ValidationError,
+  ValidationStatus,
+  ArrayItemError,
+  ArrayItemProps,
+  FieldUpdateCb,
+  FormAddon,
+} from "./types";
 import { Form, FormProps } from "./Form";
 import FormItem, { FormItemProps } from "./FormItem";
-import FormArrayItem, {
-  FormArrayItemProps,
-  useArrayField,
-} from "./FormArrayItem";
+import type { FormArrayItemProps } from "./FormArrayItem";
+
+// ---------------------------------------------------------------------------
+// Return-type helpers
+// ---------------------------------------------------------------------------
+
+type FullFormState<
+  State extends Record<string, unknown>,
+  Addons extends readonly FormAddon<any>[],
+> = Prettify<State & MergeAddonStates<Addons>>;
+
+/** The array-specific properties added when `withArrayFields()` is passed. */
+type ArrayCompoundFormExtension<State extends Record<string, unknown>> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ArrayItem: <T extends ArrayOnlyFields<State>>(
+    props: FormArrayItemProps<T, ArrayOnly<State[T]>>,
+  ) => React.ReactElement;
+  useArrayField: <T extends ArrayOnlyFields<State>>(
+    field: T,
+    rules?: ValidationRule<State[T]>[],
+    itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[],
+  ) => {
+    value: State[T];
+    errors: ValidationError<State[T]>[];
+    items: ArrayItemProps<ArrayOnly<State[T]>[number]>[];
+    itemErrors: ArrayItemError<ArrayOnly<State[T]>[number]>[];
+    append: (value: ArrayOnly<State[T]>[number]) => void;
+    prepend: (value: ArrayOnly<State[T]>[number]) => void;
+    remove: (index: number) => void;
+    move: (from: number, to: number) => void;
+    update: (
+      index: number,
+      value:
+        | ArrayOnly<State[T]>[number]
+        | FieldUpdateCb<ArrayOnly<State[T]>[number]>,
+    ) => void;
+  };
+  useArrayFieldValidation: <T extends ArrayOnlyFields<State>>(
+    field: T,
+  ) => {
+    errors: ArrayItemError<ArrayOnly<State[T]>[number]>[];
+    status: ValidationStatus;
+  };
+};
+
+/** The full return type of `createForm` — base properties + optional array extension. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CreateFormReturn<
+  State extends Record<string, unknown>,
+  Addons extends readonly FormAddon<any>[],
+> = {
+  (
+    props: FormProps<
+      FullFormState<State, Addons>,
+      FormApi<FullFormState<State, Addons>>
+    >,
+  ): React.ReactElement;
+  formApi: FormApi<FullFormState<State, Addons>>;
+  Item: <T extends GetFields<FullFormState<State, Addons>>>(
+    props: FormItemProps<T, FullFormState<State, Addons>[T]>,
+  ) => React.ReactElement;
+  useWatch: {
+    <T extends GetFields<FullFormState<State, Addons>>>(
+      field: T,
+    ): FullFormState<State, Addons>[T];
+    <T extends GetFields<FullFormState<State, Addons>>>(
+      fields: T[],
+    ): Pick<FullFormState<State, Addons>, T>;
+  };
+  useField: <T extends GetFields<FullFormState<State, Addons>>>(
+    field: T,
+  ) => readonly [
+    FullFormState<State, Addons>[T],
+    (value: FieldUpdate<FullFormState<State, Addons>[T]>) => void,
+  ];
+  useFieldErrors: <T extends GetFields<FullFormState<State, Addons>>>(
+    field: T,
+  ) => {
+    errors: ValidationError<FullFormState<State, Addons>[T]>[];
+    status: ValidationStatus;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useChildForm: <T extends GetFields<FullFormState<State, Addons>>>(
+    field: T,
+    childForm: FormApi<any>,
+  ) => void;
+} & (HasArrayAddon<Addons> extends true
+  ? ArrayCompoundFormExtension<FullFormState<State, Addons>>
+  : Record<never, never>);
+
+// ---------------------------------------------------------------------------
+// createForm / useForm
+// ---------------------------------------------------------------------------
 
 export const useCreateForm = <State extends Record<string, unknown>>(
   initialState: State,
@@ -30,37 +129,28 @@ export const useCreateForm = <State extends Record<string, unknown>>(
   return [formApiRef.current] as const;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createForm = <
   State extends Record<string, unknown>,
-  Nested extends Record<string, CompoundFormLike> = Record<never, never>,
+  Addons extends FormAddon<any>[],
 >(
   initialState: State,
-  nestedForms?: Nested,
-) => {
-  type FullState = Prettify<
-    State & { [K in keyof Nested]: ExtractFormState<Nested[K]> }
-  >;
+  ...addons: [...Addons]
+): CreateFormReturn<State, Addons> => {
+  type FullState = FullFormState<State, Addons>;
 
   const resolvedInitial = { ...initialState } as Record<string, unknown>;
-
-  if (nestedForms) {
-    for (const [key, compoundForm] of Object.entries(nestedForms)) {
-      resolvedInitial[key] = compoundForm.formApi.getState();
-    }
+  for (const addon of addons) {
+    Object.assign(resolvedInitial, addon._addonState);
   }
 
   const form = new FormApi(resolvedInitial as FullState);
 
-  if (nestedForms) {
-    for (const [key, compoundForm] of Object.entries(nestedForms)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      form.addChildForm(key as any, compoundForm.formApi);
-    }
+  for (const addon of addons) {
+    addon._setup?.(form);
   }
 
   type Types = FormApiGenericTypes<typeof form>;
-
-  type ArrayFields = ArrayOnlyFields<Types["state"]>;
 
   const FormComponent = (
     props: FormProps<Types["state"], FormApi<Types["state"]>>,
@@ -69,10 +159,6 @@ export const createForm = <
   const FormItemComponent = <T extends Types["field"]>(
     props: FormItemProps<T, Types["state"][T]>,
   ) => <FormItem {...props} />;
-
-  const ArrayItemComponent = <T extends ArrayFields>(
-    props: FormArrayItemProps<T, ArrayOnly<Types["state"][T]>>,
-  ) => <FormArrayItem {...props} />;
 
   function useWatchHook<T extends Types["field"]>(field: T): Types["state"][T];
   function useWatchHook<T extends Types["field"]>(
@@ -89,15 +175,6 @@ export const createForm = <
   const useFieldErrorsHook = <T extends Types["field"]>(field: T) =>
     useFieldValidation(form, field);
 
-  const useArrayFieldHook = <T extends ArrayFields>(
-    field: T,
-    rules?: ValidationRule<Types["state"][T]>[],
-    itemRules?: ValidationRule<ArrayOnly<Types["state"][T]>[number]>[],
-  ) => useArrayField(form, field, rules, itemRules);
-
-  const useArrayFieldValidationHook = <T extends ArrayFields>(field: T) =>
-    useArrayFieldValidation(form, field);
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const useChildFormHook = <T extends Types["field"]>(
     field: T,
@@ -112,37 +189,53 @@ export const createForm = <
     Item: typeof FormItemComponent;
     useWatch: typeof useWatchHook;
     useField: typeof useFieldHook;
-    ArrayItem: typeof ArrayItemComponent;
     formApi: typeof form;
     useFieldErrors: typeof useFieldErrorsHook;
-    useArrayField: typeof useArrayFieldHook;
-    useArrayFieldValidation: typeof useArrayFieldValidationHook;
     useChildForm: typeof useChildFormHook;
   };
 
   CompoundForm.formApi = form;
   CompoundForm.Item = FormItemComponent;
-  CompoundForm.ArrayItem = ArrayItemComponent;
   CompoundForm.useWatch = useWatchHook;
   CompoundForm.useField = useFieldHook;
-  CompoundForm.useArrayField = useArrayFieldHook;
   CompoundForm.useFieldErrors = useFieldErrorsHook;
-  CompoundForm.useArrayFieldValidation = useArrayFieldValidationHook;
   CompoundForm.useChildForm = useChildFormHook;
 
-  return CompoundForm;
+  for (const addon of addons) {
+    addon._extend?.(CompoundForm, form);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return CompoundForm as unknown as CreateFormReturn<State, Addons>;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const useForm = <
   State extends Record<string, unknown>,
-  Nested extends Record<string, CompoundFormLike> = Record<never, never>,
+  Addons extends FormAddon<any>[],
 >(
   initialState: State,
-  nestedForms?: Nested,
-) => {
-  const ref = useRef(createForm(initialState, nestedForms));
+  ...addons: [...Addons]
+): CreateFormReturn<State, Addons> => {
+  // useRef captures the initial form instance; subsequent renders reuse it.
+  // We cast because TypeScript widens the inferred type when spreading ...addons
+  // into the inner createForm call, losing the tuple type of Addons.
+  const ref = useRef<CreateFormReturn<State, Addons>>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    null as any,
+  );
+  if (!ref.current) {
+    ref.current = createForm(
+      initialState,
+      ...addons,
+    ) as unknown as CreateFormReturn<State, Addons>;
+  }
   return ref.current;
 };
+
+// ---------------------------------------------------------------------------
+// Low-level hooks (exported for direct use with FormApi instances)
+// ---------------------------------------------------------------------------
 
 export function useWatch<
   Form extends FormApi<any>,
@@ -259,28 +352,3 @@ export const useFieldValidation = <
   return { errors, status };
 };
 
-export const useArrayFieldValidation = <
-  Form extends FormApi<any>,
-  Types extends FormApiGenericTypes<Form> = FormApiGenericTypes<Form>,
-  State extends Types["state"] = Types["state"],
-  Field extends ArrayOnlyFields<State> = ArrayOnlyFields<State>,
->(
-  form: Form,
-  field: Field,
-) => {
-  const [errors, setErrors] = useState(
-    [] as ArrayItemError<State[Field][number]>[],
-  );
-  const [status, setStatus] = useState<ValidationStatus>(() =>
-    form.getArrayItemErrors(field).length > 0 ? 'error' : 'notStarted',
-  );
-
-  useEffect(() => {
-    return form.onArrayItemError(field, (errors) => {
-      setErrors(errors);
-      setStatus(errors.length > 0 ? 'error' : 'success');
-    });
-  }, [field, form]);
-
-  return { errors, status };
-};

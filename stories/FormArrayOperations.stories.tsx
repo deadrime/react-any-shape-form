@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useForm } from "@/useForm";
 import { Form } from "@/Form";
+import { withArrayFields } from "@/addons/array";
 import "./stories.css";
 
 const meta: Meta<typeof Form> = {
@@ -10,9 +11,10 @@ const meta: Meta<typeof Form> = {
 export const ArrayOperationsExample: StoryObj<typeof Form> = {
   tags: ["!dev", "!autodocs"],
   render: () => {
-    const MyForm = useForm({
-      items: ["First", "Second", "Third"],
-    });
+    const MyForm = useForm(
+      { items: ["First", "Second", "Third"] },
+      withArrayFields(),
+    );
 
     const { append, prepend, remove, move } = MyForm.useArrayField("items");
 

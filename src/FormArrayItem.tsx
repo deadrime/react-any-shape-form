@@ -1,32 +1,12 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react"
 import FormItem, { FormItemProps } from "./FormItem"
 import { ArrayItemError, FieldUpdate, FieldUpdateCb, ValidationError, ValidationRule, ValidationStatus } from "./types"
+import type { FormArrayAPI } from "./types"
 import { useField, useFieldValidation } from "./useForm"
 import { FormApi } from "./FormApi"
 import { ArrayOnlyFields, FormApiGenericTypes } from "./typesHelpers"
 import { useFormInstance } from "./FormContext"
 import { useInitField } from "./helpers/useFieldData"
-
-export type ArrayItemProps<T> = {
-  value: T;
-  index: number;
-  onChange: (value: T) => void;
-  errors: ValidationError<T>[];
-  validationStatus: ValidationStatus;
-};
-
-type FormArrayAPI<T extends unknown[]> = {
-  value: T,
-  items: ArrayItemProps<T[number]>[],
-  append: (value: T[number]) => void,
-  remove: (index: number) => void,
-  update: (index: number, value: T[number] | FieldUpdateCb<T[number]>) => void,
-  move: (from: number, to: number) => void,
-  prepend: (value: T[number]) => void,
-  itemErrors: ArrayItemError<T[number]>[],
-  errors: ValidationError<T>[],
-  validationStatus: ValidationStatus | undefined,
-}
 
 export const useArrayField = <
   Form extends FormApi<any>,

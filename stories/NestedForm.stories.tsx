@@ -2,6 +2,7 @@
 import { Meta, StoryObj } from "@storybook/react-vite";
 import { createForm } from "../src";
 import { Form } from "../src/Form";
+import { withNestedForms } from "../src/addons/nestedForm";
 import "./stories.css";
 
 const meta: Meta<typeof Form> = {
@@ -27,7 +28,10 @@ export const NestedFormExample: StoryObj<typeof Form> = {
     // OrderForm embeds ContactForm as a nested form under the "contact" key.
     // On submit, the resulting state will be:
     // { orderId: "", contact: { firstName: "", lastName: "", email: "" } }
-    const OrderForm = createForm({ orderId: "" }, { contact: ContactForm });
+    const OrderForm = createForm(
+      { orderId: "" },
+      withNestedForms({ contact: ContactForm }),
+    );
 
     return (
       <OrderForm

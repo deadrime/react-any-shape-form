@@ -3,6 +3,7 @@ import { act, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createForm } from "../src/index";
 import { useArrayField } from "../src/FormArrayItem";
+import { withArrayFields } from "../src/addons/array";
 import React from "react";
 
 describe("Form.ArrayItem tests", () => {
@@ -11,9 +12,10 @@ describe("Form.ArrayItem tests", () => {
   });
 
   describe("Basic array operations", () => {
-    const MyForm = createForm({
-      value: [] as string[],
-    });
+    const MyForm = createForm(
+      { value: [] as string[] },
+      withArrayFields(),
+    );
 
     test("append adds item to the end", async () => {
       const { getByTestId } = render(
@@ -327,9 +329,10 @@ describe("Form.ArrayItem tests", () => {
   });
 
   describe("Array validation (whole array)", () => {
-    const MyForm = createForm({
-      tags: [] as string[],
-    });
+    const MyForm = createForm(
+      { tags: [] as string[] },
+      withArrayFields(),
+    );
 
     test("required array validation", async () => {
       const onErrorCb = vi.fn();
@@ -517,9 +520,10 @@ describe("Form.ArrayItem tests", () => {
   });
 
   describe("Array item validation (itemRules)", () => {
-    const MyForm = createForm({
-      emails: [] as string[],
-    });
+    const MyForm = createForm(
+      { emails: [] as string[] },
+      withArrayFields(),
+    );
 
     beforeEach(() => {
       MyForm.formApi.resetFields();
@@ -651,9 +655,10 @@ describe("Form.ArrayItem tests", () => {
     });
 
     test("itemRules with min/max length", async () => {
-      const MyForm = createForm({
-        tags: [] as string[],
-      });
+      const MyForm = createForm(
+        { tags: [] as string[] },
+        withArrayFields(),
+      );
 
       MyForm.formApi.setFieldValue("tags", ["ab", "valid-tag", "this-tag-is-way-too-long-to-be-valid"]);
 
@@ -749,9 +754,10 @@ describe("Form.ArrayItem tests", () => {
 
   describe("useArrayField hook", () => {
     test("useArrayField returns array operations", () => {
-      const MyForm = createForm({
-        value: [] as string[],
-      });
+      const MyForm = createForm(
+        { value: [] as string[] },
+        withArrayFields(),
+      );
 
       const { getByTestId } = render(
         <MyForm>
@@ -776,9 +782,10 @@ describe("Form.ArrayItem tests", () => {
     });
 
     test("useArrayField with validation rules", async () => {
-      const MyForm = createForm({
-        value: [] as string[],
-      });
+      const MyForm = createForm(
+        { value: [] as string[] },
+        withArrayFields(),
+      );
 
       const { getByTestId } = render(
         <MyForm>
@@ -824,9 +831,10 @@ describe("Form.ArrayItem tests", () => {
     });
 
     test("useArrayField with itemRules", async () => {
-      const MyForm = createForm({
-        emails: [] as string[],
-      });
+      const MyForm = createForm(
+        { emails: [] as string[] },
+        withArrayFields(),
+      );
 
       function TestUseArrayField({ form }: { form: typeof MyForm }) {
         // Use direct import to test itemRules parameter
@@ -878,9 +886,10 @@ describe("Form.ArrayItem tests", () => {
 
   describe("Integration tests", () => {
     test("both array and item validation work together", async () => {
-      const MyForm = createForm({
-        emails: [] as string[],
-      });
+      const MyForm = createForm(
+        { emails: [] as string[] },
+        withArrayFields(),
+      );
 
       MyForm.formApi.setFieldValue("emails", ["valid@test.com"]);
 
@@ -934,9 +943,10 @@ describe("Form.ArrayItem tests", () => {
     });
 
     test("form submission fails if array item validation fails", async () => {
-      const MyForm = createForm({
-        emails: [] as string[],
-      });
+      const MyForm = createForm(
+        { emails: [] as string[] },
+        withArrayFields(),
+      );
 
       MyForm.formApi.setFieldValue("emails", ["invalid-email"]);
       const onSubmit = vi.fn();
@@ -974,9 +984,10 @@ describe("Form.ArrayItem tests", () => {
     });
 
     test("removing item removes its validation errors", async () => {
-      const MyForm = createForm({
-        emails: [] as string[],
-      });
+      const MyForm = createForm(
+        { emails: [] as string[] },
+        withArrayFields(),
+      );
 
       MyForm.formApi.setFieldValue("emails", ["invalid1", "invalid2"]);
 

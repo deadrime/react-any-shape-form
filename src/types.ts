@@ -74,3 +74,36 @@ export type ArrayItemError<T = unknown> = {
 export type FieldUpdateCb<T> = (oldState: T) => Partial<T>;
 
 export type FieldUpdate<T> = FieldUpdateCb<T> | T
+
+// Moved from FormArrayItem.tsx — used by both FormArrayItem and the addon type system
+export type ArrayItemProps<T> = {
+  value: T;
+  index: number;
+  onChange: (value: T) => void;
+  errors: ValidationError<T>[];
+  validationStatus: ValidationStatus;
+};
+
+export type FormArrayAPI<T extends unknown[]> = {
+  value: T;
+  items: ArrayItemProps<T[number]>[];
+  append: (value: T[number]) => void;
+  remove: (index: number) => void;
+  update: (index: number, value: T[number] | FieldUpdateCb<T[number]>) => void;
+  move: (from: number, to: number) => void;
+  prepend: (value: T[number]) => void;
+  itemErrors: ArrayItemError<T[number]>[];
+  errors: ValidationError<T>[];
+  validationStatus: ValidationStatus | undefined;
+};
+
+// Addon system — each addon carries _addonState for type inference and optional lifecycle hooks
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type FormAddon<ExtraState extends Record<string, unknown> = Record<never, never>> = {
+  readonly _addonType: string;
+  readonly _addonState: ExtraState;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _setup?(formApi: any): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _extend?(compoundForm: any, formApi: any): void;
+};

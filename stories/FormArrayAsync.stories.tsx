@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useForm } from "@/useForm";
 import { Form } from "@/Form";
+import { withArrayFields } from "@/addons/array";
 import "./stories.css";
 
 const meta: Meta<typeof Form> = {
@@ -18,9 +19,10 @@ const checkUsernameAvailability = async (username: string): Promise<boolean> => 
 export const ArrayItemAsyncValidationExample: StoryObj<typeof Form> = {
   tags: ["!dev", "!autodocs"],
   render: () => {
-    const MyForm = useForm({
-      usernames: ["john", "admin"],
-    });
+    const MyForm = useForm(
+      { usernames: ["john", "admin"] },
+      withArrayFields(),
+    );
 
     const { append, remove } = MyForm.useArrayField("usernames");
 

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useForm } from "@/useForm";
 import { Form } from "@/Form";
+import { withArrayFields } from "@/addons/array";
 import "./stories.css";
 
 const meta: Meta<typeof Form> = {
@@ -10,9 +11,10 @@ const meta: Meta<typeof Form> = {
 export const ArrayItemValidationExample: StoryObj<typeof Form> = {
   tags: ["!dev", "!autodocs"],
   render: () => {
-    const MyForm = useForm({
-      emails: ["test@example.com", "invalid-email"],
-    });
+    const MyForm = useForm(
+      { emails: ["test@example.com", "invalid-email"] },
+      withArrayFields(),
+    );
 
     const { append, remove } = MyForm.useArrayField("emails");
 
@@ -78,9 +80,10 @@ export const ArrayItemValidationExample: StoryObj<typeof Form> = {
 export const ArrayWithOnChangeValidationExample: StoryObj<typeof Form> = {
   tags: ["!dev", "!autodocs"],
   render: () => {
-    const MyForm = useForm({
-      tags: ["react", "form"],
-    });
+    const MyForm = useForm(
+      { tags: ["react", "form"] },
+      withArrayFields(),
+    );
 
     const { append, remove } = MyForm.useArrayField("tags");
 

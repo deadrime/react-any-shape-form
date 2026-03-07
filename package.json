@@ -42,6 +42,14 @@
     "./array": {
       "import": "./dist/array.es.js",
       "types": "./dist/src/array.d.ts"
+    },
+    "./addons/array": {
+      "import": "./dist/addons/array.es.js",
+      "types": "./dist/src/addons/array.d.ts"
+    },
+    "./addons/nestedForm": {
+      "import": "./dist/addons/nestedForm.es.js",
+      "types": "./dist/src/addons/nestedForm.d.ts"
     }
   },
   "files": [

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useForm } from "@/useForm";
 import { Form } from "@/Form";
+import { withArrayFields } from "@/addons/array";
 
 const meta: Meta<typeof Form> = {
   component: Form,
@@ -9,9 +10,10 @@ const meta: Meta<typeof Form> = {
 export const ArrayExample: StoryObj<typeof Form> = {
   // tags: ["!dev", "!autodocs"],
   render: () => {
-    const MyForm = useForm({
-      tags: ["react", "form"],
-    });
+    const MyForm = useForm(
+      { tags: ["react", "form"] },
+      withArrayFields(),
+    );
 
     return (
       <MyForm onSubmit={(state) => {

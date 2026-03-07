@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import { FormApi } from "../src/FormApi";
 import { ValidationRule } from "../src";
 import { createForm } from "../src/useForm";
+import { withNestedForms } from "../src/addons/nestedForm";
 
 describe("test FormApi", () => {
   const defaultState = {
@@ -582,10 +583,13 @@ describe("test FormApi", () => {
     });
   });
 
-  describe("createForm with nested forms via nestedForms parameter", () => {
+  describe("createForm with nested forms via withNestedForms addon", () => {
     test("auto-registers child forms and merges state", async () => {
       const AddressForm = createForm({ city: "NY", zip: "10001" });
-      const ParentForm = createForm({ name: "John" }, { address: AddressForm });
+      const ParentForm = createForm(
+        { name: "John" },
+        withNestedForms({ address: AddressForm }),
+      );
 
       const state = ParentForm.formApi.getState();
       expect(state).toEqual({
@@ -601,14 +605,20 @@ describe("test FormApi", () => {
       ]);
       AddressForm.formApi.setFieldVisible("city", true);
 
-      const ParentForm = createForm({ name: "John" }, { address: AddressForm });
+      const ParentForm = createForm(
+        { name: "John" },
+        withNestedForms({ address: AddressForm }),
+      );
 
       await expect(ParentForm.formApi.submit()).rejects.toBeDefined();
     });
 
     test("submit returns merged state from nested createForm", async () => {
       const AddressForm = createForm({ city: "NY", zip: "10001" });
-      const ParentForm = createForm({ name: "John" }, { address: AddressForm });
+      const ParentForm = createForm(
+        { name: "John" },
+        withNestedForms({ address: AddressForm }),
+      );
 
       const onSubmit = vi.fn();
       ParentForm.formApi.onSubmit(onSubmit);
@@ -621,7 +631,10 @@ describe("test FormApi", () => {
 
     test("type inference resolves nested form state", () => {
       const AddressForm = createForm({ city: "", zip: "" });
-      const ParentForm = createForm({ name: "" }, { address: AddressForm });
+      const ParentForm = createForm(
+        { name: "" },
+        withNestedForms({ address: AddressForm }),
+      );
 
       type State = ReturnType<typeof ParentForm.formApi.getState>;
       expectTypeOf<State>().toEqualTypeOf<{

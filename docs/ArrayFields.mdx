@@ -15,9 +15,23 @@ import { Meta, Canvas, Story, Source } from '@storybook/addon-docs/blocks';
 
 React Any Shape Form provides powerful support for dynamic array fields, enabling you to build complex forms with repeating sections, lists, and dynamic collections.
 
+Array field support is an **optional addon** — import `withArrayFields` only when you need it, keeping the core bundle lean.
+
+## Setup
+
+```tsx
+import { useForm } from 'react-any-shape-form';
+import { withArrayFields } from 'react-any-shape-form/addons/array';
+
+const MyForm = useForm(
+  { tags: [] as string[] },
+  withArrayFields(),
+);
+```
+
 ## Overview
 
-Array fields in this library support:
+Array fields support:
 - **Dynamic add/remove** - Users can add and remove items at runtime
 - **Full array operations** - append, prepend, remove, update, move
 - **Type safety** - Full TypeScript support for array elements
@@ -28,17 +42,21 @@ Array fields in this library support:
 
 ### Using Form.ArrayItem
 
-The `Form.ArrayItem` component provides a declarative way to work with arrays:
+The `Form.ArrayItem` component provides a declarative way to work with arrays.
+The render prop receives the full array API:
 
 ```tsx
-const MyForm = useForm({
-  tags: [] as string[]
-});
+import { withArrayFields } from 'react-any-shape-form/addons/array';
+
+const MyForm = useForm(
+  { tags: [] as string[] },
+  withArrayFields(),
+);
 
 <MyForm.ArrayItem name="tags">
-  {({ fields, append, remove, update }) => (
+  {({ value, append, remove, update }) => (
     <div>
-      {fields.map((tag, index) => (
+      {value.map((tag, index) => (
         <div key={index}>
           <input
             value={tag}
@@ -56,19 +74,22 @@ const MyForm = useForm({
 
 ### Using useArrayField Hook
 
-For more flexibility, use the `useArrayField` hook:
+For more flexibility, use the `useArrayField` hook directly:
 
 ```tsx
-const MyForm = useForm({
-  emails: [] as string[]
-});
+import { withArrayFields } from 'react-any-shape-form/addons/array';
+
+const MyForm = useForm(
+  { emails: [] as string[] },
+  withArrayFields(),
+);
 
 function EmailList() {
-  const { fields, append, remove, update } = MyForm.useArrayField("emails");
+  const { value, append, remove, update } = MyForm.useArrayField("emails");
 
   return (
     <div>
-      {fields.map((email, index) => (
+      {value.map((email, index) => (
         <div key={index}>
           <input
             value={email}
@@ -91,6 +112,8 @@ function EmailList() {
 Add an item to the end of the array:
 
 ```tsx
+const { append } = MyForm.useArrayField("items");
+
 // Simple values
 append("");
 append(0);
@@ -100,7 +123,6 @@ append(true);
 append({ name: "", email: "" });
 
 // With default values
-const { append } = MyForm.useArrayField("items");
 <button onClick={() => append({ name: "New Item", quantity: 1 })}>
   Add Item
 </button>
@@ -116,7 +138,7 @@ const { prepend } = MyForm.useArrayField("notifications");
 prepend({
   id: Date.now(),
   message: "New notification",
-  read: false
+  read: false,
 });
 ```
 
@@ -125,7 +147,7 @@ prepend({
 Remove an item by index:
 
 ```tsx
-const { fields, remove } = MyForm.useArrayField("items");
+const { value, remove } = MyForm.useArrayField("items");
 
 // Remove specific item
 <button onClick={() => remove(index)}>Delete</button>
@@ -134,29 +156,26 @@ const { fields, remove } = MyForm.useArrayField("items");
 <button onClick={() => remove(0)}>Delete First</button>
 
 // Remove last item
-<button onClick={() => remove(fields.length - 1)}>Delete Last</button>
+<button onClick={() => remove(value.length - 1)}>Delete Last</button>
 ```
 
 ### update
 
-Update an item by index:
+Update an item by index. Accepts a new value or an updater function:
 
 ```tsx
-const { fields, update } = MyForm.useArrayField("todos");
+const { value, update } = MyForm.useArrayField("todos");
 
 // Update string value
 <input
-  value={fields[index]}
+  value={value[index]}
   onChange={(e) => update(index, e.target.value)}
 />
 
-// Update object property
+// Update object property via updater function
 <input
-  value={fields[index].title}
-  onChange={(e) => update(index, {
-    ...fields[index],
-    title: e.target.value
-  })}
+  value={value[index].title}
+  onChange={(e) => update(index, (prev) => ({ ...prev, title: e.target.value }))}
 />
 ```
 
@@ -165,7 +184,7 @@ const { fields, update } = MyForm.useArrayField("todos");
 Move an item from one index to another:
 
 ```tsx
-const { fields, move } = MyForm.useArrayField("items");
+const { value, move } = MyForm.useArrayField("items");
 
 // Move item up
 <button onClick={() => move(index, index - 1)} disabled={index === 0}>
@@ -173,18 +192,13 @@ const { fields, move } = MyForm.useArrayField("items");
 </button>
 
 // Move item down
-<button onClick={() => move(index, index + 1)} disabled={index === fields.length - 1}>
+<button onClick={() => move(index, index + 1)} disabled={index === value.length - 1}>
   Move Down
 </button>
 
 // Move to top
 <button onClick={() => move(index, 0)}>
   Move to Top
-</button>
-
-// Move to bottom
-<button onClick={() => move(index, fields.length - 1)}>
-  Move to Bottom
 </button>
 ```
 
@@ -193,16 +207,17 @@ const { fields, move } = MyForm.useArrayField("items");
 ### String Arrays
 
 ```tsx
-const MyForm = useForm({
-  tags: [] as string[]
-});
+const MyForm = useForm(
+  { tags: [] as string[] },
+  withArrayFields(),
+);
 
 function TagInput() {
-  const { fields, append, remove, update } = MyForm.useArrayField("tags");
+  const { value, append, remove, update } = MyForm.useArrayField("tags");
 
   return (
     <div>
-      {fields.map((tag, index) => (
+      {value.map((tag, index) => (
         <div key={index}>
           <input
             value={tag}
@@ -220,16 +235,17 @@ function TagInput() {
 ### Number Arrays
 
 ```tsx
-const MyForm = useForm({
-  scores: [] as number[]
-});
+const MyForm = useForm(
+  { scores: [] as number[] },
+  withArrayFields(),
+);
 
 function ScoreList() {
-  const { fields, append, remove, update } = MyForm.useArrayField("scores");
+  const { value, append, remove, update } = MyForm.useArrayField("scores");
 
   return (
     <div>
-      {fields.map((score, index) => (
+      {value.map((score, index) => (
         <div key={index}>
           <input
             type="number"
@@ -254,41 +270,33 @@ interface Contact {
   phone: string;
 }
 
-const MyForm = useForm({
-  contacts: [] as Contact[]
-});
+const MyForm = useForm(
+  { contacts: [] as Contact[] },
+  withArrayFields(),
+);
 
 function ContactList() {
-  const { fields, append, remove, update } = MyForm.useArrayField("contacts");
+  const { value, append, remove, update } = MyForm.useArrayField("contacts");
 
   return (
     <div>
-      {fields.map((contact, index) => (
+      {value.map((contact, index) => (
         <div key={index} className="contact-card">
           <input
             placeholder="Name"
             value={contact.name}
-            onChange={(e) => update(index, {
-              ...contact,
-              name: e.target.value
-            })}
+            onChange={(e) => update(index, (prev) => ({ ...prev, name: e.target.value }))}
           />
           <input
             placeholder="Email"
             type="email"
             value={contact.email}
-            onChange={(e) => update(index, {
-              ...contact,
-              email: e.target.value
-            })}
+            onChange={(e) => update(index, (prev) => ({ ...prev, email: e.target.value }))}
           />
           <input
             placeholder="Phone"
             value={contact.phone}
-            onChange={(e) => update(index, {
-              ...contact,
-              phone: e.target.value
-            })}
+            onChange={(e) => update(index, (prev) => ({ ...prev, phone: e.target.value }))}
           />
           <button onClick={() => remove(index)}>Delete Contact</button>
         </div>
@@ -309,12 +317,13 @@ interface TodoList {
   items: string[];
 }
 
-const MyForm = useForm({
-  todoLists: [] as TodoList[]
-});
+const MyForm = useForm(
+  { todoLists: [] as TodoList[] },
+  withArrayFields(),
+);
 
 function NestedTodoLists() {
-  const { fields: lists, append: appendList, update: updateList } =
+  const { value: lists, append: appendList, update: updateList } =
     MyForm.useArrayField("todoLists");
 
   return (
@@ -329,19 +338,16 @@ function NestedTodoLists() {
                 onChange={(e) => {
                   const newItems = [...list.items];
                   newItems[itemIndex] = e.target.value;
-                  updateList(listIndex, {
-                    ...list,
-                    items: newItems
-                  });
+                  updateList(listIndex, (prev) => ({ ...prev, items: newItems }));
                 }}
               />
             </div>
           ))}
           <button onClick={() => {
-            updateList(listIndex, {
-              ...list,
-              items: [...list.items, ""]
-            });
+            updateList(listIndex, (prev) => ({
+              ...prev,
+              items: [...prev.items, ""],
+            }));
           }}>
             Add Item to List
           </button>
@@ -367,10 +373,10 @@ Validate the array as a whole (length, required, etc.):
   rules={[
     { required: true, message: "At least one email is required" },
     { type: "array", min: 1, message: "Add at least one email" },
-    { type: "array", max: 5, message: "Maximum 5 emails allowed" }
+    { type: "array", max: 5, message: "Maximum 5 emails allowed" },
   ]}
 >
-  {({ fields, append, remove }) => (
+  {({ value, append, remove }) => (
     // render fields
   )}
 </MyForm.ArrayItem>
@@ -378,7 +384,7 @@ Validate the array as a whole (length, required, etc.):
 
 ### Item-Level Validation
 
-Validate each array element individually:
+Validate each array element individually. Use the `items` prop (instead of `value`) to get per-item error and validation status:
 
 ```tsx
 <MyForm.ArrayItem
@@ -386,29 +392,24 @@ Validate each array element individually:
   itemRules={[
     { required: true, message: "Email is required" },
     { type: "email", message: "Invalid email format" },
-    { min: 5, message: "Minimum 5 characters" }
   ]}
 >
-  {({ fields, update, itemErrors }) => (
+  {({ items, itemErrors }) => (
     <div>
-      {fields.map((email, index) => {
-        const itemError = itemErrors.find(e => e.index === index);
-
-        return (
-          <div key={index}>
-            <input
-              value={email}
-              onChange={(e) => update(index, e.target.value)}
-              className={itemError ? 'error' : ''}
-            />
-            {itemError && (
-              <span className="error">
-                {itemError.errors.map(e => e.errorText).join(', ')}
-              </span>
-            )}
-          </div>
-        );
-      })}
+      {items.map(({ value: email, index, onChange, errors, validationStatus }) => (
+        <div key={index}>
+          <input
+            value={email}
+            onChange={(e) => onChange(e.target.value)}
+            className={errors.length > 0 ? 'error' : ''}
+          />
+          {errors.length > 0 && (
+            <span className="error">
+              {errors.map(e => e.errorText).join(', ')}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   )}
 </MyForm.ArrayItem>
@@ -416,21 +417,20 @@ Validate each array element individually:
 
 ### Combined Validation
 
-Use both array-level and item-level validation:
+Pass array-level and item-level rules to `useArrayField`:
 
 ```tsx
-const { fields, append, remove, update, itemErrors } = MyForm.useArrayField(
+const { value, append, remove, update, itemErrors } = MyForm.useArrayField(
   "tags",
-  // Array-level rules
+  // Array-level rules (second argument)
   [
-    { type: "array", min: 1, max: 10, message: "Between 1 and 10 tags" }
+    { type: "array", min: 1, max: 10, message: "Between 1 and 10 tags" },
   ],
-  // Item-level rules
+  // Item-level rules (third argument)
   [
     { required: true, message: "Tag cannot be empty" },
     { type: "string", min: 2, max: 20, message: "Tag must be 2-20 characters" },
-    { pattern: /^[a-zA-Z0-9-]+$/, message: "Only alphanumeric and dashes" }
-  ]
+  ],
 );
 ```
 
@@ -447,43 +447,36 @@ interface Todo {
   completed: boolean;
 }
 
-const MyForm = useForm({
-  todos: [] as Todo[]
-});
+const MyForm = useForm(
+  { todos: [] as Todo[] },
+  withArrayFields(),
+);
 
 function TodoList() {
-  const { fields, append, update, remove } = MyForm.useArrayField("todos");
+  const { value, append, update, remove } = MyForm.useArrayField("todos");
 
   return (
     <div>
-      {fields.map((todo, index) => (
+      {value.map((todo, index) => (
         <div key={todo.id}>
           <input
             type="checkbox"
             checked={todo.completed}
-            onChange={(e) => update(index, {
-              ...todo,
-              completed: e.target.checked
-            })}
+            onChange={(e) =>
+              update(index, (prev) => ({ ...prev, completed: e.target.checked }))
+            }
           />
           <input
             value={todo.text}
-            onChange={(e) => update(index, {
-              ...todo,
-              text: e.target.value
-            })}
-            style={{
-              textDecoration: todo.completed ? 'line-through' : 'none'
-            }}
+            onChange={(e) =>
+              update(index, (prev) => ({ ...prev, text: e.target.value }))
+            }
+            style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
           />
           <button onClick={() => remove(index)}>Delete</button>
         </div>
       ))}
-      <button onClick={() => append({
-        id: Date.now(),
-        text: "",
-        completed: false
-      })}>
+      <button onClick={() => append({ id: Date.now(), text: "", completed: false })}>
         Add Todo
       </button>
     </div>
@@ -494,12 +487,13 @@ function TodoList() {
 ### Tag Input with Enter Key
 
 ```tsx
-const MyForm = useForm({
-  tags: [] as string[]
-});
+const MyForm = useForm(
+  { tags: [] as string[] },
+  withArrayFields(),
+);
 
 function TagInput() {
-  const { fields, append, remove } = MyForm.useArrayField("tags");
+  const { value, append, remove } = MyForm.useArrayField("tags");
   const [inputValue, setInputValue] = useState("");
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -513,7 +507,7 @@ function TagInput() {
   return (
     <div>
       <div className="tags">
-        {fields.map((tag, index) => (
+        {value.map((tag, index) => (
           <span key={index} className="tag">
             {tag}
             <button onClick={() => remove(index)}>×</button>
@@ -534,17 +528,14 @@ function TagInput() {
 ### Sortable List with Drag and Drop
 
 ```tsx
-const MyForm = useForm({
-  items: ["Item 1", "Item 2", "Item 3"]
-});
+const MyForm = useForm(
+  { items: ["Item 1", "Item 2", "Item 3"] },
+  withArrayFields(),
+);
 
 function SortableList() {
-  const { fields, move } = MyForm.useArrayField("items");
+  const { value, move } = MyForm.useArrayField("items");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
@@ -556,82 +547,17 @@ function SortableList() {
 
   return (
     <div>
-      {fields.map((item, index) => (
+      {value.map((item, index) => (
         <div
           key={index}
           draggable
-          onDragStart={() => handleDragStart(index)}
+          onDragStart={() => setDraggedIndex(index)}
           onDragOver={(e) => handleDragOver(e, index)}
           className="draggable-item"
         >
           {item}
         </div>
       ))}
-    </div>
-  );
-}
-```
-
-### Dynamic Form Builder
-
-```tsx
-interface FormField {
-  name: string;
-  type: "text" | "number" | "email";
-  required: boolean;
-}
-
-const MyForm = useForm({
-  fields: [] as FormField[]
-});
-
-function FormBuilder() {
-  const { fields, append, remove, update } = MyForm.useArrayField("fields");
-
-  return (
-    <div>
-      {fields.map((field, index) => (
-        <div key={index} className="field-builder">
-          <input
-            placeholder="Field Name"
-            value={field.name}
-            onChange={(e) => update(index, {
-              ...field,
-              name: e.target.value
-            })}
-          />
-          <select
-            value={field.type}
-            onChange={(e) => update(index, {
-              ...field,
-              type: e.target.value as FormField['type']
-            })}
-          >
-            <option value="text">Text</option>
-            <option value="number">Number</option>
-            <option value="email">Email</option>
-          </select>
-          <label>
-            <input
-              type="checkbox"
-              checked={field.required}
-              onChange={(e) => update(index, {
-                ...field,
-                required: e.target.checked
-              })}
-            />
-            Required
-          </label>
-          <button onClick={() => remove(index)}>Remove Field</button>
-        </div>
-      ))}
-      <button onClick={() => append({
-        name: "",
-        type: "text",
-        required: false
-      })}>
-        Add Field
-      </button>
     </div>
   );
 }
@@ -647,18 +573,19 @@ interface CartItem {
   quantity: number;
 }
 
-const MyForm = useForm({
-  cart: [] as CartItem[]
-});
+const MyForm = useForm(
+  { cart: [] as CartItem[] },
+  withArrayFields(),
+);
 
 function ShoppingCart() {
-  const { fields, update, remove } = MyForm.useArrayField("cart");
+  const { value, update, remove } = MyForm.useArrayField("cart");
 
-  const total = fields.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = value.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <div>
-      {fields.map((item, index) => (
+      {value.map((item, index) => (
         <div key={item.id} className="cart-item">
           <div>{item.name}</div>
           <div>\${item.price.toFixed(2)}</div>
@@ -666,18 +593,15 @@ function ShoppingCart() {
             type="number"
             min="1"
             value={item.quantity}
-            onChange={(e) => update(index, {
-              ...item,
-              quantity: Number(e.target.value)
-            })}
+            onChange={(e) =>
+              update(index, (prev) => ({ ...prev, quantity: Number(e.target.value) }))
+            }
           />
           <div>\${(item.price * item.quantity).toFixed(2)}</div>
           <button onClick={() => remove(index)}>Remove</button>
         </div>
       ))}
-      <div className="total">
-        Total: \${total.toFixed(2)}
-      </div>
+      <div className="total">Total: \${total.toFixed(2)}</div>
     </div>
   );
 }
@@ -690,57 +614,55 @@ function ShoppingCart() {
 Always use stable keys for array items. If your items don't have IDs, add them:
 
 ```tsx
-// ✗ Bad - using index as key causes issues when reordering
-{fields.map((item, index) => (
+// ✗ Bad — index as key causes issues when reordering
+{value.map((item, index) => (
   <div key={index}>{item}</div>
 ))}
 
-// ✓ Good - using stable ID
+// ✓ Good — stable ID from the item itself
 interface Item {
   id: string;
   value: string;
 }
 
-const { fields } = MyForm.useArrayField("items");
+const { value } = MyForm.useArrayField("items");
 
-{fields.map((item) => (
+{value.map((item) => (
   <div key={item.id}>{item.value}</div>
 ))}
 ```
 
-### Memoize Expensive Operations
+### Memoize Array Item Components
 
-Use React.memo for array item components:
+Use `React.memo` for array item components to avoid unnecessary re-renders:
 
 ```tsx
 const TodoItem = React.memo(({
   todo,
   index,
   onUpdate,
-  onRemove
+  onRemove,
 }: {
   todo: Todo;
   index: number;
-  onUpdate: (index: number, todo: Todo) => void;
+  onUpdate: (index: number, updater: (prev: Todo) => Todo) => void;
   onRemove: (index: number) => void;
-}) => {
-  return (
-    <div>
-      <input
-        value={todo.text}
-        onChange={(e) => onUpdate(index, { ...todo, text: e.target.value })}
-      />
-      <button onClick={() => onRemove(index)}>Delete</button>
-    </div>
-  );
-});
+}) => (
+  <div>
+    <input
+      value={todo.text}
+      onChange={(e) => onUpdate(index, (prev) => ({ ...prev, text: e.target.value }))}
+    />
+    <button onClick={() => onRemove(index)}>Delete</button>
+  </div>
+));
 
 function TodoList() {
-  const { fields, update, remove } = MyForm.useArrayField("todos");
+  const { value, update, remove } = MyForm.useArrayField("todos");
 
   return (
     <div>
-      {fields.map((todo, index) => (
+      {value.map((todo, index) => (
         <TodoItem
           key={todo.id}
           todo={todo}
@@ -759,29 +681,36 @@ function TodoList() {
 The library provides full TypeScript support for array fields:
 
 ```tsx
-const MyForm = useForm({
-  strings: [] as string[],
-  numbers: [] as number[],
-  objects: [] as { name: string; age: number }[]
-});
+const MyForm = useForm(
+  {
+    strings: [] as string[],
+    numbers: [] as number[],
+    objects: [] as { name: string; age: number }[],
+  },
+  withArrayFields(),
+);
 
 // TypeScript knows the element types
-const { fields: strings } = MyForm.useArrayField("strings");
+const { value: strings } = MyForm.useArrayField("strings");
 // strings: string[]
 
-const { fields: numbers } = MyForm.useArrayField("numbers");
+const { value: numbers } = MyForm.useArrayField("numbers");
 // numbers: number[]
 
-const { fields: objects } = MyForm.useArrayField("objects");
+const { value: objects } = MyForm.useArrayField("objects");
 // objects: { name: string; age: number }[]
 
-// Only array fields are allowed
-const { fields } = MyForm.useArrayField("nonArrayField"); // TypeScript error!
+// Only array fields are allowed — TypeScript error for non-array fields:
+const { value } = MyForm.useArrayField("nonArrayField"); // TS error!
+
+// Without withArrayFields(), ArrayItem and useArrayField don't exist on the type:
+const BasicForm = useForm({ name: "" });
+BasicForm.ArrayItem; // TS error — Property 'ArrayItem' does not exist
 ```
 
 ## FormApi Methods
 
-Access array fields programmatically:
+Access array fields programmatically (no addon required — these are on `FormApi` directly):
 
 ```tsx
 // Get array field value
@@ -791,12 +720,8 @@ const tags = MyForm.formApi.getFieldValue("tags");
 MyForm.formApi.setFieldValue("tags", ["tag1", "tag2", "tag3"]);
 
 // Append to array
-const currentTags = MyForm.formApi.getFieldValue("tags");
-MyForm.formApi.setFieldValue("tags", [...currentTags, "newTag"]);
-
-// Remove from array
-const currentTags = MyForm.formApi.getFieldValue("tags");
-MyForm.formApi.setFieldValue("tags", currentTags.filter((_, i) => i !== indexToRemove));
+const current = MyForm.formApi.getFieldValue("tags");
+MyForm.formApi.setFieldValue("tags", [...current, "newTag"]);
 
 // Validate array
 await MyForm.formApi.validateFields(["tags"]);
@@ -806,13 +731,13 @@ await MyForm.formApi.validateFields(["tags"]);
 
 ### 1. Provide Default Values
 
-Always append with proper default values:
+Always append with complete default values:
 
 ```tsx
 // ✓ Good
 append({ name: "", email: "", phone: "" });
 
-// ✗ Bad - incomplete object
+// ✗ Bad — incomplete object
 append({ name: "" }); // Missing email and phone
 ```
 
@@ -821,10 +746,10 @@ append({ name: "" }); // Missing email and phone
 Always validate array inputs, especially for user-generated content:
 
 ```tsx
-const { fields, itemErrors } = MyForm.useArrayField(
+const { value, itemErrors } = MyForm.useArrayField(
   "emails",
   [{ type: "array", min: 1, message: "Add at least one email" }],
-  [{ type: "email", message: "Invalid email" }]
+  [{ type: "email", message: "Invalid email" }],
 );
 ```
 
@@ -833,12 +758,12 @@ const { fields, itemErrors } = MyForm.useArrayField(
 Show helpful messages when arrays are empty:
 
 ```tsx
-{fields.length === 0 ? (
+{value.length === 0 ? (
   <div className="empty-state">
     <p>No items yet. Click "Add Item" to get started.</p>
   </div>
 ) : (
-  fields.map((item, index) => (
+  value.map((item, index) => (
     // render item
   ))
 )}
@@ -865,9 +790,9 @@ const MAX_ITEMS = 10;
 
 <button
   onClick={() => append("")}
-  disabled={fields.length >= MAX_ITEMS}
+  disabled={value.length >= MAX_ITEMS}
 >
-  Add Item {fields.length >= MAX_ITEMS && "(Maximum reached)"}
+  Add Item {value.length >= MAX_ITEMS && "(Maximum reached)"}
 </button>
 ```
 

@@ -1,4 +1,5 @@
 import { FormApi } from "./FormApi";
+import { FormAddon } from "./types";
 
 export type FormApiGenericTypes<T> =
   T extends FormApi<infer S, infer F>
@@ -55,3 +56,21 @@ export type Prettify<T> = {
   [K in keyof T]: T[K];
   // eslint-disable-next-line @typescript-eslint/ban-types
 } & {};
+
+// Addon type utilities
+
+type ExtractAddonState<A> = A extends FormAddon<infer E> ? E : Record<never, never>;
+
+/** Merges the ExtraState of all addons in the tuple into a single object type. */
+export type MergeAddonStates<Addons extends readonly unknown[]> =
+  Addons extends readonly [infer Head, ...infer Tail]
+    ? ExtractAddonState<Head> & MergeAddonStates<Tail>
+    : Record<never, never>;
+
+/** Returns `true` if any addon in the tuple has `_addonType === 'array'`. */
+export type HasArrayAddon<Addons extends readonly unknown[]> =
+  Addons extends readonly [infer Head, ...infer Tail]
+    ? Head extends { readonly _addonType: 'array' }
+      ? true
+      : HasArrayAddon<Tail>
+    : false;
