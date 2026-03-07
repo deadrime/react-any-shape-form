@@ -1,12 +1,18 @@
-import './styles.css';
+import "./styles.css";
+import "prismjs/themes/prism-tomorrow.css";
 import { type Preview } from "@storybook/react-vite";
-import prettier from 'prettier/standalone';
-import parserBabel from 'prettier/plugins/babel';
-import parserTypescript from 'prettier/plugins/typescript';
-import estreePlugin from 'prettier/plugins/estree';
+import prettier from "prettier/standalone";
+import parserBabel from "prettier/plugins/babel";
+import parserTypescript from "prettier/plugins/typescript";
+import estreePlugin from "prettier/plugins/estree";
 
 const preview: Preview = {
   parameters: {
+    options: {
+      storySort: {
+        order: ["Welcome", "Documentation/Basics", "*"],
+      },
+    },
     controls: {
       expanded: true,
       matchers: {
@@ -36,7 +42,7 @@ const Example = () => {
             parser: "babel-ts",
             plugins: [parserBabel, parserTypescript, estreePlugin],
           });
-        }
+        },
       },
     },
   },
@@ -56,7 +62,7 @@ function extractRenderBody(src: string): string | null {
     const obj = ast.program.body[0].expression;
 
     const renderProp = obj.properties.find(
-      (p: any) => p.key?.name === "render"
+      (p: any) => p.key?.name === "render",
     );
 
     if (!renderProp) return null;

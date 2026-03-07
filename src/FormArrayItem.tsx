@@ -1,6 +1,6 @@
-import React, { memo, useCallback } from "react"
+import React, { memo, useCallback, useEffect, useState } from "react"
 import FormItem, { FormItemProps } from "./FormItem"
-import { FieldUpdate, FieldUpdateCb, ValidationRule } from "./types"
+import { ArrayItemError, FieldUpdate, FieldUpdateCb, ValidationError, ValidationRule, ValidationStatus } from "./types"
 import { useField } from "./useForm"
 import { FormApi } from "./FormApi"
 import { ArrayOnlyFields, FormApiGenericTypes } from "./typesHelpers"
@@ -14,6 +14,9 @@ type FormArrayAPI<T extends unknown[]> = {
   update: (index: number, value: T[number] | FieldUpdateCb<T[number]>) => void,
   move: (from: number, to: number) => void,
   prepend: (value: T[number]) => void,
+  itemErrors: ArrayItemError<T[number]>[],
+  errors: ValidationError<T>[],
+  validationStatus: ValidationStatus | undefined,
 }
 
 export const useArrayField = <
@@ -21,9 +24,25 @@ export const useArrayField = <
   Types extends FormApiGenericTypes<Form> = FormApiGenericTypes<Form>,
   State extends Types['state'] = Types['state'],
   Field extends ArrayOnlyFields<State> = ArrayOnlyFields<State>,
->(form: Form, field: Field, rules?: ValidationRule<State[Field]>[]) => {
+>(form: Form, field: Field, rules?: ValidationRule<State[Field]>[], itemRules?: ValidationRule<State[Field][number]>[]) => {
   const [value, setValue] = useField(form, field);
+  const [itemErrors, setItemErrors] = useState<ArrayItemError<State[Field][number]>[]>([]);
   useInitField(form, field, rules);
+
+  // Set array item validation rules
+  useEffect(() => {
+    if (itemRules) {
+      form.setArrayItemRules(field, itemRules);
+    }
+  }, [form, field, itemRules]);
+
+  // Subscribe to array item errors
+  useEffect(() => {
+    const unsubscribe = form.onArrayItemError(field, (errors) => {
+      setItemErrors(errors);
+    });
+    return unsubscribe;
+  }, [form, field]);
 
   const append = useCallback((value: State[Field][number]) => {
     setValue?.(fields => fields.concat(value))
@@ -43,8 +62,9 @@ export const useArrayField = <
 
   const move = useCallback((from: number, to: number) => {
     setValue?.(fields => {
-      fields.splice(to, 0, fields.splice(from, 1)[0]);
-      return fields
+      const movedItem = fields[from];
+      const withoutItem = fields.toSpliced(from, 1);
+      return withoutItem.toSpliced(to, 0, movedItem);
     });
   }, [setValue])
 
@@ -54,7 +74,8 @@ export const useArrayField = <
     prepend,
     remove,
     move,
-    update
+    update,
+    itemErrors
   }
 }
 
@@ -62,14 +83,15 @@ export type FormArrayItemProps<FieldName extends string = string, Value extends 
   children: (props: FormArrayAPI<Value>) => React.ReactElement
   value?: Value
   onChange?: (value: FieldUpdate<Value>, event?: unknown) => unknown
+  itemRules?: ValidationRule<Value[number]>[]
 }
 
-const FormArrayItem = <FieldName extends string = string, Value extends unknown[] = unknown[]>({ children, ...props }: FormArrayItemProps<FieldName, Value>) => {
+const FormArrayItem = <FieldName extends string = string, Value extends unknown[] = unknown[]>({ children, itemRules, ...props }: FormArrayItemProps<FieldName, Value>) => {
   const form = useFormInstance();
-  const formArray = useArrayField(form, props.name);
+  const formArray = useArrayField(form, props.name, props.rules, itemRules);
 
   return <FormItem {...props}>
-    {() => children(formArray)}
+    {({ errors, validationStatus }) => children({ ...formArray, errors: errors as ValidationError<Value>[], validationStatus })}
   </FormItem>
 }
 

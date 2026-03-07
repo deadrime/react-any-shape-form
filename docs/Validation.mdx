@@ -1,0 +1,674 @@
+import { Meta, Canvas, Story, Source } from '@storybook/addon-docs/blocks';
+
+
+<Meta
+  title="Documentation/Validation"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# Validation
+
+React Any Shape Form provides a powerful, promise-based validation system that supports both built-in rules and custom async validators.
+
+## Overview
+
+Validation in this library is:
+- **Promise-based** - All validators return promises, enabling async validation
+- **Type-safe** - Full TypeScript support with type inference
+- **Flexible** - Built-in rules for common cases, custom validators for complex logic
+- **Trigger-based** - Control when validation runs (onChange, onFinish)
+- **Per-field** - Each field tracks its own validation state independently
+
+## Built-in Validation Rules
+
+The library includes common validators out of the box:
+
+### Required
+
+Ensures a field has a value:
+
+```tsx
+<MyForm.Item
+  name="username"
+  rules={[
+    { required: true, message: "Username is required" }
+  ]}
+>
+  {({ value, onChange, errors }) => (
+    <input value={value} onChange={(e) => onChange(e.target.value)} />
+  )}
+</MyForm.Item>
+```
+
+### String Length
+
+Validate minimum and maximum string length:
+
+```tsx
+<MyForm.Item
+  name="password"
+  rules={[
+    { type: "string", min: 8, message: "Minimum 8 characters" },
+    { type: "string", max: 32, message: "Maximum 32 characters" }
+  ]}
+>
+  {({ value, onChange }) => (
+    <input type="password" value={value} onChange={(e) => onChange(e.target.value)} />
+  )}
+</MyForm.Item>
+```
+
+### Number Range
+
+Validate number minimum and maximum:
+
+```tsx
+<MyForm.Item
+  name="age"
+  rules={[
+    { type: "number", min: 18, message: "Must be at least 18" },
+    { type: "number", max: 120, message: "Must be under 120" }
+  ]}
+>
+  {({ value, onChange }) => (
+    <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value))} />
+  )}
+</MyForm.Item>
+```
+
+### Email
+
+Built-in email format validation:
+
+```tsx
+<MyForm.Item
+  name="email"
+  rules={[
+    { required: true, message: "Email is required" },
+    { type: "email", message: "Invalid email format" }
+  ]}
+>
+  {({ value, onChange }) => (
+    <input type="email" value={value} onChange={(e) => onChange(e.target.value)} />
+  )}
+</MyForm.Item>
+```
+
+### Pattern (Regex)
+
+Validate against a regular expression:
+
+```tsx
+<MyForm.Item
+  name="username"
+  rules={[
+    {
+      pattern: /^[a-zA-Z0-9_]+$/,
+      message: "Only letters, numbers, and underscores allowed"
+    }
+  ]}
+>
+  {({ value, onChange }) => (
+    <input value={value} onChange={(e) => onChange(e.target.value)} />
+  )}
+</MyForm.Item>
+```
+
+### Array Validation
+
+Validate array length:
+
+```tsx
+<MyForm.ArrayItem
+  name="tags"
+  rules={[
+    { type: "array", min: 1, message: "Add at least one tag" },
+    { type: "array", max: 5, message: "Maximum 5 tags allowed" }
+  ]}
+>
+  {({ fields, append, remove }) => (
+    // render array items
+  )}
+</MyForm.ArrayItem>
+```
+
+## Custom Validators
+
+For complex validation logic, create custom async validators:
+
+### Basic Custom Validator
+
+```tsx
+<MyForm.Item
+  name="username"
+  rules={[
+    {
+      validator: async (value) => {
+        if (value.includes('admin')) {
+          return Promise.reject("Username cannot contain 'admin'");
+        }
+        // Return undefined or resolved promise for success
+      },
+      message: "Invalid username"
+    }
+  ]}
+>
+  {({ value, onChange, errors }) => (
+    <input value={value} onChange={(e) => onChange(e.target.value)} />
+  )}
+</MyForm.Item>
+```
+
+### Async API Validation
+
+Validate against a backend API:
+
+```tsx
+const checkUsernameAvailable = async (username: string) => {
+  const response = await fetch(\`/api/check-username?username=\${username}\`);
+  const data = await response.json();
+  return data.available;
+};
+
+<MyForm.Item
+  name="username"
+  rules={[
+    {
+      validator: async (value) => {
+        const available = await checkUsernameAvailable(value);
+        if (!available) {
+          return Promise.reject("Username is already taken");
+        }
+      },
+      message: "Username validation failed",
+      validateTrigger: ["onChange", "onFinish"]
+    }
+  ]}
+>
+  {({ value, onChange, errors, validationStatus }) => (
+    <div>
+      <input value={value} onChange={(e) => onChange(e.target.value)} />
+      {validationStatus === "validating" && <span>Checking...</span>}
+      {errors.length > 0 && <span>{errors[0].errorText}</span>}
+    </div>
+  )}
+</MyForm.Item>
+```
+
+### Multi-field Validation
+
+Access the entire form state in custom validators:
+
+```tsx
+<MyForm.Item
+  name="confirmPassword"
+  rules={[
+    {
+      validator: async (value, formState) => {
+        if (value !== formState.password) {
+          return Promise.reject("Passwords do not match");
+        }
+      },
+      message: "Passwords must match"
+    }
+  ]}
+>
+  {({ value, onChange, errors }) => (
+    <div>
+      <input
+        type="password"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {errors.length > 0 && <span>{errors[0].errorText}</span>}
+    </div>
+  )}
+</MyForm.Item>
+```
+
+## Validation Triggers
+
+Control when validation runs using `validateTrigger`:
+
+### onChange (Debounced)
+
+Validates as the user types, with automatic debouncing:
+
+```tsx
+<MyForm.Item
+  name="email"
+  rules={[
+    {
+      type: "email",
+      message: "Invalid email format",
+      validateTrigger: ["onChange"]
+    }
+  ]}
+>
+  {({ value, onChange, errors, validationStatus }) => (
+    <div>
+      <input value={value} onChange={(e) => onChange(e.target.value)} />
+      {validationStatus === "validating" && <span>Validating...</span>}
+      {errors.length > 0 && <span>{errors[0].errorText}</span>}
+    </div>
+  )}
+</MyForm.Item>
+```
+
+### onFinish (On Submit)
+
+Validates only when the form is submitted (default behavior):
+
+```tsx
+<MyForm.Item
+  name="email"
+  rules={[
+    {
+      type: "email",
+      message: "Invalid email format",
+      validateTrigger: ["onFinish"]  // or omit (default)
+    }
+  ]}
+>
+  {({ value, onChange, errors }) => (
+    <input value={value} onChange={(e) => onChange(e.target.value)} />
+  )}
+</MyForm.Item>
+```
+
+### Both Triggers
+
+Combine both triggers for maximum validation coverage:
+
+```tsx
+<MyForm.Item
+  name="username"
+  rules={[
+    {
+      validator: async (value) => {
+        const available = await checkUsername(value);
+        if (!available) throw new Error("Username taken");
+      },
+      validateTrigger: ["onChange", "onFinish"]
+    }
+  ]}
+>
+  {({ value, onChange }) => (
+    <input value={value} onChange={(e) => onChange(e.target.value)} />
+  )}
+</MyForm.Item>
+```
+
+## Validation Status
+
+Each field tracks its validation state:
+
+- `notStarted` - Validation hasn't run yet
+- `validating` - Currently validating (async)
+- `success` - Validation passed
+- `error` - Validation failed
+
+Use this to show loading indicators:
+
+```tsx
+<MyForm.Item name="email" rules={[{ type: "email", validateTrigger: ["onChange"] }]}>
+  {({ value, onChange, validationStatus, errors }) => (
+    <div>
+      <input value={value} onChange={(e) => onChange(e.target.value)} />
+
+      {validationStatus === "validating" && (
+        <span className="loading">Validating...</span>
+      )}
+
+      {validationStatus === "success" && (
+        <span className="success">✓ Valid</span>
+      )}
+
+      {validationStatus === "error" && errors.length > 0 && (
+        <span className="error">{errors[0].errorText}</span>
+      )}
+    </div>
+  )}
+</MyForm.Item>
+```
+
+## Combining Multiple Rules
+
+You can apply multiple validation rules to a single field:
+
+```tsx
+<MyForm.Item
+  name="password"
+  rules={[
+    { required: true, message: "Password is required" },
+    { type: "string", min: 8, message: "Minimum 8 characters" },
+    { type: "string", max: 32, message: "Maximum 32 characters" },
+    {
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/,
+      message: "Must include uppercase, lowercase, and number"
+    },
+    {
+      validator: async (value) => {
+        if (value.includes('password')) {
+          return Promise.reject("Cannot contain the word 'password'");
+        }
+      },
+      message: "Weak password"
+    }
+  ]}
+>
+  {({ value, onChange, errors }) => (
+    <div>
+      <input
+        type="password"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {errors.length > 0 && (
+        <ul className="error-list">
+          {errors.map((error, i) => (
+            <li key={i}>{error.errorText}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )}
+</MyForm.Item>
+```
+
+## Programmatic Validation
+
+Trigger validation programmatically using FormApi:
+
+### Validate All Fields
+
+```tsx
+const MyForm = useForm({ email: "", password: "" });
+
+const handleValidate = async () => {
+  try {
+    await MyForm.formApi.validateFields();
+    console.log("All fields valid!");
+  } catch (errors) {
+    console.log("Validation errors:", errors);
+  }
+};
+
+return (
+  <div>
+    <MyForm onSubmit={(state) => console.log(state)}>
+      {/* form fields */}
+    </MyForm>
+    <button onClick={handleValidate}>Validate Now</button>
+  </div>
+);
+```
+
+### Validate Specific Fields
+
+```tsx
+// Validate only email and password fields
+await MyForm.formApi.validateFields(["email", "password"]);
+
+// Validate a single field
+await MyForm.formApi.validateFields(["email"]);
+```
+
+### Get Field Errors
+
+```tsx
+// Get errors for a specific field
+const emailErrors = MyForm.formApi.getFieldError("email");
+
+// Get all form errors
+const allErrors = MyForm.formApi.getErrors();
+
+console.log(emailErrors); // Array of ValidationError objects
+console.log(allErrors);   // Object with all field errors
+```
+
+## Validation on Form Submit
+
+The form automatically validates all fields when submitted:
+
+```tsx
+<MyForm
+  onSubmit={(state) => {
+    // This callback only runs if validation passes
+    console.log("Form is valid:", state);
+    submitToServer(state);
+  }}
+>
+  <MyForm.Item name="email" rules={[{ type: "email" }]}>
+    {({ value, onChange }) => (
+      <input value={value} onChange={(e) => onChange(e.target.value)} />
+    )}
+  </MyForm.Item>
+
+  <button type="submit">Submit</button>
+</MyForm>
+```
+
+If validation fails, `onSubmit` won't be called and errors will be displayed on the respective fields.
+
+## Error Display
+
+Access and display errors using the render function:
+
+```tsx
+<MyForm.Item
+  name="email"
+  rules={[
+    { required: true, message: "Email is required" },
+    { type: "email", message: "Invalid email format" }
+  ]}
+>
+  {({ value, onChange, errors, validationStatus }) => (
+    <div className="form-field">
+      <label>Email</label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={errors.length > 0 ? 'input-error' : ''}
+      />
+
+      {/* Display all errors */}
+      {errors.length > 0 && (
+        <div className="error-messages">
+          {errors.map((error, index) => (
+            <div key={index} className="error">
+              {error.errorText}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Or just the first error */}
+      {errors[0] && <div className="error">{errors[0].errorText}</div>}
+    </div>
+  )}
+</MyForm.Item>
+```
+
+## Array Item Validation
+
+Validate individual array elements using `itemRules`:
+
+```tsx
+<MyForm.ArrayItem
+  name="emails"
+  rules={[
+    { type: "array", min: 1, message: "Add at least one email" }
+  ]}
+  itemRules={[
+    { required: true, message: "Email cannot be empty" },
+    { type: "email", message: "Invalid email format" }
+  ]}
+>
+  {({ fields, update, append, remove, itemErrors }) => (
+    <div>
+      {fields.map((email, index) => {
+        const itemError = itemErrors.find(e => e.index === index);
+
+        return (
+          <div key={index}>
+            <input
+              value={email}
+              onChange={(e) => update(index, e.target.value)}
+            />
+            {itemError && (
+              <span>{itemError.errors.map(e => e.errorText).join(', ')}</span>
+            )}
+            <button onClick={() => remove(index)}>Remove</button>
+          </div>
+        );
+      })}
+      <button onClick={() => append("")}>Add Email</button>
+    </div>
+  )}
+</MyForm.ArrayItem>
+```
+
+For detailed array validation documentation, see [Array Item Validation](/docs/documentation-array-item-validation--docs).
+
+## Validation Rule Type Reference
+
+### ValidationRule Type
+
+```tsx
+type ValidationRule<T = any> = {
+  // Built-in type validators
+  type?: 'string' | 'number' | 'email' | 'array' | 'regexp';
+
+  // Required field
+  required?: boolean;
+
+  // Min/max for strings, numbers, arrays
+  min?: number;
+  max?: number;
+
+  // Regex pattern
+  pattern?: RegExp;
+
+  // Custom async validator
+  validator?: (value: T, formState: any) => Promise<void>;
+
+  // Error message
+  message?: string;
+
+  // When to trigger validation
+  validateTrigger?: Array<'onChange' | 'onFinish'>;
+}
+```
+
+## Best Practices
+
+### 1. Use Type-Safe Validators
+
+Let TypeScript infer types for better type safety:
+
+```tsx
+const MyForm = useForm({
+  age: 0,
+  email: ""
+});
+
+// TypeScript knows 'age' is a number
+<MyForm.Item
+  name="age"
+  rules={[
+    {
+      type: "number",
+      min: 18,
+      message: "Must be 18 or older"
+    }
+  ]}
+>
+  {({ value, onChange }) => (
+    // 'value' is correctly typed as number
+    <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value))} />
+  )}
+</MyForm.Item>
+```
+
+### 2. Debounce Expensive Validators
+
+Use `onChange` trigger with caution for API calls - the library automatically debounces:
+
+```tsx
+<MyForm.Item
+  name="username"
+  rules={[
+    {
+      validator: async (value) => {
+        // This will be debounced automatically
+        const available = await fetch(\`/api/check-username/\${value}\`);
+        if (!available) throw new Error("Username taken");
+      },
+      validateTrigger: ["onChange", "onFinish"]
+    }
+  ]}
+>
+  {({ value, onChange, validationStatus }) => (
+    <div>
+      <input value={value} onChange={(e) => onChange(e.target.value)} />
+      {validationStatus === "validating" && <span>Checking...</span>}
+    </div>
+  )}
+</MyForm.Item>
+```
+
+### 3. Provide Clear Error Messages
+
+Write user-friendly error messages:
+
+```tsx
+// Good: Specific and actionable
+{ type: "email", message: "Please enter a valid email address" }
+{ min: 8, message: "Password must be at least 8 characters" }
+
+// Bad: Vague or technical
+{ type: "email", message: "Invalid" }
+{ min: 8, message: "Validation failed" }
+```
+
+### 4. Combine Rules Logically
+
+Order rules from simple to complex:
+
+```tsx
+rules={[
+  { required: true, message: "Required" },           // Check first
+  { min: 3, message: "Min 3 characters" },          // Then basic checks
+  { pattern: /regex/, message: "Invalid format" },  // Then pattern
+  { validator: expensiveAsyncCheck }                // Finally expensive checks
+]}
+```
+
+### 5. Handle Validation Errors Gracefully
+
+Always handle potential validation failures:
+
+```tsx
+const handleSubmit = async () => {
+  try {
+    const values = await MyForm.formApi.submit();
+    await submitToServer(values);
+  } catch (error) {
+    // Validation failed - errors are already displayed on fields
+    console.log("Please fix validation errors");
+  }
+};
+```
+
+## See Also
+
+- **[Array Item Validation](/docs/documentation-array-item-validation--docs)** - Validate array elements
+- **[Hooks](/docs/documentation-hooks--docs)** - Use `useFieldValidation` hook
+- **[Advanced Patterns](/docs/documentation-advanced--docs)** - Conditional validation
+- **[API Reference](https://github.com/eugekay/react-any-shape-form)** - Full API documentation

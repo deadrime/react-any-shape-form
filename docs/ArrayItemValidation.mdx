@@ -1,0 +1,380 @@
+import { Meta, Canvas, Story } from '@storybook/addon-docs/blocks';
+import * as FormArrayValidationStories from '../stories/FormArrayValidation.stories';
+import * as FormArrayAsyncStories from '../stories/FormArrayAsync.stories';
+
+<Meta title="Documentation/Array Item Validation" />
+
+# Array Item Validation
+
+The library supports validating each array element individually through the `itemRules` prop in `Form.ArrayItem` and parameter in the `useArrayField` hook.
+
+## Overview
+
+`itemRules` allows you to validate each array element independently, unlike regular `rules` which validate the entire array.
+
+### Key Features
+
+- **Individual element validation** - Each array element can have its own validation rules
+- **Error display by index** - Errors are displayed for specific elements by index
+- **Built-in rules support** - `required`, `min`, `max`, `pattern`, `email`, `type`
+- **Custom validators** - Support for async custom validators
+- **Validation triggers** - `onChange` (debounced) or `onFinish` (on submit)
+
+## Syntax
+
+### Using Form.ArrayItem
+
+```tsx
+<MyForm.ArrayItem
+  name="fieldName"
+  rules={[...]}      // Rules for the entire array (optional)
+  itemRules={[...]}  // Rules for each array element (optional)
+>
+  {({ fields, itemErrors, append, remove, update }) => (
+    // render...
+  )}
+</MyForm.ArrayItem>
+```
+
+### Using useArrayField hook
+
+```tsx
+const { fields, itemErrors, append, remove, update } = MyForm.useArrayField(
+  'fieldName',
+  rules?,        // Rules for the entire array (optional)
+  itemRules?     // Rules for each array element (optional)
+);
+```
+
+## Types
+
+```typescript
+export type ArrayItemError<T = unknown> = {
+  index: number;                    // Index of the element with error
+  errors: ValidationError<T>[];     // Array of errors for this element
+}
+```
+
+## Parameters
+
+### rules (optional)
+Rules for validating the entire array:
+- `{ type: 'array', min: 2 }` - minimum number of elements
+- `{ type: 'array', max: 10 }` - maximum number of elements
+- `{ required: true }` - array must not be empty
+- Custom validator for the array
+
+### itemRules (optional)
+Rules for validating each element:
+- `{ required: true }` - element must not be empty
+- `{ type: 'email' }` - email validation
+- `{ type: 'string', min: 3, max: 20 }` - string length
+- `{ type: 'number', min: 0, max: 100 }` - number range
+- `{ pattern: /regex/ }` - regex validation
+- Custom validator for the element
+
+## Return Values
+
+- **fields** - array of values
+- **itemErrors** - array of `{ index: number, errors: ValidationError[] }` objects
+- **append, prepend, remove, update, move** - array operations
+
+## Interactive Examples
+
+### Example 1: Email List with Validation
+
+This example demonstrates basic email validation for array items. Each email is validated independently:
+
+
+<Story of={FormArrayValidationStories.ArrayItemValidationExample} />
+
+
+```tsx
+const Form = useForm({ emails: [] as string[] });
+
+<Form.ArrayItem
+  name="emails"
+  rules={[
+    { type: "array", min: 1, message: "Add at least one email" }
+  ]}
+  itemRules={[
+    { required: true, message: "Email is required" },
+    { type: "email", message: "Invalid email format" }
+  ]}
+>
+  {({ fields, update, append, remove, itemErrors }) => (
+    <div>
+      {fields.map((email, index) => {
+        const itemError = itemErrors.find(e => e.index === index);
+
+        return (
+          <div key={index}>
+            <input
+              value={email}
+              onChange={(e) => update(index, e.target.value)}
+              className={itemError ? 'error' : ''}
+            />
+            {itemError && (
+              <span>{itemError.errors.map(e => e.errorText).join(', ')}</span>
+            )}
+            <button onClick={() => remove(index)}>Remove</button>
+          </div>
+        );
+      })}
+      <button onClick={() => append("")}>Add Email</button>
+    </div>
+  )}
+</Form.ArrayItem>
+```
+
+### Example 2: Async Custom Validation
+
+This example shows async validation of usernames against a simulated backend:
+
+
+<Story of={FormArrayAsyncStories.ArrayItemAsyncValidationExample} />
+
+```tsx
+const Form = useForm({ usernames: [] as string[] });
+
+const checkUsernameExists = async (username: string) => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const takenUsernames = ["admin", "root", "user", "test"];
+  return takenUsernames.includes(username.toLowerCase());
+};
+
+<Form.ArrayItem
+  name="usernames"
+  itemRules={[
+    { required: true, message: "Username is required" },
+    { type: "string", min: 3, message: "Min 3 characters" },
+    {
+      validator: async (value) => {
+        const exists = await checkUsernameExists(value);
+        if (exists) {
+          return Promise.reject(`Username "${value}" is already taken`);
+        }
+      },
+      message: "Username is already taken",
+      validateTrigger: ["onChange", "onFinish"],
+    },
+  ]}
+>
+  {({ fields, update, append, remove, itemErrors }) => (
+    // render...
+  )}
+</Form.ArrayItem>
+```
+
+### Example 3: Validation on Change
+
+This example demonstrates real-time validation as the user types:
+
+<Story of={FormArrayValidationStories.ArrayWithOnChangeValidationExample} />
+
+
+```tsx
+const Form = useForm({ tags: [] as string[] });
+
+<Form.ArrayItem
+  name="tags"
+  itemRules={[
+    {
+      required: true,
+      message: "Tag cannot be empty",
+      validateTrigger: ["onChange"],
+    },
+    {
+      type: "string",
+      min: 2,
+      max: 15,
+      message: "Tag must be 2-15 characters",
+      validateTrigger: ["onChange"],
+    },
+    {
+      type: "regexp",
+      pattern: /^[a-zA-Z0-9-]+$/,
+      message: "Only alphanumeric and dashes allowed",
+      validateTrigger: ["onChange"],
+    },
+  ]}
+>
+  {({ fields, update, append, remove, itemErrors }) => (
+    <div>
+      {fields.map((field, index) => {
+        const itemError = itemErrors.find((e) => e.index === index);
+        return (
+          <div key={index}>
+            <input
+              value={field}
+              onChange={(e) => update(index, e.target.value)}
+              className={itemError ? "error" : ""}
+            />
+            {itemError && (
+              <div>{itemError.errors.map((e) => e.errorText).join(", ")}</div>
+            )}
+            <button onClick={() => remove(index)}>Remove</button>
+          </div>
+        );
+      })}
+      <button onClick={() => append("")}>Add Tag</button>
+    </div>
+  )}
+</Form.ArrayItem>
+```
+
+## Using with useArrayField Hook
+
+You can also use the `useArrayField` hook for more flexibility:
+
+```tsx
+const Form = useForm({ tags: [] as string[] });
+
+const { fields, update, append, remove, itemErrors } = Form.useArrayField(
+  "tags",
+  // Rules for the array as a whole
+  [{ type: "array", min: 1, message: "Add at least one tag" }],
+  // Rules for each element
+  [
+    { required: true, message: "Tag is required" },
+    { min: 3, message: "Min 3 characters" }
+  ]
+);
+
+return (
+  <div>
+    {fields.map((tag, index) => {
+      const itemError = itemErrors.find(e => e.index === index);
+      return (
+        <div key={index}>
+          <input
+            value={tag}
+            onChange={(e) => update(index, e.target.value)}
+          />
+          {itemError && <span>{itemError.errors[0].errorText}</span>}
+        </div>
+      );
+    })}
+  </div>
+);
+```
+
+## Validation Triggers
+
+You can specify when validation should run:
+
+- **onChange** - validates on value change (with debounce)
+- **onFinish** - validates on form submission (default)
+
+```typescript
+const { fields, itemErrors } = MyForm.useArrayField(
+  'emails',
+  undefined,
+  [
+    {
+      type: 'email',
+      message: 'Invalid email',
+      validateTrigger: ['onChange']  // Validate on input
+    }
+  ]
+);
+```
+
+## Displaying Errors
+
+Map through `itemErrors` to display validation messages:
+
+```tsx
+{itemErrors.map(itemError => (
+  <div key={itemError.index}>
+    Item {itemError.index}:
+    {itemError.errors.map((error, i) => (
+      <span key={i}>{error.errorText}</span>
+    ))}
+  </div>
+))}
+```
+
+## FormApi Methods
+
+The FormApi provides methods to work with array item validation:
+
+```typescript
+// Set item rules for an array field
+formApi.setArrayItemRules(field, rules);
+
+// Get item errors for an array field
+formApi.getArrayItemErrors(field);
+
+// Validate array items
+await formApi.validateArrayItems(field, trigger);
+
+// Subscribe to item error changes
+formApi.onArrayItemError(field, (errors) => { ... });
+```
+
+## Important Notes
+
+1. **itemErrors** updates automatically when:
+   - Array values change
+   - `MyForm.formApi.submit()` is called
+   - Manual validation is triggered
+
+2. When removing an array element, its errors are automatically removed
+
+3. Array item validation doesn't block form submission separately - it uses the general validation check for all fields
+
+4. `itemRules` and `rules` work independently - you can use both simultaneously
+
+5. When validating:
+   - Array-level `rules` validate the array as a whole (length, presence, etc.)
+   - Element-level `itemRules` validate each item individually
+
+## Integration with Form Validation
+
+Array item validation is automatically integrated into the form validation process:
+
+- When calling `formApi.validateFields()`, all array items with `itemRules` are automatically validated
+- When calling `formApi.submit()`, array item validation happens automatically
+- Array item errors are included in the overall form error list
+
+## TypeScript Support
+
+The library is fully typed with automatic type inference:
+
+```typescript
+// Types are automatically inferred from form state
+const Form = useForm({
+  emails: [] as string[]
+});
+
+// itemRules is typed as ValidationRule<string>[]
+<Form.ArrayItem
+  name="emails"
+  itemRules={[...]} // TypeScript knows these are rules for string
+>
+```
+
+## Combining Multiple Rules
+
+You can combine array-level and item-level rules:
+
+```typescript
+const { fields, itemErrors } = MyForm.useArrayField(
+  'tags',
+  [
+    { type: 'array', min: 1, max: 5, message: 'From 1 to 5 tags' }
+  ],
+  [
+    { required: true, message: 'Tag cannot be empty' },
+    { type: 'string', min: 3, message: 'Min 3 characters' },
+    { type: 'string', max: 20, message: 'Max 20 characters' },
+    { pattern: /^[a-zA-Z0-9-]+$/, message: 'Only letters, numbers, and dashes' }
+  ]
+);
+```
+
+## See Also
+
+- [types.ts](https://github.com/eugekay/react-any-shape-form/blob/main/src/types.ts) - `ArrayItemError` type definition
+- [FormApi.ts](https://github.com/eugekay/react-any-shape-form/blob/main/src/FormApi.ts) - array item validation methods implementation

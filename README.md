@@ -34,8 +34,8 @@ const MyForm = createForm({
   age: 24,
 })
 
-const MyComponent = () => 
-  <MyForm onFinish={(state) => {
+const MyComponent = () =>
+  <MyForm onSubmit={(state) => {
     alert(JSON.stringify(state, undefined, 2));
   }}>
     <MyForm.Item

@@ -33,6 +33,7 @@
   "include": [
     "src",
     "custom.d.ts",
-    "stories"
+    "stories",
+    "docs"
   ]
 }

@@ -4,6 +4,10 @@ import { Form, FormItem } from "../src";
 
 const meta: Meta<typeof FormItem> = {
   component: FormItem,
+  tags: ["!dev", "!autodocs"],
+  parameters: {
+    docsOnly: true,
+  },
   render: (props) => (
     <Form>
       <FormItem {...props} />
@@ -18,62 +22,39 @@ const meta: Meta<typeof FormItem> = {
     ],
   },
   argTypes: {
-    name: {
-      type: "string",
-      description: "field name that store in form state",
-    },
     children: {
+      control: false,
       description:
-        "`React.FC` or render function with `value` and `onChange` props",
+        "Render function that receives field props (value, onChange, validationStatus, errors, id) and returns React elements to render.",
+    },
+    name: {
+      control: "text",
+      description:
+        "Field name that identifies this field in the form state. Must be unique within the form.",
     },
     rules: {
       control: "object",
-      description: "validation rules",
+      description:
+        "Array of validation rules to apply to this field. Supports built-in validators (required, min, max, pattern, email) and custom async validators.",
     },
     onChange: {
+      control: false,
       description:
-        "usually you don't need need this callback, if you need access to form state - use render function as form children.",
+        "Optional callback fired when the field value changes. Receives the new value as an argument. Note: Usually not needed - prefer using the render function for accessing field state.",
+    },
+    onInvalid: {
+      control: false,
+      description:
+        "Optional callback fired when field validation fails. Receives validation errors array and current field value as arguments.",
+    },
+    validationDebounceDelay: {
+      control: "number",
+      description:
+        "Debounce delay in milliseconds for onChange validation. Default is 300ms. Only applies to rules with validateTrigger: ['onChange'].",
     },
   },
 };
 
-export const BaseExample: StoryObj<typeof FormItem> = {
-  render: (args) => {
-    return (
-      <Form
-        onFinish={(state) => {
-          alert(JSON.stringify(state, undefined, 2));
-        }}
-      >
-        <FormItem
-          {...args}
-          onInvalid={(error, value) => {
-            console.log(error, value);
-          }}
-        >
-          {({ value, onChange }) => (
-            <input value={value} onChange={(e) => onChange(e.target.value)} />
-          )}
-        </FormItem>
-        <button type="submit">Submit</button>
-      </Form>
-    );
-  },
-  args: {
-    name: "field",
-    rules: [
-      {
-        required: true,
-        message: "Field is required",
-      },
-      {
-        type: "number",
-        min: 10,
-        // max: 100,
-        message: "Value must be between 10 and 100!",
-      },
-    ],
-  },
-};
+export const Props: StoryObj<typeof FormItem> = {};
 
 export default meta;

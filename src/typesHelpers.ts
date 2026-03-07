@@ -1,29 +1,57 @@
 import { FormApi } from "./FormApi";
 
-export type FormApiGenericTypes<T> = T extends FormApi<infer S, infer F>
-  ? { formApi: T, state: S, field: F } :  never
+export type FormApiGenericTypes<T> =
+  T extends FormApi<infer S, infer F>
+    ? { formApi: T; state: S; field: F }
+    : never;
 
-export type ArrayOnly<T> = T extends Array<any> ? T : never
+export type ArrayOnly<T> = T extends unknown[] ? T : never;
 
 export type ArrayOnlyObj<T extends Record<string, unknown>> = {
-  [P in keyof T as T[P] extends Array<any> ? P : never]: T[P]
-}
+  [P in keyof T as T[P] extends unknown[] ? P : never]: T[P];
+};
 
-export type GetFields<T extends Record<string, unknown>> = Extract<keyof T, string>
+export type GetFields<T extends Record<string, unknown>> = Extract<
+  keyof T,
+  string
+>;
 
 export type PickBy<Obj extends Record<string, unknown>, Predicate> = {
-  [Property in keyof Obj as Obj[Property] extends Predicate ? Property : never]: Obj[Property]
-}
+  [Property in keyof Obj as Obj[Property] extends Predicate
+    ? Property
+    : never]: Obj[Property];
+};
 
-export type ArrayOnlyFields<
-Obj extends Record<string, unknown>,
-> = GetFields<PickBy<Obj, unknown[]>>
+export type ArrayOnlyFields<Obj extends Record<string, unknown>> = GetFields<
+  PickBy<Obj, unknown[]>
+>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CompoundFormLike = { formApi: FormApi<any> }
+export type CompoundFormLike = { formApi: FormApi<any> };
 
-export type ExtractFormState<T> = T extends { formApi: FormApi<infer S> } ? S : never
+export type ExtractFormState<T> = T extends { formApi: FormApi<infer S> }
+  ? S
+  : never;
 
-export type ResolveState<T extends Record<string, unknown>> = {
-  [K in keyof T]: T[K] extends CompoundFormLike ? ExtractFormState<T[K]> : T[K]
-}
+type HasFormApi<T> = T extends { formApi: infer F }
+  ? F extends FormApi<infer S>
+    ? S
+    : never
+  : never;
+
+export type ResolveState<T extends Record<string, unknown>> = Prettify<{
+  [K in keyof T]: HasFormApi<T[K]> extends never ? T[K] : HasFormApi<T[K]>;
+}>;
+
+export type NestedForms = Record<string, CompoundFormLike>;
+
+export type ResolvedNestedState<N extends NestedForms> = {
+  [K in keyof N]: ExtractFormState<N[K]>;
+};
+
+export type ArrayElementType<T> = T extends Array<infer U> ? U : never;
+
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+  // eslint-disable-next-line @typescript-eslint/ban-types
+} & {};

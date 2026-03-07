@@ -66,6 +66,11 @@ export type ValidationError<Value = unknown> = {
   errorText: string;
 }
 
+export type ArrayItemError<T = unknown> = {
+  index: number;
+  errors: ValidationError<T>[];
+}
+
 export type FieldUpdateCb<T> = (oldState: T) => Partial<T>;
 
 export type FieldUpdate<T> = FieldUpdateCb<T> | T

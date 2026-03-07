@@ -21,6 +21,7 @@ export type {
   FieldOnValidationStatusChangeCb,
   Validator,
   RuleType,
+  ArrayItemError,
 } from './types';
 export type {
   FormApiGenericTypes,

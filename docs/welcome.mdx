@@ -1,15 +1,24 @@
 import { Meta, Primary, Controls, Story, ArgTypes, Source, Title } from '@storybook/addon-docs/blocks';
 
-import * as FormStories from './Form.stories';
-import * as FormItemStories from './FormItem.stories';
+import * as FormStories from '../stories/Form.stories';
+import * as FormItemStories from '../stories/FormItem.stories';
+import FormItem from '../stories/formItem.meta.tsx';
 
-<Meta of={FormStories}/>
+<Meta
+  title="Welcome"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
 
 <Title>React any shape form</Title>
 
 Lightweight form library focused on ease of use. This library was inspired by `antd` form component and `react-hook-form`.
 
-![npm bundle size](https://img.shields.io/bundlephobia/min/react-any-shape-form) ![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-any-shape-form)
+![npm bundle size](https://deno.bundlejs.com/badge?q=react-any-shape-form@latest)
 
 ## Features
 
@@ -20,7 +29,9 @@ Lightweight form library focused on ease of use. This library was inspired by `a
 - No extra re-renders
 
 ## Install
-<Source code='npm i react-any-shape-form' language='bash' />
+```bash
+npm i react-any-shape-form
+```
 
 ## `Form` props
 <ArgTypes of={FormStories} />

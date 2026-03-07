@@ -1,0 +1,715 @@
+import { Meta, Canvas, Story } from '@storybook/addon-docs/blocks';
+
+
+<Meta
+  title="Documentation/Hooks"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# Hooks
+
+React Any Shape Form provides a set of powerful hooks for fine-grained control over form state. These hooks enable you to access and manipulate form data from anywhere in your component tree.
+
+## Overview
+
+All hooks are attached to the form instance created by `useForm` or `createForm`:
+
+```tsx
+const MyForm = useForm({ name: "", age: 0 });
+
+// Access hooks via MyForm
+const name = MyForm.useWatch("name");
+const [age, setAge] = MyForm.useField("age");
+const { errors, validationStatus } = MyForm.useFieldValidation("name");
+```
+
+## useWatch
+
+Subscribe to a field's value and re-render when it changes.
+
+### Signature
+
+```tsx
+const value = MyForm.useWatch(fieldName);
+```
+
+### Parameters
+
+- `fieldName` - The name of the field to watch (type-safe)
+
+### Returns
+
+The current value of the field
+
+### Example
+
+```tsx
+const MyForm = useForm({
+  email: "",
+  password: ""
+});
+
+function EmailDisplay() {
+  // Component re-renders only when email changes
+  const email = MyForm.useWatch("email");
+
+  return <div>Current email: {email}</div>;
+}
+
+function MyComponent() {
+  return (
+    <MyForm onSubmit={(state) => console.log(state)}>
+      <MyForm.Item name="email">
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </MyForm.Item>
+
+      <EmailDisplay />
+    </MyForm>
+  );
+}
+```
+
+### Use Cases
+
+- Display field values in other components
+- Show character counters
+- Conditional rendering based on field values
+- Real-time form previews
+
+### Performance Note
+
+`useWatch` only triggers re-renders when the watched field changes, not when other form fields change. This makes it highly efficient for large forms.
+
+## useField
+
+Get a field's value and a setter function for updating it.
+
+### Signature
+
+```tsx
+const [value, setValue] = MyForm.useField(fieldName);
+```
+
+### Parameters
+
+- `fieldName` - The name of the field (type-safe)
+
+### Returns
+
+A tuple containing:
+1. `value` - Current field value
+2. `setValue` - Function to update the field value
+
+### Example
+
+```tsx
+const MyForm = useForm({
+  count: 0
+});
+
+function Counter() {
+  const [count, setCount] = MyForm.useField("count");
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+      <button onClick={() => setCount(0)}>Reset</button>
+    </div>
+  );
+}
+```
+
+### Use Cases
+
+- Create custom input components
+- Build reusable field controllers
+- Implement complex UI controls (sliders, color pickers, etc.)
+- Access form state outside Form.Item
+
+### Type Safety
+
+The return value is correctly typed based on your form state:
+
+```tsx
+const MyForm = useForm({
+  age: 0,          // number
+  name: "",        // string
+  tags: [] as string[]  // string[]
+});
+
+const [age, setAge] = MyForm.useField("age");
+// age: number
+// setAge: (value: number) => void
+
+const [tags, setTags] = MyForm.useField("tags");
+// tags: string[]
+// setTags: (value: string[]) => void
+```
+
+## useFieldValidation
+
+Get validation state and errors for a specific field.
+
+### Signature
+
+```tsx
+const { errors, validationStatus } = MyForm.useFieldValidation(fieldName);
+```
+
+### Parameters
+
+- `fieldName` - The name of the field (type-safe)
+
+### Returns
+
+An object containing:
+- `errors` - Array of validation errors
+- `validationStatus` - Validation state: `'notStarted' | 'validating' | 'success' | 'error'`
+
+### Example
+
+```tsx
+const MyForm = useForm({
+  email: ""
+});
+
+function EmailValidationStatus() {
+  const { errors, validationStatus } = MyForm.useFieldValidation("email");
+
+  return (
+    <div>
+      {validationStatus === "validating" && (
+        <span>Validating email...</span>
+      )}
+
+      {validationStatus === "success" && (
+        <span className="success">✓ Email is valid</span>
+      )}
+
+      {validationStatus === "error" && errors.length > 0 && (
+        <div className="error">
+          {errors.map((e, i) => (
+            <div key={i}>{e.errorText}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MyComponent() {
+  return (
+    <MyForm onSubmit={(state) => console.log(state)}>
+      <MyForm.Item
+        name="email"
+        rules={[
+          { type: "email", validateTrigger: ["onChange"] }
+        ]}
+      >
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </MyForm.Item>
+
+      <EmailValidationStatus />
+    </MyForm>
+  );
+}
+```
+
+### Use Cases
+
+- Display validation status in separate components
+- Show loading indicators during async validation
+- Build custom error display components
+- Create validation summary components
+
+## useArrayField
+
+Manage array fields with add, remove, and update operations.
+
+### Signature
+
+```tsx
+const {
+  fields,
+  append,
+  prepend,
+  remove,
+  update,
+  move,
+  itemErrors
+} = MyForm.useArrayField(fieldName, rules?, itemRules?);
+```
+
+### Parameters
+
+- `fieldName` - The name of the array field (type-safe, only array fields allowed)
+- `rules` (optional) - Validation rules for the entire array
+- `itemRules` (optional) - Validation rules for each array element
+
+### Returns
+
+An object containing:
+- `fields` - Array of current values
+- `append` - Add item to the end
+- `prepend` - Add item to the beginning
+- `remove` - Remove item by index
+- `update` - Update item by index
+- `move` - Move item from one index to another
+- `itemErrors` - Array of validation errors for individual items
+
+### Example: Basic Usage
+
+```tsx
+const MyForm = useForm({
+  todos: [] as string[]
+});
+
+function TodoList() {
+  const { fields, append, remove, update } = MyForm.useArrayField("todos");
+
+  return (
+    <div>
+      {fields.map((todo, index) => (
+        <div key={index}>
+          <input
+            value={todo}
+            onChange={(e) => update(index, e.target.value)}
+          />
+          <button onClick={() => remove(index)}>Delete</button>
+        </div>
+      ))}
+      <button onClick={() => append("")}>Add Todo</button>
+    </div>
+  );
+}
+```
+
+### Example: With Validation
+
+```tsx
+const MyForm = useForm({
+  emails: [] as string[]
+});
+
+function EmailList() {
+  const { fields, append, remove, update, itemErrors } = MyForm.useArrayField(
+    "emails",
+    // Array-level rules
+    [{ type: "array", min: 1, message: "Add at least one email" }],
+    // Item-level rules
+    [
+      { required: true, message: "Email is required" },
+      { type: "email", message: "Invalid email format" }
+    ]
+  );
+
+  return (
+    <div>
+      {fields.map((email, index) => {
+        const itemError = itemErrors.find(e => e.index === index);
+
+        return (
+          <div key={index}>
+            <input
+              value={email}
+              onChange={(e) => update(index, e.target.value)}
+              className={itemError ? 'error' : ''}
+            />
+            {itemError && (
+              <span>{itemError.errors.map(e => e.errorText).join(', ')}</span>
+            )}
+            <button onClick={() => remove(index)}>Remove</button>
+          </div>
+        );
+      })}
+      <button onClick={() => append("")}>Add Email</button>
+    </div>
+  );
+}
+```
+
+### Array Operations
+
+#### append
+
+Add an item to the end of the array:
+
+```tsx
+append("New item");
+append({ name: "John", age: 30 }); // For object arrays
+```
+
+#### prepend
+
+Add an item to the beginning of the array:
+
+```tsx
+prepend("First item");
+```
+
+#### remove
+
+Remove an item by index:
+
+```tsx
+remove(0); // Remove first item
+remove(fields.length - 1); // Remove last item
+```
+
+#### update
+
+Update an item by index:
+
+```tsx
+update(0, "Updated value");
+update(1, { name: "Jane", age: 25 }); // For object arrays
+```
+
+#### move
+
+Move an item from one index to another:
+
+```tsx
+move(0, 2); // Move first item to third position
+```
+
+### Use Cases
+
+- Todo lists
+- Tag inputs
+- Multi-email inputs
+- Dynamic form sections
+- Shopping cart items
+- Nested forms with repeating sections
+
+### Type Safety
+
+`useArrayField` only accepts fields that are arrays:
+
+```tsx
+const MyForm = useForm({
+  name: "",           // Not an array
+  tags: [] as string[]  // Array
+});
+
+// ✓ Valid - tags is an array
+const { fields } = MyForm.useArrayField("tags");
+
+// ✗ Error - name is not an array
+const { fields } = MyForm.useArrayField("name");  // TypeScript error!
+```
+
+## Combining Hooks
+
+You can use multiple hooks together for complex scenarios:
+
+### Example: Conditional Field
+
+Show a field only when another field has a specific value:
+
+```tsx
+const MyForm = useForm({
+  accountType: "personal",
+  companyName: ""
+});
+
+function ConditionalCompanyField() {
+  const accountType = MyForm.useWatch("accountType");
+
+  if (accountType !== "business") {
+    return null;
+  }
+
+  return (
+    <MyForm.Item name="companyName">
+      {({ value, onChange }) => (
+        <input
+          placeholder="Company Name"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </MyForm.Item>
+  );
+}
+
+function MyComponent() {
+  return (
+    <MyForm onSubmit={(state) => console.log(state)}>
+      <MyForm.Item name="accountType">
+        {({ value, onChange }) => (
+          <select value={value} onChange={(e) => onChange(e.target.value)}>
+            <option value="personal">Personal</option>
+            <option value="business">Business</option>
+          </select>
+        )}
+      </MyForm.Item>
+
+      <ConditionalCompanyField />
+    </MyForm>
+  );
+}
+```
+
+### Example: Live Character Counter
+
+```tsx
+const MyForm = useForm({
+  bio: ""
+});
+
+function BioField() {
+  const bio = MyForm.useWatch("bio");
+  const maxLength = 200;
+  const remaining = maxLength - bio.length;
+
+  return (
+    <div>
+      <MyForm.Item name="bio">
+        {({ value, onChange }) => (
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            maxLength={maxLength}
+          />
+        )}
+      </MyForm.Item>
+      <div className={remaining < 20 ? "warning" : ""}>
+        {remaining} characters remaining
+      </div>
+    </div>
+  );
+}
+```
+
+### Example: Dependent Validation
+
+Validate one field based on another:
+
+```tsx
+const MyForm = useForm({
+  password: "",
+  confirmPassword: ""
+});
+
+function PasswordFields() {
+  const password = MyForm.useWatch("password");
+
+  return (
+    <>
+      <MyForm.Item
+        name="password"
+        rules={[
+          { required: true, message: "Password is required" },
+          { min: 8, message: "Minimum 8 characters" }
+        ]}
+      >
+        {({ value, onChange, errors }) => (
+          <div>
+            <input
+              type="password"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+            {errors[0] && <span>{errors[0].errorText}</span>}
+          </div>
+        )}
+      </MyForm.Item>
+
+      <MyForm.Item
+        name="confirmPassword"
+        rules={[
+          { required: true, message: "Please confirm password" },
+          {
+            validator: async (value) => {
+              if (value !== password) {
+                return Promise.reject("Passwords do not match");
+              }
+            },
+            message: "Passwords must match"
+          }
+        ]}
+      >
+        {({ value, onChange, errors }) => (
+          <div>
+            <input
+              type="password"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+            {errors[0] && <span>{errors[0].errorText}</span>}
+          </div>
+        )}
+      </MyForm.Item>
+    </>
+  );
+}
+```
+
+## Custom Hooks
+
+Build your own hooks on top of the built-in ones:
+
+### Example: useFormField (Combined Hook)
+
+```tsx
+function useFormField<T>(
+  form: ReturnType<typeof useForm<any>>,
+  fieldName: string
+) {
+  const [value, setValue] = form.useField(fieldName);
+  const { errors, validationStatus } = form.useFieldValidation(fieldName);
+
+  return {
+    value,
+    setValue,
+    errors,
+    validationStatus,
+    hasError: errors.length > 0,
+    isValidating: validationStatus === "validating"
+  };
+}
+
+// Usage
+function MyComponent() {
+  const MyForm = useForm({ email: "" });
+  const email = useFormField(MyForm, "email");
+
+  return (
+    <div>
+      <input
+        value={email.value}
+        onChange={(e) => email.setValue(e.target.value)}
+      />
+      {email.isValidating && <span>Validating...</span>}
+      {email.hasError && <span>{email.errors[0].errorText}</span>}
+    </div>
+  );
+}
+```
+
+## Hook Best Practices
+
+### 1. Use the Right Hook for the Job
+
+- **useWatch** - When you only need to read a value
+- **useField** - When you need to read and update a value
+- **useFieldValidation** - When you need validation info
+- **useArrayField** - When working with arrays
+
+### 2. Minimize Re-renders
+
+Use `useWatch` instead of accessing the entire form state:
+
+```tsx
+// ✗ Bad - causes re-renders on any field change
+function EmailDisplay() {
+  const state = MyForm.formApi.getState();
+  return <div>{state.email}</div>;
+}
+
+// ✓ Good - only re-renders when email changes
+function EmailDisplay() {
+  const email = MyForm.useWatch("email");
+  return <div>{email}</div>;
+}
+```
+
+### 3. Extract Complex Logic
+
+Move complex field logic into separate components:
+
+```tsx
+// Extract complex field into its own component
+function PasswordField() {
+  const [password, setPassword] = MyForm.useField("password");
+  const { errors, validationStatus } = MyForm.useFieldValidation("password");
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div>
+      <input
+        type={showPassword ? "text" : "password"}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <button onClick={() => setShowPassword(!showPassword)}>
+        {showPassword ? "Hide" : "Show"}
+      </button>
+      {/* ... error display, strength meter, etc ... */}
+    </div>
+  );
+}
+
+// Use in main form
+function MyForm() {
+  return (
+    <Form onSubmit={handleSubmit}>
+      <PasswordField />
+    </Form>
+  );
+}
+```
+
+### 4. Use Type Safety
+
+Let TypeScript guide you:
+
+```tsx
+const MyForm = useForm({
+  age: 0,
+  name: "",
+  tags: [] as string[]
+});
+
+// TypeScript ensures you pass the right field name
+const age = MyForm.useWatch("age");     // ✓ Valid
+const invalid = MyForm.useWatch("xyz"); // ✗ Error
+
+// TypeScript ensures array operations only on array fields
+const { fields } = MyForm.useArrayField("tags");  // ✓ Valid
+const { fields } = MyForm.useArrayField("name");  // ✗ Error (not an array)
+```
+
+### 5. Avoid Stale Closures
+
+When using hooks in callbacks, ensure you have the latest values:
+
+```tsx
+function MyComponent() {
+  const [count, setCount] = MyForm.useField("count");
+
+  // ✗ Bad - count might be stale in async callback
+  const handleClick = async () => {
+    await someAsyncOperation();
+    setCount(count + 1); // count might be outdated
+  };
+
+  // ✓ Good - use functional update
+  const handleClick = async () => {
+    await someAsyncOperation();
+    const currentCount = MyForm.formApi.getFieldValue("count");
+    setCount(currentCount + 1);
+  };
+
+  return <button onClick={handleClick}>Increment</button>;
+}
+```
+
+## See Also
+
+- **[Basics](/docs/documentation-basics--docs)** - Introduction to the library
+- **[Array Fields](/docs/documentation-array-fields--docs)** - Deep dive into array field management
+- **[Validation](/docs/documentation-validation--docs)** - Validation rules and patterns
+- **[Advanced Patterns](/docs/documentation-advanced--docs)** - Complex use cases

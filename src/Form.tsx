@@ -23,7 +23,7 @@ export type FormProps<
   form?: Form;
   initialState?: State;
   children: React.ReactNode;
-  onFinish?: (state: State) => void;
+  onSubmit?: (state: State) => void;
   onFieldChange?: (field: keyof State, value: State[keyof State]) => void;
   id?: string;
 };
@@ -35,7 +35,7 @@ export const Form = <
 >(
   props: FormProps<InitialState, F, Form>,
 ) => {
-  const { children, onFinish, onFieldChange, initialState, id } = props;
+  const { children, onSubmit, onFieldChange, initialState, id } = props;
 
   const formApi = useMemo<Form>(
     () =>
@@ -53,11 +53,11 @@ export const Form = <
   }, []);
 
   useEffect(() => {
-    if (!onFinish) {
+    if (!onSubmit) {
       return;
     }
-    return formApi.onSubmit(onFinish);
-  }, [formApi, onFinish]);
+    return formApi.onSubmit(onSubmit);
+  }, [formApi, onSubmit]);
 
   return (
     <FormContext.Provider

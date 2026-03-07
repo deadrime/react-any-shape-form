@@ -1,0 +1,235 @@
+import { Meta, Canvas, Story, Source } from '@storybook/addon-docs/blocks';
+import * as FormStories from '../stories/Form.stories';
+import * as FormStylesStories from '../stories/FormStyles.stories';
+import * as FormApiStories from '../stories/FormApiMethods.stories';
+
+<Meta
+  title="Documentation/Basics"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+## Basic Example
+
+Here's a simple form with two fields - name and age. Notice how the library gives you complete control over rendering:
+
+<Canvas of={FormStories.BaseExample} sourceState="shown" />
+
+### Key Concepts
+
+In this example:
+- **`useForm`** creates a form instance with initial state
+- **`MyForm.Item`** connects a field to the form state
+- **Render prop pattern** gives you full control over input rendering
+- **You handle all styling** - the library provides zero CSS
+
+The `children` render function receives:
+- `value` - current field value
+- `onChange` - function to update the value
+- `errors` - array of validation errors
+- `validationStatus` - validation state: `'notStarted' | 'validating' | 'success' | 'error'`
+
+## Validation
+
+React Any Shape Form includes powerful, promise-based validation:
+
+### Built-in Rules
+
+The library provides common validators out of the box:
+
+
+```tsx
+<MyForm.Item
+  name="email"
+  rules={[
+    { required: true, message: "Email is required" },
+    { type: "email", message: "Invalid email format" },
+    { min: 5, message: "At least 5 characters" },
+    { max: 100, message: "Maximum 100 characters" }
+  ]}
+>
+  {({ value, onChange, errors }) => (
+    // Your input component
+  )}
+</MyForm.Item>
+```
+
+### Custom Validators
+
+Create async validators for complex logic:
+
+```tsx
+{
+  validator: async (value) => {
+    const exists = await checkUsernameExists(value);
+    if (exists) {
+      return Promise.reject("Username taken");
+    }
+  },
+  message: "Username already exists",
+  validateTrigger: ["onChange", "onFinish"]
+}
+```
+
+### Validation Triggers
+
+Control when validation runs:
+- **`onChange`** - validates as user types (debounced)
+- **`onFinish`** - validates on form submission
+
+See the [Validation](/docs/documentation-validation--docs) section for detailed validation documentation.
+
+## Creating Forms: `useForm` vs `createForm`
+
+React Any Shape Form provides two ways to create forms, depending on your needs:
+
+### Option 1: `useForm` - For Simple Forms
+
+Use `useForm` when building a simple form contained within a single component:
+
+```tsx
+import { useForm } from 'react-any-shape-form';
+
+function MyComponent() {
+  const MyForm = useForm({
+    name: "",
+    email: ""
+  });
+
+  return (
+    <MyForm onSubmit={(state) => console.log(state)}>
+      <MyForm.Item name="name">
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </MyForm.Item>
+      {/* ... more fields ... */}
+    </MyForm>
+  );
+}
+```
+
+**Characteristics:**
+- Created inside a React component
+- Scoped to that component's lifecycle
+- Perfect for single-component forms
+- Form instance is recreated on component remount
+
+### Option 2: `createForm` - For Shared Forms
+
+Use `createForm` when you need to:
+- Share form state across multiple components
+- Access form outside React components
+- Persist form instance across remounts
+- Build reusable form definitions
+
+```tsx
+import { createForm } from 'react-any-shape-form';
+
+// Created outside component - shared across your app
+const LoginForm = createForm({
+  username: "",
+  password: ""
+});
+
+// Use in multiple places
+function LoginPage() {
+  return (
+    <LoginForm onSubmit={(state) => handleLogin(state)}>
+      <LoginForm.Item name="username">
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </LoginForm.Item>
+      {/* ... */}
+    </LoginForm>
+  );
+}
+
+// Access form state in another component
+function LoginStatus() {
+  const username = LoginForm.useWatch("username");
+  return <div>Logging in as: {username}</div>;
+}
+
+// Or access imperatively outside React
+LoginForm.formApi.setFieldValue("username", "admin");
+const currentState = LoginForm.formApi.getState();
+```
+
+**Characteristics:**
+- Created outside React components
+- Single instance shared across your app
+- Can be accessed anywhere via `FormApi`
+- Form state persists across component remounts
+- Ideal for complex, multi-step, or shared forms
+
+### When to Use Which?
+
+| Scenario | Use |
+|----------|-----|
+| Simple form in one component | `useForm` |
+| Multi-step wizard | `createForm` |
+| Form shared across routes | `createForm` |
+| Need to access form outside React | `createForm` |
+| Form state should persist on unmount | `createForm` |
+| Quick prototype or simple use case | `useForm` |
+
+## Styling is Your Responsibility
+
+This library provides **zero built-in styles**. You have complete freedom to:
+- Use any CSS framework (Tailwind, Bootstrap, MUI, etc.)
+- Implement custom designs
+- Control every aspect of the UI
+
+Here's an example using Tailwind CSS:
+
+<Canvas of={FormStylesStories.StylesExample} />
+
+The library only manages:
+- Form state
+- Validation logic
+- Field subscriptions
+- Type safety
+
+Everything visual is up to you!
+
+## Form API Access
+
+Every form provides a `formApi` instance for programmatic control:
+
+<Canvas of={FormApiStories.UsingFormApi} />
+
+### Common FormApi Methods
+
+```tsx
+// Get/set field values
+MyForm.formApi.getFieldValue("name");
+MyForm.formApi.setFieldValue("name", "John");
+MyForm.formApi.setFieldsValue({ name: "John", age: 30 });
+
+// Get entire form state
+const state = MyForm.formApi.getState();
+
+// Validation
+await MyForm.formApi.validateFields(); // validate all fields
+await MyForm.formApi.validateFields(["email"]); // validate specific fields
+
+// Form submission
+await MyForm.formApi.submit(); // validates and calls onSubmit
+
+// Reset
+MyForm.formApi.resetFields(); // reset to initial state
+MyForm.formApi.resetFields(["email"]); // reset specific fields
+```
+
+## Next Steps
+
+- **[Validation](/docs/documentation-validation--docs)** - Learn about validation rules and custom validators
+- **[Hooks](/docs/documentation-hooks--docs)** - Explore `useWatch`, `useField`, and more
+- **[Array Fields](/docs/documentation-array-fields--docs)** - Work with dynamic lists
+- **[Advanced Patterns](/docs/documentation-advanced--docs)** - Conditional fields, nested forms, and more

@@ -18,11 +18,11 @@ describe("test Form", () => {
     });
 
     const formItemOnChangeCb = vi.fn();
-    const formOnFinishCb = vi.fn();
+    const formOnSubmitCb = vi.fn();
     const formOnFieldChangeCb = vi.fn();
 
     const MyFormJsx = (
-      <MyForm onFinish={formOnFinishCb} onFieldChange={formOnFieldChangeCb}>
+      <MyForm onSubmit={formOnSubmitCb} onFieldChange={formOnFieldChangeCb}>
         <MyForm.Item name="name" onChange={formItemOnChangeCb}>
           {({ value, onChange }) => (
             <input
@@ -76,9 +76,8 @@ describe("test Form", () => {
     test("form submit", async () => {
       await userEvent.type(input, "Rina");
       await userEvent.click(submit);
-      expect(formOnFinishCb).toBeCalledWith({ name: "Rina" });
+      expect(formOnSubmitCb).toBeCalledWith({ name: "Rina" });
     });
-
   });
 
   describe("test validation", () => {
@@ -150,11 +149,13 @@ describe("test Form", () => {
     });
 
     test("validator receives formState for cross-field validation", async () => {
-      const crossFieldValidator = vi.fn(async (value: string, _rule, formState) => {
-        if (value && formState.password && value !== formState.password) {
-          return Promise.reject("Passwords do not match");
-        }
-      });
+      const crossFieldValidator = vi.fn(
+        async (value: string, _rule, formState) => {
+          if (value && formState.password && value !== formState.password) {
+            return Promise.reject("Passwords do not match");
+          }
+        },
+      );
 
       const onErrorCb = vi.fn();
 
@@ -171,7 +172,13 @@ describe("test Form", () => {
           </MyForm.Item>
           <MyForm.Item
             name="confirmPassword"
-            rules={[{ validator: crossFieldValidator, message: "Passwords do not match", validateTrigger: ["onFinish"] }]}
+            rules={[
+              {
+                validator: crossFieldValidator,
+                message: "Passwords do not match",
+                validateTrigger: ["onFinish"],
+              },
+            ]}
           >
             {({ value, onChange, errors }) => {
               errors.forEach((e) => onErrorCb(e));
@@ -190,7 +197,7 @@ describe("test Form", () => {
           >
             Submit
           </button>
-        </MyForm>
+        </MyForm>,
       );
 
       const passwordInput = getByTestId("password-input");
@@ -202,11 +209,14 @@ describe("test Form", () => {
       await userEvent.click(submitBtn);
 
       expect(crossFieldValidator).toHaveBeenCalled();
-      const lastCall = crossFieldValidator.mock.calls[crossFieldValidator.mock.calls.length - 1];
+      const lastCall =
+        crossFieldValidator.mock.calls[
+          crossFieldValidator.mock.calls.length - 1
+        ];
       expect(lastCall[2]).toHaveProperty("password", "abc");
       expect(lastCall[2]).toHaveProperty("confirmPassword", "xyz");
       expect(onErrorCb).toHaveBeenCalledWith(
-        expect.objectContaining({ errorText: "Passwords do not match" })
+        expect.objectContaining({ errorText: "Passwords do not match" }),
       );
     });
   });
@@ -226,7 +236,7 @@ describe("test Form", () => {
               />
             )}
           </MyForm.Item>
-        </MyForm>
+        </MyForm>,
       );
 
       expect((getByTestId(inputTestId) as HTMLInputElement).value).toBe("John");
@@ -246,7 +256,7 @@ describe("test Form", () => {
               />
             )}
           </MyForm.Item>
-        </MyForm>
+        </MyForm>,
       );
 
       expect((getByTestId(inputTestId) as HTMLInputElement).value).toBe("John");
@@ -266,7 +276,7 @@ describe("test Form", () => {
               />
             )}
           </MyForm.Item>
-        </MyForm>
+        </MyForm>,
       );
 
       act(() => {
