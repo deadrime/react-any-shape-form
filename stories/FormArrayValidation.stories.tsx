@@ -30,26 +30,22 @@ export const ArrayItemValidationExample: StoryObj<typeof Form> = {
               },
             ]}
           >
-            {({ fields, onChange }) => (
+            {({ items }) => (
               <div className="form-item">
                 <label>Email Addresses</label>
                 <div className="array-list">
-                  {fields.map((email, index) => (
+                  {items.map((item, index) => (
                     <div key={index} className="array-item">
-                      <MyForm.Item name={["emails", index]}>
-                        {({ value: itemValue, onChange: itemOnChange, errors }) => (
-                          <div className="array-item-input">
-                            <input
-                              className={`input ${errors.length > 0 ? "input-invalid" : ""}`}
-                              value={itemValue}
-                              onChange={(e) => itemOnChange(e.target.value)}
-                            />
-                            {errors.length > 0 && (
-                              <div className="error">{errors[0].errorText}</div>
-                            )}
-                          </div>
+                      <div className="array-item-input">
+                        <input
+                          className={`input ${item.errors.length > 0 ? "input-invalid" : ""}`}
+                          value={item.value}
+                          onChange={(e) => item.onChange(e.target.value)}
+                        />
+                        {item.errors.length > 0 && (
+                          <div className="error">{item.errors.map(err => err.errorText).join(', ')}</div>
                         )}
-                      </MyForm.Item>
+                      </div>
                       <button
                         type="button"
                         className="btn-small"
@@ -114,27 +110,23 @@ export const ArrayWithOnChangeValidationExample: StoryObj<typeof Form> = {
               },
             ]}
           >
-            {({ fields }) => (
+            {({ items }) => (
               <div className="form-item">
                 <label>Tags (validate on change)</label>
                 <div className="array-list">
-                  {fields.map((tag, index) => (
+                  {items.map((item, index) => (
                     <div key={index} className="array-item">
-                      <MyForm.Item name={["tags", index]}>
-                        {({ value: itemValue, onChange: itemOnChange, errors }) => (
-                          <div className="array-item-input">
-                            <input
-                              className={`input ${errors.length > 0 ? "input-invalid" : ""}`}
-                              value={itemValue}
-                              onChange={(e) => itemOnChange(e.target.value)}
-                              placeholder="Enter tag"
-                            />
-                            {errors.length > 0 && (
-                              <div className="error">{errors[0].errorText}</div>
-                            )}
-                          </div>
+                      <div className="array-item-input">
+                        <input
+                          className={`input ${item.errors.length > 0 ? "input-invalid" : ""}`}
+                          value={item.value}
+                          onChange={(e) => item.onChange(e.target.value)}
+                          placeholder="Enter tag"
+                        />
+                        {item.errors.length > 0 && (
+                          <div className="error">{item.errors.map(err => err.errorText).join(', ')}</div>
                         )}
-                      </MyForm.Item>
+                      </div>
                       <button
                         type="button"
                         className="btn-small"

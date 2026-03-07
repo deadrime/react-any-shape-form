@@ -12,16 +12,16 @@ describe("Form.ArrayItem tests", () => {
 
   describe("Basic array operations", () => {
     const MyForm = createForm({
-      items: [] as string[],
+      value: [] as string[],
     });
 
     test("append adds item to the end", async () => {
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, append }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, append }) => (
               <div>
-                <div data-testid="items-count">{fields.length}</div>
+                <div data-testid="value-count">{value.length}</div>
                 <button
                   data-testid="add-btn"
                   onClick={() => append("new item")}
@@ -34,23 +34,23 @@ describe("Form.ArrayItem tests", () => {
         </MyForm>
       );
 
-      expect(getByTestId("items-count").textContent).toBe("0");
+      expect(getByTestId("value-count").textContent).toBe("0");
 
       await userEvent.click(getByTestId("add-btn"));
 
-      expect(getByTestId("items-count").textContent).toBe("1");
-      expect(MyForm.formApi.getFieldValue("items")).toEqual(["new item"]);
+      expect(getByTestId("value-count").textContent).toBe("1");
+      expect(MyForm.formApi.getFieldValue("value")).toEqual(["new item"]);
     });
 
     test("prepend adds item to the beginning", async () => {
-      MyForm.formApi.setFieldValue("items", ["second"]);
+      MyForm.formApi.setFieldValue("value", ["second"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, prepend }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, prepend }) => (
               <div>
-                <div data-testid="first-item">{fields[0]}</div>
+                <div data-testid="first-item">{value[0]}</div>
                 <button
                   data-testid="prepend-btn"
                   onClick={() => prepend("first")}
@@ -66,18 +66,18 @@ describe("Form.ArrayItem tests", () => {
       await userEvent.click(getByTestId("prepend-btn"));
 
       expect(getByTestId("first-item").textContent).toBe("first");
-      expect(MyForm.formApi.getFieldValue("items")).toEqual(["first", "second"]);
+      expect(MyForm.formApi.getFieldValue("value")).toEqual(["first", "second"]);
     });
 
     test("remove deletes item by index", async () => {
-      MyForm.formApi.setFieldValue("items", ["item1", "item2", "item3"]);
+      MyForm.formApi.setFieldValue("value", ["item1", "item2", "item3"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, remove }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, remove }) => (
               <div>
-                <div data-testid="items-count">{fields.length}</div>
+                <div data-testid="value-count">{value.length}</div>
                 <button
                   data-testid="remove-btn"
                   onClick={() => remove(1)}
@@ -92,19 +92,19 @@ describe("Form.ArrayItem tests", () => {
 
       await userEvent.click(getByTestId("remove-btn"));
 
-      expect(getByTestId("items-count").textContent).toBe("2");
-      expect(MyForm.formApi.getFieldValue("items")).toEqual(["item1", "item3"]);
+      expect(getByTestId("value-count").textContent).toBe("2");
+      expect(MyForm.formApi.getFieldValue("value")).toEqual(["item1", "item3"]);
     });
 
     test("update modifies item by index", async () => {
-      MyForm.formApi.setFieldValue("items", ["old"]);
+      MyForm.formApi.setFieldValue("value", ["old"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, update }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, update }) => (
               <div>
-                <div data-testid="first-item">{fields[0]}</div>
+                <div data-testid="first-item">{value[0]}</div>
                 <button
                   data-testid="update-btn"
                   onClick={() => update(0, "new")}
@@ -120,18 +120,18 @@ describe("Form.ArrayItem tests", () => {
       await userEvent.click(getByTestId("update-btn"));
 
       expect(getByTestId("first-item").textContent).toBe("new");
-      expect(MyForm.formApi.getFieldValue("items")).toEqual(["new"]);
+      expect(MyForm.formApi.getFieldValue("value")).toEqual(["new"]);
     });
 
     test("update with callback function", async () => {
-      MyForm.formApi.setFieldValue("items", ["hello"]);
+      MyForm.formApi.setFieldValue("value", ["hello"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, update }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, update }) => (
               <div>
-                <div data-testid="first-item">{fields[0]}</div>
+                <div data-testid="first-item">{value[0]}</div>
                 <button
                   data-testid="update-btn"
                   onClick={() => update(0, (prev) => prev + " world")}
@@ -149,15 +149,15 @@ describe("Form.ArrayItem tests", () => {
       expect(getByTestId("first-item").textContent).toBe("hello world");
     });
 
-    test("move reorders items", async () => {
-      MyForm.formApi.setFieldValue("items", ["a", "b", "c"]);
+    test("move reorders value", async () => {
+      MyForm.formApi.setFieldValue("value", ["a", "b", "c"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, move }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, move }) => (
               <div>
-                <div data-testid="items">{fields.join(",")}</div>
+                <div data-testid="value">{value.join(",")}</div>
                 <button
                   data-testid="move-btn"
                   onClick={() => move(0, 2)}
@@ -172,19 +172,19 @@ describe("Form.ArrayItem tests", () => {
 
       await userEvent.click(getByTestId("move-btn"));
 
-      const result = MyForm.formApi.getFieldValue("items");
+      const result = MyForm.formApi.getFieldValue("value");
       expect(result).toEqual(["b", "c", "a"]);
     });
 
     test("move from end to beginning", async () => {
-      MyForm.formApi.setFieldValue("items", ["a", "b", "c"]);
+      MyForm.formApi.setFieldValue("value", ["a", "b", "c"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, move }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, move }) => (
               <div>
-                <div data-testid="items">{fields.join(",")}</div>
+                <div data-testid="value">{value.join(",")}</div>
                 <button
                   data-testid="move-btn"
                   onClick={() => move(2, 0)}
@@ -199,18 +199,18 @@ describe("Form.ArrayItem tests", () => {
 
       await userEvent.click(getByTestId("move-btn"));
 
-      expect(MyForm.formApi.getFieldValue("items")).toEqual(["c", "a", "b"]);
+      expect(MyForm.formApi.getFieldValue("value")).toEqual(["c", "a", "b"]);
     });
 
     test("move to middle position", async () => {
-      MyForm.formApi.setFieldValue("items", ["a", "b", "c", "d"]);
+      MyForm.formApi.setFieldValue("value", ["a", "b", "c", "d"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, move }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, move }) => (
               <div>
-                <div data-testid="items">{fields.join(",")}</div>
+                <div data-testid="value">{value.join(",")}</div>
                 <button
                   data-testid="move-btn"
                   onClick={() => move(3, 1)}
@@ -225,19 +225,19 @@ describe("Form.ArrayItem tests", () => {
 
       await userEvent.click(getByTestId("move-btn"));
 
-      expect(MyForm.formApi.getFieldValue("items")).toEqual(["a", "d", "b", "c"]);
+      expect(MyForm.formApi.getFieldValue("value")).toEqual(["a", "d", "b", "c"]);
     });
 
     test("move does not mutate original array", async () => {
       const originalArray = ["a", "b", "c"];
-      MyForm.formApi.setFieldValue("items", originalArray);
+      MyForm.formApi.setFieldValue("value", originalArray);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, move }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, move }) => (
               <div>
-                <div data-testid="items">{fields.join(",")}</div>
+                <div data-testid="value">{value.join(",")}</div>
                 <button
                   data-testid="move-btn"
                   onClick={() => move(0, 2)}
@@ -256,20 +256,20 @@ describe("Form.ArrayItem tests", () => {
       expect(originalArray).toEqual(["a", "b", "c"]);
 
       // Form value should be different
-      const result = MyForm.formApi.getFieldValue("items");
+      const result = MyForm.formApi.getFieldValue("value");
       expect(result).toEqual(["b", "c", "a"]);
       expect(result).not.toBe(originalArray);
     });
 
     test("move with same from and to index", async () => {
-      MyForm.formApi.setFieldValue("items", ["a", "b", "c"]);
+      MyForm.formApi.setFieldValue("value", ["a", "b", "c"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, move }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, move }) => (
               <div>
-                <div data-testid="items">{fields.join(",")}</div>
+                <div data-testid="value">{value.join(",")}</div>
                 <button
                   data-testid="move-btn"
                   onClick={() => move(1, 1)}
@@ -285,18 +285,18 @@ describe("Form.ArrayItem tests", () => {
       await userEvent.click(getByTestId("move-btn"));
 
       // Array should remain unchanged
-      expect(MyForm.formApi.getFieldValue("items")).toEqual(["a", "b", "c"]);
+      expect(MyForm.formApi.getFieldValue("value")).toEqual(["a", "b", "c"]);
     });
 
     test("move triggers re-render with updated order", async () => {
-      MyForm.formApi.setFieldValue("items", ["first", "second", "third"]);
+      MyForm.formApi.setFieldValue("value", ["first", "second", "third"]);
 
       const { getByTestId } = render(
         <MyForm>
-          <MyForm.ArrayItem name="items">
-            {({ fields, move }) => (
+          <MyForm.ArrayItem name="value">
+            {({ value, move }) => (
               <div>
-                {fields.map((item, index) => (
+                {value.map((item, index) => (
                   <div key={index} data-testid={`item-${index}`}>
                     {item}
                   </div>
@@ -352,9 +352,9 @@ describe("Form.ArrayItem tests", () => {
               },
             ]}
           >
-            {({ fields, append }) => (
+            {({ value, append }) => (
               <div>
-                <div data-testid="items-count">{fields.length}</div>
+                <div data-testid="value-count">{value.length}</div>
                 <button data-testid="add-btn" onClick={() => append("tag")}>
                   Add
                 </button>
@@ -403,7 +403,7 @@ describe("Form.ArrayItem tests", () => {
               },
             ]}
           >
-            {({ fields }) => <div data-testid="items-count">{fields.length}</div>}
+            {({ value }) => <div data-testid="value-count">{value.length}</div>}
           </MyForm.ArrayItem>
           <ErrorDisplay />
           <button
@@ -447,7 +447,7 @@ describe("Form.ArrayItem tests", () => {
               },
             ]}
           >
-            {({ fields }) => <div data-testid="items-count">{fields.length}</div>}
+            {({ value }) => <div data-testid="value-count">{value.length}</div>}
           </MyForm.ArrayItem>
           <ErrorDisplay />
           <button
@@ -494,7 +494,7 @@ describe("Form.ArrayItem tests", () => {
               },
             ]}
           >
-            {({ fields }) => <div data-testid="items-count">{fields.length}</div>}
+            {({ value }) => <div data-testid="value-count">{value.length}</div>}
           </MyForm.ArrayItem>
           <ErrorDisplay />
           <button
@@ -543,7 +543,7 @@ describe("Form.ArrayItem tests", () => {
               },
             ]}
           >
-            {({ fields: _fields, itemErrors }) => (
+            {({ value: _value, itemErrors }) => (
               <div>
                 <div data-testid="error-count">{itemErrors.length}</div>
                 {itemErrors.map((err) => (
@@ -586,11 +586,11 @@ describe("Form.ArrayItem tests", () => {
               },
             ]}
           >
-            {({ fields, update, itemErrors }) => (
+            {({ value, update, itemErrors }) => (
               <div>
                 <input
                   data-testid="email-input"
-                  value={fields[0] || ""}
+                  value={value[0] || ""}
                   onChange={(e) => update(0, e.target.value)}
                 />
                 <div data-testid="has-error">{itemErrors.length > 0 ? "yes" : "no"}</div>
@@ -750,7 +750,7 @@ describe("Form.ArrayItem tests", () => {
   describe("useArrayField hook", () => {
     test("useArrayField returns array operations", () => {
       const MyForm = createForm({
-        items: [] as string[],
+        value: [] as string[],
       });
 
       const { getByTestId } = render(
@@ -760,11 +760,11 @@ describe("Form.ArrayItem tests", () => {
       );
 
       function TestUseArrayField({ form }: { form: typeof MyForm }) {
-        const { fields, append } = form.useArrayField("items");
+        const { value, append } = form.useArrayField("value");
 
         return (
           <div>
-            <div data-testid="count">{fields.length}</div>
+            <div data-testid="count">{value.length}</div>
             <button data-testid="add-btn" onClick={() => append("item")}>
               Add
             </button>
@@ -777,7 +777,7 @@ describe("Form.ArrayItem tests", () => {
 
     test("useArrayField with validation rules", async () => {
       const MyForm = createForm({
-        items: [] as string[],
+        value: [] as string[],
       });
 
       const { getByTestId } = render(
@@ -793,7 +793,7 @@ describe("Form.ArrayItem tests", () => {
       );
 
       function TestUseArrayField({ form }: { form: typeof MyForm }) {
-        const { fields, append } = form.useArrayField("items", [
+        const { value, append } = form.useArrayField("value", [
           {
             type: "array",
             min: 1,
@@ -801,11 +801,11 @@ describe("Form.ArrayItem tests", () => {
           },
         ]);
 
-        const { errors } = form.useFieldErrors("items");
+        const { errors } = form.useFieldErrors("value");
 
         return (
           <div>
-            <div data-testid="count">{fields.length}</div>
+            <div data-testid="count">{value.length}</div>
             <button data-testid="add-btn" onClick={() => append("item")}>
               Add
             </button>
@@ -830,7 +830,7 @@ describe("Form.ArrayItem tests", () => {
 
       function TestUseArrayField({ form }: { form: typeof MyForm }) {
         // Use direct import to test itemRules parameter
-        const { fields, itemErrors } = useArrayField(
+        const { value, itemErrors } = useArrayField(
           form.formApi,
           "emails",
           undefined,
@@ -845,7 +845,7 @@ describe("Form.ArrayItem tests", () => {
 
         return (
           <div>
-            <div data-testid="count">{fields.length}</div>
+            <div data-testid="count">{value.length}</div>
             <div data-testid="item-error-count">{itemErrors.length}</div>
           </div>
         );
@@ -952,8 +952,8 @@ describe("Form.ArrayItem tests", () => {
               },
             ]}
           >
-            {({ fields }) => (
-              <div data-testid="count">{fields.length}</div>
+            {({ value }) => (
+              <div data-testid="count">{value.length}</div>
             )}
           </MyForm.ArrayItem>
           <button
@@ -991,7 +991,7 @@ describe("Form.ArrayItem tests", () => {
               },
             ]}
           >
-            {({ fields: _fields, remove, itemErrors }) => (
+            {({ value: _value, remove, itemErrors }) => (
               <div>
                 <div data-testid="error-count">{itemErrors.length}</div>
                 <button data-testid="remove-btn" onClick={() => remove(0)}>

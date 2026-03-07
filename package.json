@@ -27,7 +27,7 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test": "vitest --typecheck"
+    "test": "vitest run --typecheck"
   },
   "module": "dist/index.es.js",
   "exports": {

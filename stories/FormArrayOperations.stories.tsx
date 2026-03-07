@@ -20,11 +20,11 @@ export const ArrayOperationsExample: StoryObj<typeof Form> = {
       <MyForm>
         <div className="form">
           <MyForm.ArrayItem name="items">
-            {({ fields }) => (
+            {({ value }) => (
               <div className="form-item">
                 <label>Items</label>
                 <div className="array-list">
-                  {fields.map((item, index) => (
+                  {value.map((item, index) => (
                     <div key={index} className="array-item">
                       <span>{item}</span>
                       <div className="array-actions">
@@ -40,7 +40,7 @@ export const ArrayOperationsExample: StoryObj<typeof Form> = {
                           type="button"
                           className="btn-small"
                           onClick={() => move(index, index + 1)}
-                          disabled={index === fields.length - 1}
+                          disabled={index === value.length - 1}
                         >
                           ↓
                         </button>

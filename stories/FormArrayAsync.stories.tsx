@@ -27,45 +27,40 @@ export const ArrayItemAsyncValidationExample: StoryObj<typeof Form> = {
     return (
       <MyForm>
         <div className="form">
-          <MyForm.ArrayItem name="usernames">
-            {({ fields }) => (
+          <MyForm.ArrayItem
+            name="usernames"
+            itemRules={[
+              { required: true, message: "Username is required!" },
+              {
+                validator: async (value: string) => {
+                  const isAvailable = await checkUsernameAvailability(value);
+                  if (!isAvailable) {
+                    throw new Error("Username is already taken!");
+                  }
+                },
+              },
+            ]}
+          >
+            {({ items }) => (
               <div className="form-item">
                 <label>Usernames (async validation)</label>
                 <div className="array-list">
-                  {fields.map((_username, index) => (
+                  {items.map((item, index) => (
                     <div key={index} className="array-item">
-                      <MyForm.Item
-                        name={["usernames", index]}
-                        rules={[
-                          { required: true, message: "Username is required!" },
-                          {
-                            validator: async (value) => {
-                              const isAvailable = await checkUsernameAvailability(value);
-                              if (!isAvailable) {
-                                throw new Error("Username is already taken!");
-                              }
-                              return true;
-                            },
-                          },
-                        ]}
-                      >
-                        {({ value: itemValue, onChange, errors, validationStatus }) => (
-                          <div className="array-item-input">
-                            <input
-                              className={`input ${validationStatus === "validating" ? "input-validating" : ""} ${validationStatus === "error" ? "input-invalid" : ""} ${validationStatus === "success" ? "input-success" : ""}`}
-                              value={itemValue}
-                              onChange={(e) => onChange(e.target.value)}
-                              placeholder="Username"
-                            />
-                            {validationStatus === "validating" && (
-                              <div className="validating">Checking...</div>
-                            )}
-                            {errors.length > 0 && (
-                              <div className="error">{errors[0].errorText}</div>
-                            )}
-                          </div>
+                      <div className="array-item-input">
+                        <input
+                          className={`input ${item.validationStatus === "validating" ? "input-validating" : ""} ${item.validationStatus === "error" ? "input-invalid" : ""} ${item.validationStatus === "success" ? "input-success" : ""}`}
+                          value={item.value}
+                          onChange={(e) => item.onChange(e.target.value)}
+                          placeholder="Username"
+                        />
+                        {item.validationStatus === "validating" && (
+                          <div className="validating">Checking...</div>
                         )}
-                      </MyForm.Item>
+                        {item.errors.length > 0 && (
+                          <div className="error">{item.errors[0].errorText}</div>
+                        )}
+                      </div>
                       <button
                         type="button"
                         className="btn-small"

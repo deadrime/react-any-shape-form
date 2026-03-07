@@ -28,26 +28,23 @@ export const ArrayExample: StoryObj<typeof Form> = {
               { type: "string", min: 2, message: "Тег минимум 2 символа", validateTrigger: ['onChange', 'onFinish'] },
             ]}
           >
-            {({ fields, append, remove, itemErrors, errors }) => (
+            {({ items, append, remove, errors }) => (
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Tags</label>
                 <div className="flex flex-wrap gap-1">
-                  {fields.map((tag, index) => {
-                    const itemError = itemErrors.find((e) => e.index === index);
-                    return (
-                      <div key={index} className="flex flex-col gap-0.5">
-                        <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-sm">
-                          {tag}
-                          <button type="button" onClick={() => remove(index)} className="text-gray-400 hover:text-gray-700">×</button>
+                  {items.map(({ value: tag, index, errors: itemErrors }) => (
+                    <div key={index} className="flex flex-col gap-0.5">
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-sm">
+                        {tag}
+                        <button type="button" onClick={() => remove(index)} className="text-gray-400 hover:text-gray-700">×</button>
+                      </span>
+                      {itemErrors.length > 0 && (
+                        <span className="text-red-500 text-xs">
+                          {itemErrors.map((e) => e.errorText).join(", ")}
                         </span>
-                        {itemError && (
-                          <span className="text-red-500 text-xs">
-                            {itemError.errors.map((e) => e.errorText).join(", ")}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                      )}
+                    </div>
+                  ))}
                 </div>
                 <input
                   className="border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-400"

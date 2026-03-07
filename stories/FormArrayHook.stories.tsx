@@ -14,7 +14,7 @@ export const ArrayHookExample: StoryObj<typeof Form> = {
       items: ["item1", "item2"],
     });
 
-    const { fields, append, remove, update } = MyForm.useArrayField("items");
+    const { value, append, remove, update } = MyForm.useArrayField("items");
 
     return (
       <MyForm>
@@ -22,7 +22,7 @@ export const ArrayHookExample: StoryObj<typeof Form> = {
           <div className="form-item">
             <label>Items</label>
             <div className="array-list">
-              {fields.map((item, index) => (
+              {value.map((item, index) => (
                 <div key={index} className="array-item">
                   <span>{item}</span>
                   <div className="array-actions">
@@ -47,7 +47,7 @@ export const ArrayHookExample: StoryObj<typeof Form> = {
             <button
               type="button"
               className="btn"
-              onClick={() => append(`item${fields.length + 1}`)}
+              onClick={() => append(`item${value.length + 1}`)}
             >
               Add Item
             </button>

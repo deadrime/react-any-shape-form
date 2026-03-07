@@ -5,7 +5,7 @@ export { default as FormItem } from './FormItem';
 export type { FormItemProps, FormItemChildrenProps } from './FormItem';
 export { useFormContext, useFormInstance, createFormContext, FormContext } from './FormContext';
 export type { FormContextState } from './FormContext';
-export { createForm, useForm, useCreateForm, useWatch, useField, useFieldValidation } from './useForm';
+export { createForm, useForm, useCreateForm, useWatch, useField, useFieldValidation, useArrayFieldValidation } from './useForm';
 export type {
   FieldError,
   FieldOnChangeCb,

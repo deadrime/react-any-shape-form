@@ -14,7 +14,7 @@ import {
   Prettify,
   ExtractFormState,
 } from "./typesHelpers";
-import { FieldUpdate, ValidationRule, ValidationError } from "./types";
+import { FieldUpdate, ValidationRule, ValidationError, ValidationStatus, ArrayItemError } from "./types";
 import { Form, FormProps } from "./Form";
 import FormItem, { FormItemProps } from "./FormItem";
 import FormArrayItem, {
@@ -95,6 +95,9 @@ export const createForm = <
     itemRules?: ValidationRule<ArrayOnly<Types["state"][T]>[number]>[],
   ) => useArrayField(form, field, rules, itemRules);
 
+  const useArrayFieldValidationHook = <T extends ArrayFields>(field: T) =>
+    useArrayFieldValidation(form, field);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const useChildFormHook = <T extends Types["field"]>(
     field: T,
@@ -113,6 +116,7 @@ export const createForm = <
     formApi: typeof form;
     useFieldErrors: typeof useFieldErrorsHook;
     useArrayField: typeof useArrayFieldHook;
+    useArrayFieldValidation: typeof useArrayFieldValidationHook;
     useChildForm: typeof useChildFormHook;
   };
 
@@ -123,6 +127,7 @@ export const createForm = <
   CompoundForm.useField = useFieldHook;
   CompoundForm.useArrayField = useArrayFieldHook;
   CompoundForm.useFieldErrors = useFieldErrorsHook;
+  CompoundForm.useArrayFieldValidation = useArrayFieldValidationHook;
   CompoundForm.useChildForm = useChildFormHook;
 
   return CompoundForm;
@@ -248,6 +253,32 @@ export const useFieldValidation = <
     return form.onFieldValidationStatusChange(field, (status, errors) => {
       setStatus(status);
       setErrors(errors || []);
+    });
+  }, [field, form]);
+
+  return { errors, status };
+};
+
+export const useArrayFieldValidation = <
+  Form extends FormApi<any>,
+  Types extends FormApiGenericTypes<Form> = FormApiGenericTypes<Form>,
+  State extends Types["state"] = Types["state"],
+  Field extends ArrayOnlyFields<State> = ArrayOnlyFields<State>,
+>(
+  form: Form,
+  field: Field,
+) => {
+  const [errors, setErrors] = useState(
+    [] as ArrayItemError<State[Field][number]>[],
+  );
+  const [status, setStatus] = useState<ValidationStatus>(() =>
+    form.getArrayItemErrors(field).length > 0 ? 'error' : 'notStarted',
+  );
+
+  useEffect(() => {
+    return form.onArrayItemError(field, (errors) => {
+      setErrors(errors);
+      setStatus(errors.length > 0 ? 'error' : 'success');
     });
   }, [field, form]);
 

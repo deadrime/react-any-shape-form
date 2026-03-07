@@ -1,14 +1,23 @@
-import React, { memo, useCallback, useEffect, useState } from "react"
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react"
 import FormItem, { FormItemProps } from "./FormItem"
 import { ArrayItemError, FieldUpdate, FieldUpdateCb, ValidationError, ValidationRule, ValidationStatus } from "./types"
-import { useField } from "./useForm"
+import { useField, useFieldValidation } from "./useForm"
 import { FormApi } from "./FormApi"
 import { ArrayOnlyFields, FormApiGenericTypes } from "./typesHelpers"
 import { useFormInstance } from "./FormContext"
 import { useInitField } from "./helpers/useFieldData"
 
+export type ArrayItemProps<T> = {
+  value: T;
+  index: number;
+  onChange: (value: T) => void;
+  errors: ValidationError<T>[];
+  validationStatus: ValidationStatus;
+};
+
 type FormArrayAPI<T extends unknown[]> = {
-  fields: T,
+  value: T,
+  items: ArrayItemProps<T[number]>[],
   append: (value: T[number]) => void,
   remove: (index: number) => void,
   update: (index: number, value: T[number] | FieldUpdateCb<T[number]>) => void,
@@ -27,6 +36,8 @@ export const useArrayField = <
 >(form: Form, field: Field, rules?: ValidationRule<State[Field]>[], itemRules?: ValidationRule<State[Field][number]>[]) => {
   const [value, setValue] = useField(form, field);
   const [itemErrors, setItemErrors] = useState<ArrayItemError<State[Field][number]>[]>([]);
+  const { status: fieldValidationStatus, errors } = useFieldValidation(form, field);
+
   useInitField(form, field, rules);
 
   // Set array item validation rules
@@ -44,21 +55,30 @@ export const useArrayField = <
     return unsubscribe;
   }, [form, field]);
 
+  const triggerOnChangeValidation = useCallback(() => {
+    form.getFieldError(field, 'onChange');
+    form.validateArrayItems(field, 'onChange');
+  }, [form, field]);
+
   const append = useCallback((value: State[Field][number]) => {
-    setValue?.(fields => fields.concat(value))
-  }, [setValue])
+    setValue?.(fields => fields.concat(value));
+    triggerOnChangeValidation();
+  }, [setValue, triggerOnChangeValidation])
 
   const prepend = useCallback((value: State[Field][number]) => {
-    setValue?.(fields => [value].concat(fields))
-  }, [setValue])
+    setValue?.(fields => [value].concat(fields));
+    triggerOnChangeValidation();
+  }, [setValue, triggerOnChangeValidation])
 
   const remove = useCallback((index: number) => {
     setValue?.(fields => fields.toSpliced(index, 1) as State[Field]);
-  }, [setValue])
+    triggerOnChangeValidation();
+  }, [setValue, triggerOnChangeValidation])
 
   const update = useCallback((index: number, value: State[Field][number] | FieldUpdateCb<State[Field][number]>) => {
     setValue?.(fields => fields.with(index, typeof value === 'function' ? (value as FieldUpdateCb<State[Field][number]>)(fields[index]) : value) as State[Field]);
-  }, [setValue])
+    triggerOnChangeValidation();
+  }, [setValue, triggerOnChangeValidation])
 
   const move = useCallback((from: number, to: number) => {
     setValue?.(fields => {
@@ -66,16 +86,37 @@ export const useArrayField = <
       const withoutItem = fields.toSpliced(from, 1);
       return withoutItem.toSpliced(to, 0, movedItem);
     });
-  }, [setValue])
+    triggerOnChangeValidation();
+  }, [setValue, triggerOnChangeValidation])
+
+  const items = useMemo(
+    () => (value as State[Field]).map((item, index) => {
+      const itemError = itemErrors.find(e => e.index === index);
+      const itemValidationStatus: ValidationStatus =
+        fieldValidationStatus === 'notStarted' || fieldValidationStatus === 'validating'
+          ? fieldValidationStatus
+          : itemError ? 'error' : 'success';
+      return {
+        value: item,
+        index,
+        onChange: (newValue: State[Field][number]) => update(index, newValue),
+        errors: itemError?.errors ?? [],
+        validationStatus: itemValidationStatus,
+      };
+    }),
+    [value, itemErrors, update, fieldValidationStatus],
+  );
 
   return {
-    fields: value,
+    value,
+    errors,
+    items,
+    itemErrors,
     append,
     prepend,
     remove,
     move,
     update,
-    itemErrors
   }
 }
 
