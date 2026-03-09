@@ -800,13 +800,15 @@ describe("Form.ArrayItem tests", () => {
       );
 
       function TestUseArrayField({ form }: { form: typeof MyForm }) {
-        const { value, append } = form.useArrayField("value", [
-          {
-            type: "array",
-            min: 1,
-            message: "At least one item required",
-          },
-        ]);
+        const { value, append } = form.useArrayField("value", {
+          rules: [
+            {
+              type: "array",
+              min: 1,
+              message: "At least one item required",
+            },
+          ],
+        });
 
         const { errors } = form.useFieldErrors("value");
 
@@ -841,14 +843,15 @@ describe("Form.ArrayItem tests", () => {
         const { value, itemErrors } = useArrayField(
           form.formApi,
           "emails",
-          undefined,
-          [
-            {
-              type: "email",
-              message: "Invalid email format",
-              validateTrigger: ["onFinish"],
-            },
-          ]
+          {
+            itemRules: [
+              {
+                type: "email",
+                message: "Invalid email format",
+                validateTrigger: ["onFinish"],
+              },
+            ],
+          }
         );
 
         return (

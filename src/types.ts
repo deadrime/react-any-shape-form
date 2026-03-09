@@ -16,6 +16,12 @@ export type Validator<T = unknown, S = Record<string, unknown>> = (value: T, rul
 
 export type ValidateTrigger = 'onChange' | 'onFinish'
 
+export interface ItemSchemaResolver<T = unknown> {
+  /** @internal */
+  _validate: (value: T) => Promise<string[]>;
+  validateTrigger?: ValidateTrigger[];
+}
+
 interface BaseRule {
   required?: boolean
   validateTrigger?: ValidateTrigger[]
@@ -87,11 +93,12 @@ export type ArrayItemProps<T> = {
 export type FormArrayAPI<T extends unknown[]> = {
   value: T;
   items: ArrayItemProps<T[number]>[];
-  append: (value: T[number]) => void;
+  append: (value: T[number]) => Promise<void>;
+  prepend: (value: T[number]) => Promise<void>;
+  insert: (index: number, value: T[number]) => Promise<void>;
   remove: (index: number) => void;
-  update: (index: number, value: T[number] | FieldUpdateCb<T[number]>) => void;
   move: (from: number, to: number) => void;
-  prepend: (value: T[number]) => void;
+  update: (index: number, value: T[number] | FieldUpdateCb<T[number]>) => Promise<void>;
   itemErrors: ArrayItemError<T[number]>[];
   errors: ValidationError<T>[];
   validationStatus: ValidationStatus | undefined;

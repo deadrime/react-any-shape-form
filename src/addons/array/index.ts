@@ -3,7 +3,7 @@ import FormArrayItem, { FormArrayItemProps } from "./FormArrayItem";
 import { useArrayField } from "./FormArrayItem";
 import { FormApi } from "../../FormApi";
 import { AddonExtensionHKT, ArrayOnly, ArrayOnlyFields, FormApiGenericTypes } from "../../typesHelpers";
-import { ArrayItemError, ArrayItemProps, FieldUpdateCb, FormAddon, FormApiAddon, IArrayAddon, ValidationError, ValidationRule, ValidationStatus, ValidateTrigger } from "../../types";
+import { ArrayItemError, ArrayItemProps, FieldUpdateCb, FormAddon, FormApiAddon, IArrayAddon, ItemSchemaResolver, ValidationError, ValidationRule, ValidationStatus, ValidateTrigger } from "../../types";
 import { ARRAY_ADDON_KEY } from "../addonKeys";
 import { getValidationErrors, prepareRules } from "../../helpers/getValidationErrors";
 
@@ -136,15 +136,19 @@ export type ArrayCompoundFormExtension<State extends Record<string, unknown>> = 
   ) => React.ReactElement;
   useArrayField: <T extends ArrayOnlyFields<State>>(
     field: T,
-    rules?: ValidationRule<State[T]>[],
-    itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[],
+    options?: {
+      rules?: ValidationRule<State[T]>[];
+      itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[];
+      schema?: ItemSchemaResolver<ArrayOnly<State[T]>[number]>;
+    },
   ) => {
     value: State[T];
     errors: ValidationError<State[T]>[];
     items: ArrayItemProps<ArrayOnly<State[T]>[number]>[];
     itemErrors: ArrayItemError<ArrayOnly<State[T]>[number]>[];
-    append: (value: ArrayOnly<State[T]>[number]) => void;
-    prepend: (value: ArrayOnly<State[T]>[number]) => void;
+    append: (value: ArrayOnly<State[T]>[number]) => Promise<void>;
+    prepend: (value: ArrayOnly<State[T]>[number]) => Promise<void>;
+    insert: (index: number, value: ArrayOnly<State[T]>[number]) => Promise<void>;
     remove: (index: number) => void;
     move: (from: number, to: number) => void;
     update: (
@@ -152,7 +156,7 @@ export type ArrayCompoundFormExtension<State extends Record<string, unknown>> = 
       value:
         | ArrayOnly<State[T]>[number]
         | FieldUpdateCb<ArrayOnly<State[T]>[number]>,
-    ) => void;
+    ) => Promise<void>;
   };
   useArrayFieldValidation: <T extends ArrayOnlyFields<State>>(
     field: T,
@@ -185,9 +189,12 @@ export function withArrayFields(): ArrayFieldsAddon {
 
       const useArrayFieldHook = <T extends ArrayOnlyFields<State>>(
         field: T,
-        rules?: ValidationRule<State[T]>[],
-        itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[],
-      ) => useArrayField(form, field, rules, itemRules);
+        options?: {
+          rules?: ValidationRule<State[T]>[];
+          itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[];
+          schema?: ItemSchemaResolver<ArrayOnly<State[T]>[number]>;
+        },
+      ) => useArrayField(form, field, options);
 
       const useArrayFieldValidationHook = <T extends ArrayOnlyFields<State>>(
         field: T,
