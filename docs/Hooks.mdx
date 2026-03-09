@@ -62,6 +62,22 @@ Manage array fields with add, remove, and update operations. Available via `with
 const { value, append, remove, update } = MyForm.useArrayField(fieldName);
 ```
 
+### [useFormState](/docs/documentation-hooks-useformstate--docs)
+
+Get a reactive snapshot of the overall form state. Available via `withFormState()` addon.
+
+```tsx
+const { isDirty, dirtyFields, touchedFields, isSubmitting, isValid } = MyForm.useFormState();
+```
+
+### [useFieldState](/docs/documentation-hooks-usefieldstate--docs)
+
+Get per-field state: touched, dirty, and validity. Re-renders only when that specific field's state changes. Available via `withFormState()` addon.
+
+```tsx
+const { isTouched, isDirty, isValid } = MyForm.useFieldState(fieldName);
+```
+
 ## Combining Hooks
 
 You can use multiple hooks together for complex scenarios:

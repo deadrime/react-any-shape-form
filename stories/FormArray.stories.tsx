@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useForm } from "@/useForm";
 import { Form } from "@/Form";
-import { withArrayFields } from "@/addons/array";
+import { withArrayFields } from "@/addons/array/index.js";
 
 const meta: Meta<typeof Form> = {
   component: Form,

@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/addon-docs/blocks';
 
 <Meta
-  title="Documentation/Addons"
+  title="Documentation/Addons/Create Addon"
   parameters={{
     viewMode: 'docs',
     previewTabs: {
@@ -10,33 +10,9 @@ import { Meta } from '@storybook/addon-docs/blocks';
   }}
 />
 
-# Addons
+# Creating a Custom Addon
 
-Addons are the extension mechanism for React Any Shape Form. They let you augment any form instance with new behaviour, extra state, and additional methods — without touching the core library.
-
-## Why Addons?
-
-Out of the box, `createForm` gives you fields, validation, and submission. Addons let you bolt on capabilities that don't belong in every form:
-
-- **Built-in addons** — `withArrayFields()`, `withNestedForms()`
-- **Your own addons** — auto-save, dirty tracking, analytics, undo history, and anything else you need
-
-An addon is just a plain object. You pass it to `createForm` or `useForm` alongside the initial state:
-
-```ts
-const MyForm = createForm(
-  { name: '', email: '' },
-  withAutoSave('draft-key'),     // ← addon
-  withDirtyTracking(),           // ← addon
-);
-```
-
-Each addon can:
-- Merge **extra fields** into the form state
-- Install a **lifecycle object** that reacts to field updates, validation, and state reads
-- Add **methods and hooks** to the compound form object (`MyForm.clearDraft()`, `MyForm.useIsDirty()`, etc.)
-
----
+Addons extend React Any Shape Form with custom behavior. This guide shows how to build your own addons.
 
 ## How an Addon Works
 
@@ -447,160 +423,6 @@ class AuditAddon implements FormApiAddon {
 
 ---
 
-## Schema Validation Addons
-
-Three built-in addons let you validate the entire form state against a **Zod**, **Yup**, or **Valibot** schema. Schema errors are mapped back to individual fields and surface exactly like per-field rule errors — in `errors` inside `Form.Item`, `useFieldErrors`, and the thrown array from `validateFields`.
-
-### Installation
-
-The schema libraries are optional peer dependencies. Install whichever you need:
-
-```bash
-npm install zod        # or yarn add zod
-npm install yup        # or yarn add yup
-npm install valibot    # or yarn add valibot
-```
-
----
-
-### `withZodSchema(schema)`
-
-```ts
-import { z } from 'zod';
-import { createForm } from 'react-any-shape-form';
-import { withZodSchema } from 'react-any-shape-form/addons/zodSchema';
-
-const schema = z.object({
-  email: z.string().email('Invalid email address'),
-  age: z.number().min(18, 'Must be 18 or older'),
-});
-
-const MyForm = createForm(
-  { email: '', age: 0 },
-  withZodSchema(schema),
-);
-```
-
-### `withYupSchema(schema)`
-
-```ts
-import * as yup from 'yup';
-import { createForm } from 'react-any-shape-form';
-import { withYupSchema } from 'react-any-shape-form/addons/yupSchema';
-
-const schema = yup.object({
-  email: yup.string().email('Invalid email address').required(),
-  age: yup.number().min(18, 'Must be 18 or older').required(),
-});
-
-const MyForm = createForm(
-  { email: '', age: 0 },
-  withYupSchema(schema),
-);
-```
-
-### `withValibotSchema(schema)`
-
-```ts
-import * as v from 'valibot';
-import { createForm } from 'react-any-shape-form';
-import { withValibotSchema } from 'react-any-shape-form/addons/valibotSchema';
-
-const schema = v.object({
-  email: v.pipe(v.string(), v.email('Invalid email address')),
-  age: v.pipe(v.number(), v.minValue(18, 'Must be 18 or older')),
-});
-
-const MyForm = createForm(
-  { email: '', age: 0 },
-  withValibotSchema(schema),
-);
-```
-
----
-
-### Full example
-
-Schema errors appear in the same `errors` array as rule-based errors — no extra wiring needed:
-
-```tsx
-const MyForm = createForm(
-  { email: '', age: 0 },
-  withZodSchema(
-    z.object({
-      email: z.string().email('Invalid email address'),
-      age: z.number().min(18, 'Must be 18 or older'),
-    })
-  ),
-);
-
-function SignupForm() {
-  return (
-    <MyForm onSubmit={(values) => console.log(values)}>
-      <MyForm.Item name="email">
-        {({ value, onChange, errors }) => (
-          <div>
-            <input value={value} onChange={(e) => onChange(e.target.value)} />
-            {errors[0] && <span className="error">{errors[0].errorText}</span>}
-          </div>
-        )}
-      </MyForm.Item>
-
-      <MyForm.Item name="age">
-        {({ value, onChange, errors }) => (
-          <div>
-            <input
-              type="number"
-              value={value}
-              onChange={(e) => onChange(Number(e.target.value))}
-            />
-            {errors[0] && <span className="error">{errors[0].errorText}</span>}
-          </div>
-        )}
-      </MyForm.Item>
-
-      <button type="submit">Sign up</button>
-    </MyForm>
-  );
-}
-```
-
----
-
-### Combining schema validation with field rules
-
-Schema addons and per-field `rules` are fully independent — both run on submit and their errors are merged together. Use field `rules` for `onChange` feedback and a schema for final `onFinish` validation:
-
-```tsx
-<MyForm.Item
-  name="email"
-  rules={[
-    // Runs onChange — gives instant feedback while typing
-    { type: 'email', message: 'Invalid format', validateTrigger: ['onChange'] },
-  ]}
->
-  {({ value, onChange, errors }) => (
-    <input value={value} onChange={(e) => onChange(e.target.value)} />
-  )}
-</MyForm.Item>
-// Schema (withZodSchema) also validates 'email' on submit — both error sets are shown
-```
-
----
-
-### Behavior notes
-
-| | Schema addons | Field rules |
-|---|---|---|
-| Runs on `onChange` | No (always skipped) | Yes, if `validateTrigger` includes `onChange` |
-| Runs on `onFinish` / submit | Yes | Yes |
-| Errors appear in `Form.Item` | Yes | Yes |
-| Errors thrown from `validateFields` | Yes | Yes |
-
-Schema addons intentionally skip `onChange` validation — schema parsing is designed for whole-form checks on submit, not per-keystroke feedback.
-
----
-
 ## Multiple Addons
 
 Pass any number of addons to `createForm`. Their states and extensions are merged:
@@ -716,9 +538,8 @@ addon?.doSomething();
 
 ## See Also
 
-- **[Array Fields](/docs/documentation-array-fields--docs)** — `withArrayFields()` built-in addon
-- **[Nested Forms](/docs/documentation-nested-forms--docs)** — `withNestedForms()` built-in addon
+- **[Schema Validation](/docs/documentation-addons-schema--docs)** — Zod, Yup, Valibot integration
+- **[Array Fields](/docs/documentation-arrays-array-fields--docs)** — Built-in array addon
+- **[Nested Forms](/docs/documentation-nested-forms--docs)** — Built-in nested forms addon
+- **[useFormState](/docs/documentation-hooks-useformstate--docs)** — Form state tracking addon
 - **[Validation](/docs/documentation-validation--docs)** — Validation rules and custom validators
-- **[Zod](https://zod.dev)** — TypeScript-first schema validation library
-- **[Yup](https://github.com/jquense/yup)** — Schema builder for value parsing and validation
-- **[Valibot](https://valibot.dev)** — Modular and type-safe schema library

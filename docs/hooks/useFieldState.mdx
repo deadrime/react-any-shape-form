@@ -1,0 +1,201 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta
+  title="Documentation/Hooks/useFieldState"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# useFieldState
+
+Get a reactive per-field state snapshot: whether the field has been touched, is dirty, or has a validation error. Requires the [`withFormState()`](/docs/documentation-addons--docs#withformstate) addon.
+
+## Signature
+
+```tsx
+const { isTouched, isDirty, isValid } = MyForm.useFieldState(fieldName);
+```
+
+## Parameters
+
+- `fieldName` — the name of the field (type-safe, autocompleted from form state)
+
+## Returns
+
+An object containing:
+
+| Property | Type | Description |
+|---|---|---|
+| `isTouched` | `boolean` | Field has been changed at least once. Stays `true` even if the value is restored. Resets on `resetFields()` / `setInitialState()` |
+| `isDirty` | `boolean` | Current value differs from the initial value |
+| `isValid` | `boolean` | `false` while the field has an active validation error |
+
+## Setup
+
+Pass `withFormState()` when creating the form:
+
+```tsx
+import { createForm } from 'react-any-shape-form';
+import { withFormState } from 'react-any-shape-form/addons/formState';
+
+const MyForm = createForm(
+  { name: '', email: '' },
+  withFormState(),
+);
+```
+
+## Example
+
+### Show errors only after first interaction
+
+A common UX pattern: don't show validation errors until the user has actually touched the field.
+
+```tsx
+function NameField() {
+  const { isTouched } = MyForm.useFieldState('name');
+
+  return (
+    <MyForm.Item
+      name="name"
+      rules={[{ required: true, message: 'Name is required' }]}
+      validateTrigger="onChange"
+    >
+      {({ value, onChange, errors }) => (
+        <div>
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+          {isTouched && errors[0] && (
+            <span className="error">{errors[0].errorText}</span>
+          )}
+        </div>
+      )}
+    </MyForm.Item>
+  );
+}
+```
+
+### Modified field indicator
+
+```tsx
+function EmailField() {
+  const { isDirty, isValid } = MyForm.useFieldState('email');
+
+  return (
+    <MyForm.Item name="email">
+      {({ value, onChange }) => (
+        <div>
+          <label>
+            Email
+            {isDirty && <span className="badge">modified</span>}
+          </label>
+          <input
+            className={!isValid ? 'input-invalid' : ''}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        </div>
+      )}
+    </MyForm.Item>
+  );
+}
+```
+
+### Full example
+
+```tsx
+import { createForm } from 'react-any-shape-form';
+import { withFormState } from 'react-any-shape-form/addons/formState';
+
+const SignupForm = createForm(
+  { username: '', password: '' },
+  withFormState(),
+);
+
+function FieldWithMeta({
+  name,
+  label,
+  type = 'text',
+}: {
+  name: 'username' | 'password';
+  label: string;
+  type?: string;
+}) {
+  const { isTouched, isDirty, isValid } = SignupForm.useFieldState(name);
+
+  return (
+    <SignupForm.Item
+      name={name}
+      rules={[{ required: true, message: `${label} is required` }]}
+      validateTrigger="onChange"
+    >
+      {({ value, onChange, errors }) => (
+        <div>
+          <label>
+            {label}
+            {isDirty && <span className="badge">modified</span>}
+          </label>
+          <input
+            type={type}
+            className={isTouched && !isValid ? 'input-invalid' : ''}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+          {isTouched && errors[0] && (
+            <span className="error">{errors[0].errorText}</span>
+          )}
+        </div>
+      )}
+    </SignupForm.Item>
+  );
+}
+
+function MySignupForm() {
+  return (
+    <SignupForm onSubmit={console.log}>
+      <FieldWithMeta name="username" label="Username" />
+      <FieldWithMeta name="password" label="Password" type="password" />
+      <button type="submit">Sign up</button>
+    </SignupForm>
+  );
+}
+```
+
+## Re-render behaviour
+
+`useFieldState` subscribes to the global form state notification, but returns a **stable object reference** when the field's own state hasn't changed. This means a component using `useFieldState('name')` will **not** re-render when only `email` changes — unlike `useFormState()` which re-renders on any change.
+
+```tsx
+// Only re-renders when 'name' field's isTouched/isDirty/isValid changes
+const nameState = MyForm.useFieldState('name');
+
+// Re-renders on any field change in the form
+const formState = MyForm.useFormState();
+```
+
+## `isTouched` vs `isDirty`
+
+| | `isTouched` | `isDirty` |
+|---|---|---|
+| Initially | `false` | `false` |
+| After first change | `true` | `true` (if value ≠ initial) |
+| After restoring initial value | `true` | `false` |
+| After `resetFields()` | `false` | `false` |
+| After `setInitialState()` | `false` | `false` |
+
+## Use Cases
+
+- Show validation errors only after the user has interacted with a field
+- Mark modified fields with a visual indicator
+- Enable per-field undo (restore to initial value) based on `isDirty`
+- Drive per-field save buttons
+- Combine with `useFieldValidation` for complete field state
+
+## See Also
+
+- **[useFormState](/docs/documentation-hooks-useformstate--docs)** - Overall form state (`isDirty`, `isSubmitting`, `isValid`, etc.)
+- **[useFieldValidation](/docs/documentation-hooks-usefieldvalidation--docs)** - Validation errors and status for a field
+- **[withFormState](/docs/documentation-addons--docs#withformstate)** - The addon that enables this hook
+- **[Addons](/docs/documentation-addons--docs)** - How addons work

@@ -1,0 +1,155 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta
+  title="Documentation/Addons"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# Addons
+
+Addons are the extension mechanism for React Any Shape Form. They let you augment any form instance with new behaviour, extra state, and additional methods — without touching the core library.
+
+## Why Addons?
+
+Out of the box, `createForm` gives you fields, validation, and submission. Addons let you bolt on capabilities that don't belong in every form:
+
+- **Built-in addons** — `withArrayFields()`, `withNestedForms()`
+- **Your own addons** — auto-save, dirty tracking, analytics, undo history, and anything else you need
+
+An addon is just a plain object. You pass it to `createForm` or `useForm` alongside the initial state:
+
+```ts
+const MyForm = createForm(
+  { name: '', email: '' },
+  withAutoSave('draft-key'),     // ← addon
+  withDirtyTracking(),           // ← addon
+);
+```
+
+Each addon can:
+- Merge **extra fields** into the form state
+- Install a **lifecycle object** that reacts to field updates, validation, and state reads
+- Add **methods and hooks** to the compound form object (`MyForm.clearDraft()`, `MyForm.useIsDirty()`, etc.)
+
+---
+
+## Built-in Addons
+
+### Array Fields
+
+For managing dynamic arrays of fields — lists, repeating sections, tags, etc.
+
+- **[Array Fields](/docs/documentation-arrays-array-fields--docs)** — Full documentation
+- **[Array Item Validation](/docs/documentation-arrays-array-item-validation--docs)** — Validation for array items
+
+### Nested Forms
+
+For composing multiple forms together — master-detail relationships, sections with independent validation.
+
+- **[Nested Forms](/docs/documentation-nested-forms--docs)** — Full documentation
+
+### Form State
+
+For tracking dirty state, touched fields, and submission progress.
+
+- **[useFormState](/docs/documentation-hooks-useformstate--docs)** — Overall form state hook
+- **[useFieldState](/docs/documentation-hooks-usefieldstate--docs)** — Per-field state hook
+
+```tsx
+import { withFormState } from 'react-any-shape-form/addons/formState';
+
+const MyForm = createForm(
+  { name: '', email: '' },
+  withFormState(),
+);
+```
+
+Once added, two hooks become available on the compound form object:
+
+#### `useFormState()`
+
+Returns a snapshot of the whole form. Re-renders on any change.
+
+```tsx
+const {
+  isDirty,        // at least one field differs from initial value
+  dirtyFields,    // ['name', 'email'] — keys of changed fields
+  touchedFields,  // fields changed at least once (stays set until reset)
+  isSubmitting,   // true while formApi.submit() is in progress
+  isValid,        // false while any field has an active validation error
+} = MyForm.useFormState();
+```
+
+**Example — controlled Submit button:**
+
+```tsx
+function Footer() {
+  const { isDirty, isSubmitting, isValid } = MyForm.useFormState();
+  return (
+    <button type="submit" disabled={!isDirty || !isValid || isSubmitting}>
+      {isSubmitting ? 'Saving…' : 'Save'}
+    </button>
+  );
+}
+```
+
+#### `useFieldState(field)`
+
+Returns state for a single field. Only re-renders when *that field's* state changes — more efficient than `useFormState` when you only need metadata for one field.
+
+```tsx
+const {
+  isTouched,  // changed at least once; stays true even if value is restored
+  isDirty,    // current value ≠ initial value
+  isValid,    // false while the field has an active validation error
+} = MyForm.useFieldState('name');
+```
+
+**Example — show error only after user interaction:**
+
+```tsx
+function NameField() {
+  const { isTouched } = MyForm.useFieldState('name');
+  return (
+    <MyForm.Item name="name" rules={[{ required: true, message: 'Required' }]} validateTrigger="onChange">
+      {({ value, onChange, errors }) => (
+        <div>
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+          {isTouched && errors[0] && <span className="error">{errors[0].errorText}</span>}
+        </div>
+      )}
+    </MyForm.Item>
+  );
+}
+```
+
+### Schema Validation
+
+For validating the entire form against a schema — Zod, Yup, or Valibot.
+
+- **[Schema Validation](/docs/documentation-addons-schema--docs)** — Full documentation
+
+---
+
+## Creating Your Own Addon
+
+Build custom addons to add form-specific behavior:
+
+- **[Create Addon](/docs/documentation-addons-create-addon--docs)** — Step-by-step guide
+- **[Auto-Save Example](/docs/documentation-addons-create-addon--docs#full-example-autosave-addon)** — Real-world addon example
+- **[Lifecycle Hooks](/docs/documentation-addons-create-addon--docs#lifecycle-hooks-in-depth)** — React to form events
+- **[API Reference](/docs/documentation-addons-create-addon--docs#api-reference)** — Full API documentation
+
+---
+
+## See Also
+
+- **[Validation](/docs/documentation-validation--docs)** — Validation rules and custom validators
+- **[Zod](https://zod.dev)** — TypeScript-first schema validation library
+- **[Yup](https://github.com/jquense/yup)** — Schema builder for value parsing and validation
+- **[Valibot](https://valibot.dev)** — Modular and type-safe schema library

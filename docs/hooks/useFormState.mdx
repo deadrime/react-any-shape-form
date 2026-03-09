@@ -1,0 +1,198 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta
+  title="Documentation/Hooks/useFormState"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# useFormState
+
+Get a reactive snapshot of the overall form state. Requires the [`withFormState()`](/docs/documentation-addons--docs#withformstate) addon.
+
+## Signature
+
+```tsx
+const { isDirty, dirtyFields, touchedFields, isSubmitting, isValid } = MyForm.useFormState();
+```
+
+## Returns
+
+An object containing:
+
+| Property | Type | Description |
+|---|---|---|
+| `isDirty` | `boolean` | `true` if at least one field differs from its initial value |
+| `dirtyFields` | `string[]` | Keys of fields whose current value differs from initial |
+| `touchedFields` | `string[]` | Fields changed at least once; stays set until reset |
+| `isSubmitting` | `boolean` | `true` while `formApi.submit()` is in progress |
+| `isValid` | `boolean` | `false` while any field has an active validation error |
+
+## Setup
+
+Pass `withFormState()` when creating the form:
+
+```tsx
+import { createForm } from 'react-any-shape-form';
+import { withFormState } from 'react-any-shape-form/addons/formState';
+
+const MyForm = createForm(
+  { name: '', email: '' },
+  withFormState(),
+);
+```
+
+## Example
+
+### Controlled Submit button
+
+The most common use case — disable the Submit button until the form is dirty, valid, and not already submitting:
+
+```tsx
+function FormFooter() {
+  const { isDirty, isSubmitting, isValid } = MyForm.useFormState();
+
+  return (
+    <button
+      type="submit"
+      disabled={!isDirty || !isValid || isSubmitting}
+    >
+      {isSubmitting ? 'Saving…' : 'Save'}
+    </button>
+  );
+}
+```
+
+### Dirty indicator and unsaved changes warning
+
+```tsx
+function FormHeader() {
+  const { isDirty, dirtyFields } = MyForm.useFormState();
+
+  return (
+    <div>
+      <h2>Edit Profile</h2>
+      {isDirty && (
+        <span className="badge">
+          Unsaved changes in: {dirtyFields.join(', ')}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function useUnsavedChangesWarning() {
+  const { isDirty } = MyForm.useFormState();
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+}
+```
+
+### Inline submission state
+
+```tsx
+function MyFormComponent() {
+  const { isSubmitting } = MyForm.useFormState();
+
+  return (
+    <MyForm onSubmit={handleSubmit}>
+      <MyForm.Item name="name">
+        {({ value, onChange }) => (
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={isSubmitting}
+          />
+        )}
+      </MyForm.Item>
+
+      {isSubmitting && <div className="overlay">Saving…</div>}
+
+      <button type="submit" disabled={isSubmitting}>Submit</button>
+    </MyForm>
+  );
+}
+```
+
+### Full example
+
+```tsx
+import { createForm } from 'react-any-shape-form';
+import { withFormState } from 'react-any-shape-form/addons/formState';
+
+const ProfileForm = createForm(
+  { name: '', bio: '' },
+  withFormState(),
+);
+
+function ProfileEditor() {
+  const { isDirty, isSubmitting, isValid, touchedFields } = ProfileForm.useFormState();
+
+  return (
+    <ProfileForm
+      onSubmit={(values) =>
+        fetch('/api/profile', { method: 'POST', body: JSON.stringify(values) })
+      }
+    >
+      <ProfileForm.Item
+        name="name"
+        rules={[{ required: true, message: 'Name is required' }]}
+        validateTrigger="onChange"
+      >
+        {({ value, onChange, errors }) => (
+          <div>
+            <input value={value} onChange={(e) => onChange(e.target.value)} />
+            {errors[0] && <span className="error">{errors[0].errorText}</span>}
+          </div>
+        )}
+      </ProfileForm.Item>
+
+      <ProfileForm.Item name="bio">
+        {({ value, onChange }) => (
+          <textarea value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </ProfileForm.Item>
+
+      <p className="status">
+        Touched: {touchedFields.join(', ') || 'none'}
+      </p>
+
+      <button
+        type="submit"
+        disabled={!isDirty || !isValid || isSubmitting}
+      >
+        {isSubmitting ? 'Saving…' : 'Save changes'}
+      </button>
+    </ProfileForm>
+  );
+}
+```
+
+## Re-render behaviour
+
+`useFormState` re-renders the component on **any** change to the form — a field update, validation result, or submit lifecycle event. If you only need state for a single field, prefer [`useFieldState`](/docs/documentation-hooks-usefieldstate--docs) to reduce unnecessary re-renders.
+
+## Use Cases
+
+- Enable / disable Submit based on dirty + valid state
+- Show a loading spinner during submission
+- Warn users about unsaved changes before navigation
+- Display a summary of which fields have been modified
+- Block navigation until the form is submitted or reset
+
+## See Also
+
+- **[useFieldState](/docs/documentation-hooks-usefieldstate--docs)** - Per-field `isTouched`, `isDirty`, `isValid`
+- **[useFieldValidation](/docs/documentation-hooks-usefieldvalidation--docs)** - Validation errors and status for a field
+- **[withFormState](/docs/documentation-addons--docs#withformstate)** - The addon that enables this hook
+- **[Addons](/docs/documentation-addons--docs)** - How addons work
