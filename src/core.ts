@@ -26,6 +26,7 @@ export type {
   ArrayItemProps,
   FormArrayAPI,
   FormAddon,
+  FormApiAddon,
 } from './types';
 export type {
   FormApiGenericTypes,
@@ -42,4 +43,4 @@ export type {
   AddonExtensionHKT,
   ApplyAddonExtension,
 } from './typesHelpers';
-export { defineAddon } from './helpers/defineAddon';
+export { defineAddon } from './addons/defineAddon';

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { act, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createForm } from "../src/index";
-import { useArrayField } from "../src/FormArrayItem";
+import { useArrayField } from "../src/addons/array/FormArrayItem";
 import { withArrayFields } from "../src/addons/array";
 import React from "react";
 

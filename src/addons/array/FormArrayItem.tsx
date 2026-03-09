@@ -1,13 +1,13 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react"
-import FormItem, { FormItemProps } from "./FormItem"
-import { ArrayItemError, FieldUpdate, FieldUpdateCb, IArrayPlugin, ValidationError, ValidationRule, ValidationStatus } from "./types"
-import type { FormArrayAPI } from "./types"
-import { useField, useFieldValidation } from "./useForm"
-import { FormApi } from "./FormApi"
-import { ArrayOnlyFields, FormApiGenericTypes } from "./typesHelpers"
-import { useFormInstance } from "./FormContext"
-import { useInitField } from "./helpers/useFieldData"
-import { ARRAY_PLUGIN_KEY } from "./pluginKeys"
+import FormItem, { FormItemProps } from "../../FormItem"
+import { ArrayItemError, FieldUpdate, FieldUpdateCb, IArrayAddon, ValidationError, ValidationRule, ValidationStatus } from "../../types"
+import type { FormArrayAPI } from "../../types"
+import { useField, useFieldValidation } from "../../useForm"
+import { FormApi } from "../../FormApi"
+import { ArrayOnlyFields, FormApiGenericTypes } from "../../typesHelpers"
+import { useFormInstance } from "../../FormContext"
+import { useInitField } from "../../helpers/useFieldData"
+import { ARRAY_ADDON_KEY } from "../addonKeys"
 
 export const useArrayField = <
   Form extends FormApi<any>,
@@ -24,20 +24,20 @@ export const useArrayField = <
   // Set array item validation rules
   useEffect(() => {
     if (itemRules) {
-      form.getPlugin<IArrayPlugin>(ARRAY_PLUGIN_KEY)?.setArrayItemRules(field as string, itemRules);
+      form.getAddon<IArrayAddon>(ARRAY_ADDON_KEY)?.setArrayItemRules(field as string, itemRules);
     }
   }, [form, field, itemRules]);
 
   // Subscribe to array item errors
   useEffect(() => {
-    return form.getPlugin<IArrayPlugin>(ARRAY_PLUGIN_KEY)?.onArrayItemError(field as string, (errors) => {
+    return form.getAddon<IArrayAddon>(ARRAY_ADDON_KEY)?.onArrayItemError(field as string, (errors) => {
       setItemErrors(errors);
     }) ?? (() => {});
   }, [form, field]);
 
   const triggerOnChangeValidation = useCallback(() => {
     form.getFieldError(field, 'onChange');
-    form.getPlugin<IArrayPlugin>(ARRAY_PLUGIN_KEY)?.validateArrayItems(field as string, 'onChange');
+    form.getAddon<IArrayAddon>(ARRAY_ADDON_KEY)?.validateArrayItems(field as string, 'onChange');
   }, [form, field]);
 
   const append = useCallback((value: State[Field][number]) => {

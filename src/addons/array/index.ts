@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import FormArrayItem, { FormArrayItemProps } from "../FormArrayItem";
-import { useArrayField } from "../FormArrayItem";
-import { FormApi } from "../FormApi";
-import { AddonExtensionHKT, ArrayOnly, ArrayOnlyFields, FormApiGenericTypes } from "../typesHelpers";
-import { ArrayItemError, ArrayItemProps, FieldUpdateCb, FormAddon, FormApiPlugin, IArrayPlugin, ValidationError, ValidationRule, ValidationStatus, ValidateTrigger } from "../types";
-import { ARRAY_PLUGIN_KEY } from "../pluginKeys";
-import { getValidationErrors, prepareRules } from "../helpers/getValidationErrors";
+import FormArrayItem, { FormArrayItemProps } from "./FormArrayItem";
+import { useArrayField } from "./FormArrayItem";
+import { FormApi } from "../../FormApi";
+import { AddonExtensionHKT, ArrayOnly, ArrayOnlyFields, FormApiGenericTypes } from "../../typesHelpers";
+import { ArrayItemError, ArrayItemProps, FieldUpdateCb, FormAddon, FormApiAddon, IArrayAddon, ValidationError, ValidationRule, ValidationStatus, ValidateTrigger } from "../../types";
+import { ARRAY_ADDON_KEY } from "../addonKeys";
+import { getValidationErrors, prepareRules } from "../../helpers/getValidationErrors";
 
-export class ArrayItemsPlugin implements FormApiPlugin, IArrayPlugin {
+export class ArrayItemsAddon implements FormApiAddon, IArrayAddon {
   private rules = new Map<string, ValidationRule<unknown>[]>();
   private errors = new Map<string, ArrayItemError<unknown>[]>();
   private subs = new Map<string, ((errors: ArrayItemError<unknown>[]) => void)[]>();
@@ -19,6 +19,12 @@ export class ArrayItemsPlugin implements FormApiPlugin, IArrayPlugin {
       this.errors.delete(field);
       this.subs.get(field)?.forEach(cb => cb([]));
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onFieldVisible(_field: string, _visible: boolean) {
+    // intentionally no-op: setFieldVisible fires on re-render cycles (not only true unmounts),
+    // so cleaning up errors/subs here would break in-flight validation.
   }
 
   onGetState(state: Record<string, unknown>) {
@@ -108,12 +114,12 @@ const useArrayFieldValidation = <
     [] as ArrayItemError<State[Field][number]>[],
   );
   const [status, setStatus] = useState<ValidationStatus>(() => {
-    const plugin = form.getPlugin<IArrayPlugin>(ARRAY_PLUGIN_KEY);
+    const plugin = form.getAddon<IArrayAddon>(ARRAY_ADDON_KEY);
     return (plugin?.getArrayItemErrors(field as string).length ?? 0) > 0 ? "error" : "notStarted";
   });
 
   useEffect(() => {
-    return form.getPlugin<IArrayPlugin>(ARRAY_PLUGIN_KEY)?.onArrayItemError(field as string, (errors) => {
+    return form.getAddon<IArrayAddon>(ARRAY_ADDON_KEY)?.onArrayItemError(field as string, (errors) => {
       setErrors(errors);
       setStatus(errors.length > 0 ? "error" : "success");
     }) ?? (() => {});
@@ -168,7 +174,7 @@ export function withArrayFields(): ArrayFieldsAddon {
     _addonType: "array" as const,
     _addonState: {} as Record<never, never>,
     _setup(formApi: FormApi<any>) {
-      formApi.installPlugin(ARRAY_PLUGIN_KEY, new ArrayItemsPlugin(formApi));
+      formApi.installAddon(ARRAY_ADDON_KEY, new ArrayItemsAddon(formApi));
     },
     _extend(compoundForm: any, form: FormApi<any>) {
       type State = ReturnType<typeof form.getState>;

@@ -666,9 +666,33 @@ const handleSubmit = async () => {
 };
 ```
 
+## Schema-Level Validation (Zod / Yup / Valibot)
+
+For whole-form validation against an external schema, use the built-in schema addons. They run on submit, map errors back to individual fields, and work alongside per-field rules:
+
+```ts
+import { z } from 'zod';
+import { createForm } from 'react-any-shape-form';
+import { withZodSchema } from 'react-any-shape-form/addons/zodSchema';
+
+const MyForm = createForm(
+  { email: '', age: 0 },
+  withZodSchema(
+    z.object({
+      email: z.string().email('Invalid email'),
+      age: z.number().min(18, 'Must be 18+'),
+    })
+  ),
+);
+```
+
+See **[Addons → Schema Validation](/docs/documentation-addons--docs)** for the full guide covering `withZodSchema`, `withYupSchema`, and `withValibotSchema`.
+
+---
+
 ## See Also
 
 - **[Array Item Validation](/docs/documentation-array-item-validation--docs)** - Validate array elements
 - **[Hooks](/docs/documentation-hooks--docs)** - Use `useFieldValidation` hook
 - **[Advanced Patterns](/docs/documentation-advanced--docs)** - Conditional validation
-- **[API Reference](https://github.com/eugekay/react-any-shape-form)** - Full API documentation
+- **[Addons](/docs/documentation-addons--docs)** - Schema validation and custom addon system

@@ -31,14 +31,17 @@ export default defineConfig({
         index: path.resolve(__dirname, 'src/index.ts'),
         core: path.resolve(__dirname, 'src/core.ts'),
         array: path.resolve(__dirname, 'src/array.ts'),
-        'addons/array': path.resolve(__dirname, 'src/addons/array.ts'),
-        'addons/nestedForm': path.resolve(__dirname, 'src/addons/nestedForm.ts'),
+        'addons/array': path.resolve(__dirname, 'src/addons/array/index.ts'),
+        'addons/nestedForm': path.resolve(__dirname, 'src/addons/nestedForm/index.ts'),
+        'addons/zodSchema': path.resolve(__dirname, 'src/addons/zodSchema/index.ts'),
+        'addons/yupSchema': path.resolve(__dirname, 'src/addons/yupSchema/index.ts'),
+        'addons/valibotSchema': path.resolve(__dirname, 'src/addons/valibotSchema/index.ts'),
       },
       formats: ['es'],
       fileName: (format, entryName) => `${entryName}.${format}.js`,
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
+      external: ['react', 'react-dom', 'zod', 'yup', 'valibot'],
       treeshake: 'smallest',
       output: {
         globals: {

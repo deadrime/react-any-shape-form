@@ -1,0 +1,724 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta
+  title="Documentation/Addons"
+  parameters={{
+    viewMode: 'docs',
+    previewTabs: {
+      canvas: { hidden: true },
+    },
+  }}
+/>
+
+# Addons
+
+Addons are the extension mechanism for React Any Shape Form. They let you augment any form instance with new behaviour, extra state, and additional methods — without touching the core library.
+
+## Why Addons?
+
+Out of the box, `createForm` gives you fields, validation, and submission. Addons let you bolt on capabilities that don't belong in every form:
+
+- **Built-in addons** — `withArrayFields()`, `withNestedForms()`
+- **Your own addons** — auto-save, dirty tracking, analytics, undo history, and anything else you need
+
+An addon is just a plain object. You pass it to `createForm` or `useForm` alongside the initial state:
+
+```ts
+const MyForm = createForm(
+  { name: '', email: '' },
+  withAutoSave('draft-key'),     // ← addon
+  withDirtyTracking(),           // ← addon
+);
+```
+
+Each addon can:
+- Merge **extra fields** into the form state
+- Install a **lifecycle object** that reacts to field updates, validation, and state reads
+- Add **methods and hooks** to the compound form object (`MyForm.clearDraft()`, `MyForm.useIsDirty()`, etc.)
+
+---
+
+## How an Addon Works
+
+Every addon is a `FormAddon` object with up to four parts:
+
+```ts
+type FormAddon = {
+  _addonType: string;     // identifier, for debugging
+  _addonState: object;    // initial values for extra fields — become part of the form state
+  _setup?(formApi): void; // called once at form creation
+  _extend?(compoundForm, formApi): void; // adds methods to the compound form
+};
+```
+
+The lifecycle looks like this when `createForm` runs:
+
+1. All `_addonState` objects are merged with the initial state — the `FormApi` is created with the combined state.
+2. `_setup(formApi)` is called for each addon — typically used to install a runtime `FormApiAddon` inside `FormApi`.
+3. `_extend(compoundForm, formApi)` is called — adds properties to the compound form object.
+
+---
+
+## The `FormApiAddon` Interface
+
+A `FormApiAddon` is a runtime object (usually a class instance) installed inside `FormApi` via `formApi.installAddon(key, instance)`. It receives lifecycle callbacks:
+
+```ts
+type FormApiAddon = {
+  // Called after any field value changes
+  onFieldUpdate?(field: string, value: unknown): void;
+
+  // Called when getState() is invoked — can transform the returned state
+  onGetState?(state: Record<string, unknown>): Record<string, unknown>;
+
+  // Called during form validation — can add extra errors
+  onValidateFields?(fields: string[], trigger?: ValidateTrigger): Promise<ValidationError[]>;
+
+  // Called after resetFields() with the reset state
+  onReset?(state: Record<string, unknown>): void;
+
+  // Called when a field's visibility changes (mounts/unmounts)
+  onFieldVisible?(field: string, visible: boolean): void;
+
+  // Called after a successful submit() with the final state
+  onSubmit?(state: Record<string, unknown>): void;
+
+  // Called when a field has validation errors
+  onValidationError?(field: string, errors: ValidationError[]): void;
+
+  // Called after setInitialState() with the new state
+  onSetInitialState?(state: Record<string, unknown>): void;
+};
+```
+
+Use `formApi.getAddon<YourClass>(key)` to retrieve the instance anywhere you have access to `formApi`.
+
+---
+
+## Creating a Simple Addon
+
+For straightforward addons, use the `defineAddon` helper. It handles TypeScript types for `_addonState` and the compound form extension automatically.
+
+### Addon with no extra state
+
+The simplest possible addon — adds a `useIsSubmitting` hook to the form:
+
+```ts
+import { defineAddon, FormApiAddon } from 'react-any-shape-form';
+
+const SUBMITTING_KEY = Symbol('submitting');
+
+class SubmittingTracker implements FormApiAddon {
+  private submitting = false;
+  private listeners = new Set<() => void>();
+
+  setSubmitting(value: boolean) {
+    this.submitting = value;
+    this.listeners.forEach(cb => cb());
+  }
+
+  subscribe(cb: () => void) {
+    this.listeners.add(cb);
+    return () => this.listeners.delete(cb);
+  }
+
+  isSubmitting() {
+    return this.submitting;
+  }
+}
+
+export const withSubmitting = () =>
+  defineAddon<
+    Record<never, never>,
+    { useIsSubmitting: () => boolean }
+  >({
+    type: 'submitting',
+    setup: (formApi) => {
+      formApi.installAddon(SUBMITTING_KEY, new SubmittingTracker());
+    },
+    extend: (form, formApi) => {
+      form.useIsSubmitting = () => {
+        const tracker = formApi.getAddon<SubmittingTracker>(SUBMITTING_KEY)!;
+        return React.useSyncExternalStore(
+          tracker.subscribe.bind(tracker),
+          tracker.isSubmitting.bind(tracker),
+        );
+      };
+    },
+  });
+```
+
+```tsx
+// Usage
+const MyForm = createForm(
+  { email: '' },
+  withSubmitting(),
+);
+
+function SubmitButton() {
+  const isSubmitting = MyForm.useIsSubmitting();
+  return <button type="submit" disabled={isSubmitting}>Submit</button>;
+}
+```
+
+---
+
+### Addon with extra state
+
+Pass `initialState` to merge fields into the form. The fields become part of the form's state — fully typed, watchable, and readable via `formApi.getFieldsValue()`.
+
+```ts
+import { defineAddon } from 'react-any-shape-form';
+
+// Adds a `_step` field to the form state
+export const withWizard = (totalSteps: number) =>
+  defineAddon<
+    { _step: number },
+    { nextStep: () => void; prevStep: () => void; currentStep: () => number }
+  >({
+    type: 'wizard',
+    initialState: { _step: 1 },
+    extend: (form, formApi) => {
+      form.nextStep = () => {
+        const step = formApi.getFieldValue('_step' as never) as number;
+        if (step < totalSteps) formApi.setFieldValue('_step' as never, step + 1);
+      };
+      form.prevStep = () => {
+        const step = formApi.getFieldValue('_step' as never) as number;
+        if (step > 1) formApi.setFieldValue('_step' as never, step - 1);
+      };
+      form.currentStep = () => formApi.getFieldValue('_step' as never) as number;
+    },
+  });
+```
+
+```tsx
+const CheckoutForm = createForm(
+  { name: '', address: '', card: '' },
+  withWizard(3),
+);
+
+function Checkout() {
+  const step = CheckoutForm.useWatch('_step');
+
+  return (
+    <CheckoutForm onSubmit={handleSubmit}>
+      {step === 1 && <PersonalInfoStep />}
+      {step === 2 && <AddressStep />}
+      {step === 3 && <PaymentStep />}
+
+      <button type="button" onClick={() => CheckoutForm.prevStep()}>Back</button>
+      {step < 3
+        ? <button type="button" onClick={() => CheckoutForm.nextStep()}>Next</button>
+        : <button type="submit">Pay</button>
+      }
+    </CheckoutForm>
+  );
+}
+```
+
+---
+
+## Full Example: Auto-Save Addon
+
+A realistic addon that debounces field changes and saves to `localStorage`. Demonstrates:
+- A `FormApiAddon` class using `onFieldUpdate`
+- `installAddon` / `getAddon`
+- Extra methods on the compound form
+
+```ts
+import { defineAddon, FormApiAddon, FormApi } from 'react-any-shape-form';
+
+const AUTOSAVE_KEY = Symbol('autosave');
+
+class AutoSaveAddonImpl implements FormApiAddon {
+  private timer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(
+    private formApi: FormApi<any>,
+    private storageKey: string,
+    private delay: number,
+  ) {}
+
+  onFieldUpdate() {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      const state = this.formApi.getFieldsValue();
+      localStorage.setItem(this.storageKey, JSON.stringify(state));
+    }, this.delay);
+  }
+
+  load() {
+    const raw = localStorage.getItem(this.storageKey);
+    if (raw) {
+      try {
+        this.formApi.setFieldsValue(JSON.parse(raw));
+      } catch {}
+    }
+  }
+
+  clear() {
+    if (this.timer) clearTimeout(this.timer);
+    localStorage.removeItem(this.storageKey);
+  }
+}
+
+export const withAutoSave = (storageKey: string, delay = 1000) =>
+  defineAddon<
+    Record<never, never>,
+    { saveDraft: () => void; clearDraft: () => void; loadDraft: () => void }
+  >({
+    type: 'autosave',
+    setup: (formApi) => {
+      const addon = new AutoSaveAddonImpl(formApi, storageKey, delay);
+      formApi.installAddon(AUTOSAVE_KEY, addon);
+      addon.load(); // restore previous draft on form creation
+    },
+    extend: (form, formApi) => {
+      const getAddon = () => formApi.getAddon<AutoSaveAddonImpl>(AUTOSAVE_KEY)!;
+      form.saveDraft = () => getAddon().onFieldUpdate();
+      form.clearDraft = () => getAddon().clear();
+      form.loadDraft = () => getAddon().load();
+    },
+  });
+```
+
+```tsx
+const PostForm = createForm(
+  { title: '', body: '' },
+  withAutoSave('post-draft', 2000),
+);
+
+function PostEditor() {
+  return (
+    <PostForm onSubmit={(state) => { PostForm.clearDraft(); publish(state); }}>
+      <PostForm.Item name="title">
+        {({ value, onChange }) => (
+          <input value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </PostForm.Item>
+
+      <PostForm.Item name="body">
+        {({ value, onChange }) => (
+          <textarea value={value} onChange={(e) => onChange(e.target.value)} />
+        )}
+      </PostForm.Item>
+
+      <button type="submit">Publish</button>
+      <button type="button" onClick={() => PostForm.clearDraft()}>Discard draft</button>
+    </PostForm>
+  );
+}
+```
+
+---
+
+## Lifecycle Hooks in Depth
+
+### `onFieldUpdate(field, value)`
+
+Called after **any** field changes. Use it to react to value changes at the addon level without subscribing to individual fields.
+
+```ts
+class LoggerAddon implements FormApiAddon {
+  constructor(private prefix: string) {}
+
+  onFieldUpdate(field: string, value: unknown) {
+    console.log(`${this.prefix}`, field, '→', value);
+  }
+}
+```
+
+> Note: do **not** call `formApi.setFieldValue` inside `onFieldUpdate` — it will cause infinite recursion since that triggers another `onFieldUpdate`.
+
+### `onGetState(state)`
+
+Called every time `formApi.getState()` is invoked. Can transform or enrich the returned state without storing extra values in the form.
+
+```ts
+class ComputedFieldsAddon implements FormApiAddon {
+  onGetState(state: Record<string, unknown>) {
+    const price = state.price as number ?? 0;
+    const qty = state.quantity as number ?? 0;
+    return { ...state, total: price * qty };
+  }
+}
+```
+
+The transformation only affects the value returned by `getState()`. The underlying field values are unchanged.
+
+### `onValidateFields(fields, trigger)`
+
+Called during form submission and manual validation. Return additional `ValidationError[]` to fail validation. The errors are collected alongside field-level errors and thrown together.
+
+```ts
+class CrossFieldValidator implements FormApiAddon {
+  constructor(private formApi: FormApi<any>) {}
+
+  async onValidateFields(): Promise<ValidationError[]> {
+    const state = this.formApi.getFieldsValue();
+    if (state.password !== state.confirmPassword) {
+      return [{
+        rule: { required: true, message: 'Passwords do not match' },
+        value: state.confirmPassword,
+        errorText: 'Passwords do not match',
+      }];
+    }
+    return [];
+  }
+}
+```
+
+### `onReset(state)`
+
+Called after `resetFields()` with the reset state. Use it to reset any addon-managed state in sync with the form.
+
+```ts
+class ChildFormsAddon implements FormApiAddon {
+  private childForms = new Map<string, FormApi<any>>();
+
+  onReset(_state: Record<string, unknown>) {
+    for (const [, child] of this.childForms) {
+      child.resetFields();
+    }
+  }
+}
+```
+
+> `ChildFormsAddon` (built into `withNestedForms`) uses this to propagate resets to all registered child forms.
+
+### `onFieldVisible(field, visible)`
+
+Called when `setFieldVisible()` is invoked — i.e., when a field mounts (`true`) or unmounts (`false`). Use it to clean up addon state tied to a field's lifecycle.
+
+```ts
+class AnalyticsAddon implements FormApiAddon {
+  onFieldVisible(field: string, visible: boolean) {
+    if (!visible) {
+      analytics.track('field_hidden', { field });
+    }
+  }
+}
+```
+
+> Note: `setFieldVisible` fires on every React effect re-run (not only true unmounts), so avoid deleting subscriber or validation state here — use this for side effects only.
+
+### `onSubmit(state)`
+
+Called after a **successful** `submit()` — i.e., after validation passes, with the final merged state. Not called when validation fails.
+
+```ts
+class AnalyticsAddon implements FormApiAddon {
+  onSubmit(state: Record<string, unknown>) {
+    analytics.track('form_submitted', state);
+  }
+}
+```
+
+### `onValidationError(field, errors)`
+
+Called whenever a field receives validation errors (via `triggerFieldError`). Use it to react to field-level errors for cross-field dependencies or logging.
+
+```ts
+class DependentFieldAddon implements FormApiAddon {
+  constructor(private formApi: FormApi<any>) {}
+
+  onValidationError(field: string, errors: ValidationError[]) {
+    if (field === 'email' && errors.length > 0) {
+      this.formApi.setFieldValue('confirmEmail', '');
+    }
+  }
+}
+```
+
+### `onSetInitialState(state)`
+
+Called after `setInitialState()` with the new state. Use it to sync addon-managed state when the form's initial data changes (e.g., after a data fetch).
+
+```ts
+class AuditAddon implements FormApiAddon {
+  private baseline: Record<string, unknown> = {};
+
+  onSetInitialState(state: Record<string, unknown>) {
+    this.baseline = { ...state };
+  }
+}
+```
+
+---
+
+## Schema Validation Addons
+
+Three built-in addons let you validate the entire form state against a **Zod**, **Yup**, or **Valibot** schema. Schema errors are mapped back to individual fields and surface exactly like per-field rule errors — in `errors` inside `Form.Item`, `useFieldErrors`, and the thrown array from `validateFields`.
+
+### Installation
+
+The schema libraries are optional peer dependencies. Install whichever you need:
+
+```bash
+npm install zod        # or yarn add zod
+npm install yup        # or yarn add yup
+npm install valibot    # or yarn add valibot
+```
+
+---
+
+### `withZodSchema(schema)`
+
+```ts
+import { z } from 'zod';
+import { createForm } from 'react-any-shape-form';
+import { withZodSchema } from 'react-any-shape-form/addons/zodSchema';
+
+const schema = z.object({
+  email: z.string().email('Invalid email address'),
+  age: z.number().min(18, 'Must be 18 or older'),
+});
+
+const MyForm = createForm(
+  { email: '', age: 0 },
+  withZodSchema(schema),
+);
+```
+
+### `withYupSchema(schema)`
+
+```ts
+import * as yup from 'yup';
+import { createForm } from 'react-any-shape-form';
+import { withYupSchema } from 'react-any-shape-form/addons/yupSchema';
+
+const schema = yup.object({
+  email: yup.string().email('Invalid email address').required(),
+  age: yup.number().min(18, 'Must be 18 or older').required(),
+});
+
+const MyForm = createForm(
+  { email: '', age: 0 },
+  withYupSchema(schema),
+);
+```
+
+### `withValibotSchema(schema)`
+
+```ts
+import * as v from 'valibot';
+import { createForm } from 'react-any-shape-form';
+import { withValibotSchema } from 'react-any-shape-form/addons/valibotSchema';
+
+const schema = v.object({
+  email: v.pipe(v.string(), v.email('Invalid email address')),
+  age: v.pipe(v.number(), v.minValue(18, 'Must be 18 or older')),
+});
+
+const MyForm = createForm(
+  { email: '', age: 0 },
+  withValibotSchema(schema),
+);
+```
+
+---
+
+### Full example
+
+Schema errors appear in the same `errors` array as rule-based errors — no extra wiring needed:
+
+```tsx
+const MyForm = createForm(
+  { email: '', age: 0 },
+  withZodSchema(
+    z.object({
+      email: z.string().email('Invalid email address'),
+      age: z.number().min(18, 'Must be 18 or older'),
+    })
+  ),
+);
+
+function SignupForm() {
+  return (
+    <MyForm onSubmit={(values) => console.log(values)}>
+      <MyForm.Item name="email">
+        {({ value, onChange, errors }) => (
+          <div>
+            <input value={value} onChange={(e) => onChange(e.target.value)} />
+            {errors[0] && <span className="error">{errors[0].errorText}</span>}
+          </div>
+        )}
+      </MyForm.Item>
+
+      <MyForm.Item name="age">
+        {({ value, onChange, errors }) => (
+          <div>
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => onChange(Number(e.target.value))}
+            />
+            {errors[0] && <span className="error">{errors[0].errorText}</span>}
+          </div>
+        )}
+      </MyForm.Item>
+
+      <button type="submit">Sign up</button>
+    </MyForm>
+  );
+}
+```
+
+---
+
+### Combining schema validation with field rules
+
+Schema addons and per-field `rules` are fully independent — both run on submit and their errors are merged together. Use field `rules` for `onChange` feedback and a schema for final `onFinish` validation:
+
+```tsx
+<MyForm.Item
+  name="email"
+  rules={[
+    // Runs onChange — gives instant feedback while typing
+    { type: 'email', message: 'Invalid format', validateTrigger: ['onChange'] },
+  ]}
+>
+  {({ value, onChange, errors }) => (
+    <input value={value} onChange={(e) => onChange(e.target.value)} />
+  )}
+</MyForm.Item>
+// Schema (withZodSchema) also validates 'email' on submit — both error sets are shown
+```
+
+---
+
+### Behavior notes
+
+| | Schema addons | Field rules |
+|---|---|---|
+| Runs on `onChange` | No (always skipped) | Yes, if `validateTrigger` includes `onChange` |
+| Runs on `onFinish` / submit | Yes | Yes |
+| Errors appear in `Form.Item` | Yes | Yes |
+| Errors thrown from `validateFields` | Yes | Yes |
+
+Schema addons intentionally skip `onChange` validation — schema parsing is designed for whole-form checks on submit, not per-keystroke feedback.
+
+---
+
+## Multiple Addons
+
+Pass any number of addons to `createForm`. Their states and extensions are merged:
+
+```ts
+const MyForm = createForm(
+  { name: '', email: '' },
+  withAutoSave('contact-draft'),
+  withWizard(2),
+  withLogger('[ContactForm]'),
+);
+
+// All extensions are available:
+MyForm.clearDraft();
+MyForm.nextStep();
+```
+
+Addons are set up in order — `_setup` runs left to right, `_extend` runs left to right.
+
+---
+
+## TypeScript: State-Aware Extensions
+
+`defineAddon` is sufficient when the extension type is fixed (doesn't depend on the form's state shape). If you need the extension type to vary based on the state — as `withArrayFields` does — implement `AddonExtensionHKT` and use `FormAddon` directly.
+
+```ts
+import {
+  AddonExtensionHKT,
+  FormAddon,
+  FormApi,
+  GetFields,
+} from 'react-any-shape-form';
+
+// Describe the extension as an HKT parameterized by State
+interface MyExtHKT extends AddonExtensionHKT {
+  readonly type: {
+    useFirstField: () => this['_State'][GetFields<this['_State']>];
+  };
+}
+
+export function withFirstField(): FormAddon<Record<never, never>, MyExtHKT> {
+  return {
+    _addonType: 'firstField',
+    _addonState: {},
+    _extend(compoundForm, formApi: FormApi<any>) {
+      compoundForm.useFirstField = () => {
+        const firstKey = Object.keys(formApi.getFieldsValue())[0];
+        return formApi.getFieldValue(firstKey as never);
+      };
+    },
+  };
+}
+```
+
+When you call `createForm({ a: 1, b: 2 }, withFirstField())`, the return type includes `useFirstField: () => number`.
+
+---
+
+## API Reference
+
+### `defineAddon(config)`
+
+```ts
+import { defineAddon } from 'react-any-shape-form';
+
+defineAddon<ExtraState, Extension>({
+  type?: string;                               // identifier for debugging
+  initialState?: ExtraState;                   // fields merged into form state
+  setup?: (formApi: FormApi<any>) => void;     // called once at creation
+  extend?: (form: any, formApi: FormApi<any>) => void; // adds to compound form
+})
+```
+
+The `Extension` type parameter describes the object type added to the compound form. TypeScript uses it to type the extra properties on `MyForm`.
+
+---
+
+### `FormApiAddon`
+
+```ts
+import type { FormApiAddon } from 'react-any-shape-form';
+
+interface FormApiAddon {
+  onFieldUpdate?(field: string, value: unknown): void;
+  onGetState?(state: Record<string, unknown>): Record<string, unknown>;
+  onValidateFields?(fields: string[], trigger?: ValidateTrigger): Promise<ValidationError[]>;
+}
+```
+
+---
+
+### `formApi.installAddon(key, instance)`
+
+Registers a `FormApiAddon` inside `FormApi`. Use a `Symbol` as the key to avoid collisions.
+
+```ts
+const MY_KEY = Symbol('my-addon');
+formApi.installAddon(MY_KEY, new MyAddonImpl(formApi));
+```
+
+---
+
+### `formApi.getAddon<T>(key)`
+
+Retrieves a previously installed `FormApiAddon` by key. Returns `undefined` if not found.
+
+```ts
+const addon = formApi.getAddon<MyAddonImpl>(MY_KEY);
+addon?.doSomething();
+```
+
+---
+
+## See Also
+
+- **[Array Fields](/docs/documentation-array-fields--docs)** — `withArrayFields()` built-in addon
+- **[Nested Forms](/docs/documentation-nested-forms--docs)** — `withNestedForms()` built-in addon
+- **[Validation](/docs/documentation-validation--docs)** — Validation rules and custom validators
+- **[Zod](https://zod.dev)** — TypeScript-first schema validation library
+- **[Yup](https://github.com/jquense/yup)** — Schema builder for value parsing and validation
+- **[Valibot](https://valibot.dev)** — Modular and type-safe schema library

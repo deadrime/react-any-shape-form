@@ -97,15 +97,20 @@ export type FormArrayAPI<T extends unknown[]> = {
   validationStatus: ValidationStatus | undefined;
 };
 
-// Plugin system — lifecycle hooks for extending FormApi behavior
-export type FormApiPlugin = {
+// Addon system — lifecycle hooks for extending FormApi behavior
+export type FormApiAddon = {
   onFieldUpdate?(field: string, value: unknown): void;
   onGetState?(state: Record<string, unknown>): Record<string, unknown>;
   onValidateFields?(fields: string[], trigger?: ValidateTrigger): Promise<ValidationError[]>;
+  onReset?(state: Record<string, unknown>): void;
+  onFieldVisible?(field: string, visible: boolean): void;
+  onSubmit?(state: Record<string, unknown>): void;
+  onValidationError?(field: string, errors: ValidationError[]): void;
+  onSetInitialState?(state: Record<string, unknown>): void;
 };
 
-// Interface for the array items plugin (used by FormArrayItem without importing the concrete class)
-export type IArrayPlugin = {
+// Interface for the array items addon (used by FormArrayItem without importing the concrete class)
+export type IArrayAddon = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setArrayItemRules(field: string, rules: ValidationRule<any>[]): void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

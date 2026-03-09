@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { FormApi } from "../FormApi";
-import { FormAddon, FormApiPlugin, ValidationError, ValidateTrigger } from "../types";
-import { AddonExtensionHKT, CompoundFormLike, GetFields, NestedForms, ResolvedNestedState } from "../typesHelpers";
-import { NESTED_FORMS_PLUGIN_KEY } from "../pluginKeys";
+import { FormApi } from "../../FormApi";
+import { FormAddon, FormApiAddon, ValidationError, ValidateTrigger } from "../../types";
+import { AddonExtensionHKT, CompoundFormLike, GetFields, NestedForms, ResolvedNestedState } from "../../typesHelpers";
+import { NESTED_FORMS_ADDON_KEY } from "../addonKeys";
 
-export class ChildFormsPlugin implements FormApiPlugin {
+export class ChildFormsAddon implements FormApiAddon {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private childForms = new Map<string, FormApi<any>>();
 
@@ -38,6 +38,12 @@ export class ChildFormsPlugin implements FormApiPlugin {
     }
     return errors;
   }
+
+  onReset(_state: Record<string, unknown>) {
+    for (const [, child] of this.childForms) {
+      child.resetFields();
+    }
+  }
 }
 
 type NestedExtension<State extends Record<string, unknown>> = {
@@ -66,18 +72,18 @@ export function withNestedForms<N extends NestedForms>(
     _addonType: "nested" as const,
     _addonState: addonState,
     _setup(formApi: FormApi<any>) {
-      const plugin = new ChildFormsPlugin();
+      const plugin = new ChildFormsAddon();
       for (const [key, compoundForm] of Object.entries(forms)) {
         plugin.addChildForm(key, (compoundForm as CompoundFormLike).formApi);
       }
-      formApi.installPlugin(NESTED_FORMS_PLUGIN_KEY, plugin);
+      formApi.installAddon(NESTED_FORMS_ADDON_KEY, plugin);
     },
     _extend(compoundForm: any, formApi: FormApi<any>) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       compoundForm.useChildForm = (field: string, childForm: FormApi<any>) => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         useEffect(() => {
-          return formApi.getPlugin<ChildFormsPlugin>(NESTED_FORMS_PLUGIN_KEY)?.addChildForm(field, childForm);
+          return formApi.getAddon<ChildFormsAddon>(NESTED_FORMS_ADDON_KEY)?.addChildForm(field, childForm);
         }, [field, childForm]);
       };
     },

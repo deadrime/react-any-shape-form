@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import { FormApi } from "../src/FormApi";
 import { ValidationRule } from "../src";
 import { createForm } from "../src/useForm";
-import { ChildFormsPlugin, withNestedForms } from "../src/addons/nestedForm";
-import { NESTED_FORMS_PLUGIN_KEY } from "../src/pluginKeys";
+import { ChildFormsAddon, withNestedForms } from "../src/addons/nestedForm";
+import { NESTED_FORMS_ADDON_KEY } from "../src/addons/addonKeys";
 
 describe("test FormApi", () => {
   const defaultState = {
@@ -484,7 +484,7 @@ describe("test FormApi", () => {
     type ParentState = { name: string; address: { city: string; zip: string } };
     let parent: FormApi<ParentState>;
     let child: FormApi<{ city: string; zip: string }>;
-    let parentPlugin: ChildFormsPlugin;
+    let parentAddon: ChildFormsAddon;
 
     beforeEach(() => {
       parent = new FormApi<ParentState>({
@@ -495,12 +495,12 @@ describe("test FormApi", () => {
         city: "NY",
         zip: "10001",
       });
-      parentPlugin = new ChildFormsPlugin();
-      parent.installPlugin(NESTED_FORMS_PLUGIN_KEY, parentPlugin);
+      parentAddon = new ChildFormsAddon();
+      parent.installAddon(NESTED_FORMS_ADDON_KEY, parentAddon);
     });
 
     test("getState merges child state", () => {
-      parentPlugin.addChildForm("address", child);
+      parentAddon.addChildForm("address", child);
       expect(parent.getState()).toEqual({
         name: "",
         address: { city: "NY", zip: "10001" },
@@ -515,7 +515,7 @@ describe("test FormApi", () => {
     });
 
     test("cleanup removes child form", () => {
-      const cleanup = parentPlugin.addChildForm("address", child);
+      const cleanup = parentAddon.addChildForm("address", child);
       cleanup();
       expect(parent.getState()).toEqual({
         name: "",
@@ -524,8 +524,8 @@ describe("test FormApi", () => {
     });
 
     test("removeChildForm removes child", () => {
-      parentPlugin.addChildForm("address", child);
-      parentPlugin.removeChildForm("address");
+      parentAddon.addChildForm("address", child);
+      parentAddon.removeChildForm("address");
       expect(parent.getState()).toEqual({
         name: "",
         address: { city: "", zip: "" },
@@ -533,7 +533,7 @@ describe("test FormApi", () => {
     });
 
     test("submit returns merged state", async () => {
-      parentPlugin.addChildForm("address", child);
+      parentAddon.addChildForm("address", child);
       const state = await parent.submit();
       expect(state).toEqual({
         name: "",
@@ -547,12 +547,12 @@ describe("test FormApi", () => {
       ]);
       child.setFieldVisible("city", true);
       child.setFieldValue("city", "");
-      parentPlugin.addChildForm("address", child);
+      parentAddon.addChildForm("address", child);
       await expect(parent.submit()).rejects.toBeDefined();
     });
 
     test("submit calls onSubmit with merged state", async () => {
-      parentPlugin.addChildForm("address", child);
+      parentAddon.addChildForm("address", child);
       const onSubmit = vi.fn();
       parent.onSubmit(onSubmit);
       await parent.submit();
@@ -563,7 +563,7 @@ describe("test FormApi", () => {
     });
 
     test("child onSubmit is not triggered by parent submit", async () => {
-      parentPlugin.addChildForm("address", child);
+      parentAddon.addChildForm("address", child);
       const childOnSubmit = vi.fn();
       child.onSubmit(childOnSubmit);
       await parent.submit();
@@ -580,10 +580,10 @@ describe("test FormApi", () => {
         lat: 40,
         lng: -74,
       });
-      const middlePlugin = new ChildFormsPlugin();
-      middle.installPlugin(NESTED_FORMS_PLUGIN_KEY, middlePlugin);
-      middlePlugin.addChildForm("geo", inner);
-      parentPlugin.addChildForm("address", middle);
+      const middleAddon = new ChildFormsAddon();
+      middle.installAddon(NESTED_FORMS_ADDON_KEY, middleAddon);
+      middleAddon.addChildForm("geo", inner);
+      parentAddon.addChildForm("address", middle);
       const state = await parent.submit();
       expect((state.address as any).geo).toEqual({ lat: 40, lng: -74 });
     });
@@ -647,6 +647,132 @@ describe("test FormApi", () => {
         name: string;
         address: { city: string; zip: string };
       }>();
+    });
+  });
+
+  describe("addons", () => {
+    test("installAddon / getAddon", () => {
+      const addon = {};
+      const KEY = Symbol("test");
+      api.installAddon(KEY, addon);
+      expect(api.getAddon(KEY)).toBe(addon);
+    });
+
+    test("onFieldUpdate is called on setFieldValue", () => {
+      const KEY = Symbol("test");
+      const onFieldUpdate = vi.fn();
+      api.installAddon(KEY, { onFieldUpdate });
+      api.setFieldValue("strField", "hello");
+      expect(onFieldUpdate).toHaveBeenCalledWith("strField", "hello");
+    });
+
+    test("onGetState can transform state", () => {
+      const KEY = Symbol("test");
+      api.installAddon(KEY, {
+        onGetState: (state) => ({ ...state, strField: "overridden" }),
+      });
+      expect(api.getState().strField).toBe("overridden");
+    });
+
+    test("getAddonsErrors returns empty when addon returns no errors", async () => {
+      const KEY = Symbol("test");
+      api.installAddon(KEY, { onValidateFields: async () => [] });
+      const errors = await api.getAddonsErrors(["strField"]);
+      expect(errors).toEqual([]);
+    });
+
+    test("getAddonsErrors returns errors from addon", async () => {
+      const KEY = Symbol("test");
+      const error = { rule: "required", value: "", errorText: "Required" };
+      api.installAddon(KEY, { onValidateFields: async () => [error] });
+      const errors = await api.getAddonsErrors(["strField"]);
+      expect(errors).toEqual([error]);
+    });
+
+    test("getAddonsErrors merges errors from multiple addons", async () => {
+      const KEY1 = Symbol("a");
+      const KEY2 = Symbol("b");
+      const err1 = { rule: "required", value: "", errorText: "Err1" };
+      const err2 = { rule: "min", value: "", errorText: "Err2" };
+      api.installAddon(KEY1, { onValidateFields: async () => [err1] });
+      api.installAddon(KEY2, { onValidateFields: async () => [err2] });
+      const errors = await api.getAddonsErrors(["strField"]);
+      expect(errors).toEqual([err1, err2]);
+    });
+
+    test("validateFields throws when addon returns errors", async () => {
+      const KEY = Symbol("test");
+      const error = { rule: "custom", value: "", errorText: "Addon error" };
+      api.installAddon(KEY, { onValidateFields: async () => [error] });
+      api.setFieldVisible("strField", true);
+      await expect(api.validateFields()).rejects.toContainEqual(error);
+    });
+
+    describe("new lifecycle hooks", () => {
+      test("onReset is called after resetFields with reset state", () => {
+        const KEY = Symbol("test");
+        const onReset = vi.fn();
+        api.installAddon(KEY, { onReset });
+        api.setFieldValue("strField", "changed");
+        api.resetFields();
+        expect(onReset).toHaveBeenCalledWith(expect.objectContaining({ strField: "" }));
+      });
+
+      test("onFieldVisible is called with true when field becomes visible", () => {
+        const KEY = Symbol("test");
+        const onFieldVisible = vi.fn();
+        api.installAddon(KEY, { onFieldVisible });
+        api.setFieldVisible("strField", true);
+        expect(onFieldVisible).toHaveBeenCalledWith("strField", true);
+      });
+
+      test("onFieldVisible is called with false when field becomes invisible", () => {
+        const KEY = Symbol("test");
+        const onFieldVisible = vi.fn();
+        api.installAddon(KEY, { onFieldVisible });
+        api.setFieldVisible("strField", false);
+        expect(onFieldVisible).toHaveBeenCalledWith("strField", false);
+      });
+
+      test("onSubmit is called after successful submit with form state", async () => {
+        const KEY = Symbol("test");
+        const onSubmit = vi.fn();
+        api.installAddon(KEY, { onSubmit });
+        await api.submit();
+        expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ strField: "" }));
+      });
+
+      test("onSubmit is NOT called when validation fails", async () => {
+        const KEY = Symbol("test");
+        const onSubmit = vi.fn();
+        api.installAddon(KEY, { onSubmit });
+        api.setFieldVisible("strField", true);
+        api.setFieldRules("strField", [{ required: true, message: "Required" }]);
+        await expect(api.submit()).rejects.toBeDefined();
+        expect(onSubmit).not.toHaveBeenCalled();
+      });
+
+      test("onValidationError is called when field has a validation error", async () => {
+        const KEY = Symbol("test");
+        const onValidationError = vi.fn();
+        api.installAddon(KEY, { onValidationError });
+        api.setFieldVisible("strField", true);
+        api.setFieldRules("strField", [{ required: true, message: "Required" }]);
+        await api.getFieldError("strField");
+        expect(onValidationError).toHaveBeenCalledWith(
+          "strField",
+          expect.arrayContaining([expect.objectContaining({ errorText: "Required" })]),
+        );
+      });
+
+      test("onSetInitialState is called after setInitialState with the new state", () => {
+        const KEY = Symbol("test");
+        const onSetInitialState = vi.fn();
+        api.installAddon(KEY, { onSetInitialState });
+        const newState = { strField: "new", numField: 42, boolField: true, strArray: [], numArray: [] };
+        api.setInitialState(newState);
+        expect(onSetInitialState).toHaveBeenCalledWith(expect.objectContaining({ strField: "new", numField: 42 }));
+      });
     });
   });
 });

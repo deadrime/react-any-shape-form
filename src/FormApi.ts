@@ -1,5 +1,5 @@
 import { getValidationErrors, prepareRules } from "./helpers/getValidationErrors";
-import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, ValidationRule, ValidateTrigger, ValidationError, FieldOnValidationStatusChangeCb, ValidationStatus, FormApiPlugin } from "./types";
+import { FieldError, FieldOnChangeCb, FieldOnErrorCb, FieldOnSubmitCb, FieldUpdate, FieldsUpdateCb, ValidationRule, ValidateTrigger, ValidationError, FieldOnValidationStatusChangeCb, ValidationStatus, FormApiAddon } from "./types";
 import { GetFields } from "./typesHelpers";
 
 export class FormApi<State extends Record<string, unknown>, Field extends GetFields<State> = GetFields<State>> {
@@ -13,7 +13,7 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   private submitSubscribers: Set<FieldOnSubmitCb<State>>;
   private validationSubscribers: Map<Field, FieldOnValidationStatusChangeCb<State[Field]>[]>;
   private visibleFields: Set<Field>
-  private readonly _plugins = new Map<symbol, FormApiPlugin>();
+  private readonly _addons = new Map<symbol, FormApiAddon>();
 
   constructor(state: State) {
     this.state = state;
@@ -28,13 +28,13 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     this.visibleFields = new Set();
   }
 
-  installPlugin(key: symbol, plugin: FormApiPlugin): void {
-    this._plugins.set(key, plugin);
+  installAddon(key: symbol, plugin: FormApiAddon): void {
+    this._addons.set(key, plugin);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getPlugin<P = any>(key: symbol): P | undefined {
-    return this._plugins.get(key) as P | undefined;
+  getAddon<P = any>(key: symbol): P | undefined {
+    return this._addons.get(key) as P | undefined;
   }
 
   setFieldVisible<F extends Field>(field: F, visible: boolean) {
@@ -43,11 +43,14 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     } else {
       this.visibleFields.delete(field);
     }
+    for (const plugin of this._addons.values()) {
+      plugin.onFieldVisible?.(field, visible);
+    }
   }
 
   getState(): State {
     let state = { ...this.state } as Record<string, unknown>;
-    for (const plugin of this._plugins.values()) {
+    for (const plugin of this._addons.values()) {
       state = plugin.onGetState?.(state) ?? state;
     }
     return state as State;
@@ -77,8 +80,8 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
       this.validationStatusByField[field] = 'notStarted';
       this.validationSubscribers.get(field)?.forEach(cb => cb('notStarted'));
     }
-    // notify plugins
-    for (const plugin of this._plugins.values()) {
+    // notify addons
+    for (const plugin of this._addons.values()) {
       plugin.onFieldUpdate?.(field, value);
     }
   }
@@ -86,7 +89,10 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   private triggerFieldError(field: Field, validationErrors: ValidationError<State[Field]>[]) {
     this.fieldErrors[field] = validationErrors;
     this.validationStatusByField[field] = 'error';
-    this.errorSubscribers.get(field)?.forEach(cb => cb(validationErrors, this.state))
+    this.errorSubscribers.get(field)?.forEach(cb => cb(validationErrors, this.state));
+    for (const plugin of this._addons.values()) {
+      plugin.onValidationError?.(field, validationErrors as ValidationError[]);
+    }
   }
 
   private triggerFieldValidation<F extends Field>(field: F, status: ValidationStatus, errors?: ValidationError<State[Field]>[]) {
@@ -140,6 +146,9 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
 
   resetFields() {
     this.setFieldsValue(this.initialState);
+    for (const plugin of this._addons.values()) {
+      plugin.onReset?.(this.state as Record<string, unknown>);
+    }
   }
 
   setFieldRules<F extends Field>(field: F, validationRules: ValidationRule<State[F]>[]) {
@@ -194,18 +203,26 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
     if (errors.length > 0) throw errors;
   }
 
+  setFieldError<F extends Field>(field: F, errors: ValidationError<State[F]>[]) {
+    this.triggerFieldError(field, errors as unknown as ValidationError<State[Field]>[]);
+  }
+
+  async getAddonsErrors(fields: string[], trigger?: ValidateTrigger) {
+    const results = await Promise.all(
+      [...this._addons.values()].map(addon => addon.onValidateFields?.(fields, trigger) ?? Promise.resolve([]))
+    );
+    return results.flat();
+  }
+
   async validateFields(fieldNames?: Field[], trigger?: ValidateTrigger) {
-    const fields = (fieldNames || [...this.visibleFields.values()]) as string[];
-    const errors = await this.getFieldsError(fields as Field[], trigger);
+    const fields = fieldNames || [...this.visibleFields.values()];
+    const [errors, addonErrors] = await Promise.all([
+      this.getFieldsError(fields, trigger),
+      this.getAddonsErrors(fields, trigger),
+    ]);
 
-    const pluginErrors: ValidationError[] = [];
-    for (const plugin of this._plugins.values()) {
-      const errs = await plugin.onValidateFields?.(fields, trigger) ?? [];
-      pluginErrors.push(...errs);
-    }
-
-    if ([...errors, ...pluginErrors].length > 0) {
-      throw [...errors, ...pluginErrors];
+    if ([...errors, ...addonErrors].length > 0) {
+      throw [...errors, ...addonErrors];
     }
   }
 
@@ -220,11 +237,17 @@ export class FormApi<State extends Record<string, unknown>, Field extends GetFie
   setInitialState(state: State) {
     this.initialState = structuredClone(state);
     this.setFieldsValue(state);
+    for (const plugin of this._addons.values()) {
+      plugin.onSetInitialState?.(state as Record<string, unknown>);
+    }
   }
 
   async submit() {
     await this.validateFields();
     const state = this.getState();
+    for (const plugin of this._addons.values()) {
+      plugin.onSubmit?.(state as Record<string, unknown>);
+    }
     this.submitSubscribers.forEach(cb => cb(state))
     return state
   }
