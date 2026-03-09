@@ -44,6 +44,10 @@ export default defineConfig({
       external: ['react', 'react-dom', 'zod', 'yup', 'valibot'],
       treeshake: 'smallest',
       output: {
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        entryFileNames: (chunk) => `${chunk.name}.es.js`,
+        chunkFileNames: '[name].es.js',
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
