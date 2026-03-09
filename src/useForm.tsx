@@ -8,27 +8,19 @@ import React, {
 import { FormApi } from "./FormApi";
 import {
   FormApiGenericTypes,
-  ArrayOnly,
-  ArrayOnlyFields,
   Prettify,
   MergeAddonStates,
-  HasArrayAddon,
-  HasNestedAddon,
+  MergeAddonExtensions,
   GetFields,
 } from "./typesHelpers";
 import {
   FieldUpdate,
-  ValidationRule,
   ValidationError,
   ValidationStatus,
-  ArrayItemError,
-  ArrayItemProps,
-  FieldUpdateCb,
   FormAddon,
 } from "./types";
 import { Form, FormProps } from "./Form";
 import FormItem, { FormItemProps } from "./FormItem";
-import type { FormArrayItemProps } from "./FormArrayItem";
 
 // ---------------------------------------------------------------------------
 // Return-type helpers
@@ -39,39 +31,6 @@ type FullFormState<
   Addons extends readonly FormAddon<any>[],
 > = Prettify<State & MergeAddonStates<Addons>>;
 
-/** The array-specific properties added when `withArrayFields()` is passed. */
-type ArrayCompoundFormExtension<State extends Record<string, unknown>> = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ArrayItem: <T extends ArrayOnlyFields<State>>(
-    props: FormArrayItemProps<T, ArrayOnly<State[T]>>,
-  ) => React.ReactElement;
-  useArrayField: <T extends ArrayOnlyFields<State>>(
-    field: T,
-    rules?: ValidationRule<State[T]>[],
-    itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[],
-  ) => {
-    value: State[T];
-    errors: ValidationError<State[T]>[];
-    items: ArrayItemProps<ArrayOnly<State[T]>[number]>[];
-    itemErrors: ArrayItemError<ArrayOnly<State[T]>[number]>[];
-    append: (value: ArrayOnly<State[T]>[number]) => void;
-    prepend: (value: ArrayOnly<State[T]>[number]) => void;
-    remove: (index: number) => void;
-    move: (from: number, to: number) => void;
-    update: (
-      index: number,
-      value:
-        | ArrayOnly<State[T]>[number]
-        | FieldUpdateCb<ArrayOnly<State[T]>[number]>,
-    ) => void;
-  };
-  useArrayFieldValidation: <T extends ArrayOnlyFields<State>>(
-    field: T,
-  ) => {
-    errors: ArrayItemError<ArrayOnly<State[T]>[number]>[];
-    status: ValidationStatus;
-  };
-};
 
 /** The full return type of `createForm` — base properties + optional array extension. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,15 +68,7 @@ export type CreateFormReturn<
     errors: ValidationError<FullFormState<State, Addons>[T]>[];
     status: ValidationStatus;
   };
-} & (HasArrayAddon<Addons> extends true
-  ? ArrayCompoundFormExtension<FullFormState<State, Addons>>
-  : Record<never, never>)
-  & (HasNestedAddon<Addons> extends true
-  ? {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      useChildForm: <T extends GetFields<FullFormState<State, Addons>>>(field: T, childForm: FormApi<any>) => void;
-    }
-  : Record<never, never>);
+} & MergeAddonExtensions<FullFormState<State, Addons>, Addons>;
 
 // ---------------------------------------------------------------------------
 // createForm / useForm

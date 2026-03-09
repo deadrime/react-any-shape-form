@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { FormApi } from "../FormApi";
 import { FormAddon, FormApiPlugin, ValidationError, ValidateTrigger } from "../types";
-import { CompoundFormLike, NestedForms, ResolvedNestedState } from "../typesHelpers";
+import { AddonExtensionHKT, CompoundFormLike, GetFields, NestedForms, ResolvedNestedState } from "../typesHelpers";
 import { NESTED_FORMS_PLUGIN_KEY } from "../pluginKeys";
 
 export class ChildFormsPlugin implements FormApiPlugin {
@@ -40,10 +40,20 @@ export class ChildFormsPlugin implements FormApiPlugin {
   }
 }
 
-export type NestedFormsAddon<ExtraState extends Record<string, unknown>> =
-  FormAddon<ExtraState> & {
-    readonly _addonType: "nested";
-  };
+type NestedExtension<State extends Record<string, unknown>> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useChildForm: <T extends GetFields<State>>(field: T, childForm: FormApi<any>) => void;
+};
+
+/** HKT that maps a form state type to the nested-forms compound-form extension. */
+export interface NestedExtensionHKT extends AddonExtensionHKT {
+  readonly type: NestedExtension<this['_State']>;
+}
+
+export type NestedFormsAddon<ExtraState extends Record<string, unknown>> = FormAddon<
+  ExtraState,
+  NestedExtensionHKT
+>;
 
 export function withNestedForms<N extends NestedForms>(
   forms: N,

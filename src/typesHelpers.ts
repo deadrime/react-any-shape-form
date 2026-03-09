@@ -1,6 +1,21 @@
 import { FormApi } from "./FormApi";
 import { FormAddon } from "./types";
 
+// ---------------------------------------------------------------------------
+// HKT (Higher-Kinded Type) simulation
+// Allows addons to declare state-parameterized extension types.
+// ---------------------------------------------------------------------------
+
+/** Base interface for addon extension HKTs. Override `type` using `this['_State']` to access the form state. */
+export interface AddonExtensionHKT {
+  readonly _State: Record<string, unknown>;
+  readonly type: Record<string, unknown>;
+}
+
+/** Apply an HKT to a concrete state type, producing the extension object type. */
+export type ApplyAddonExtension<F extends AddonExtensionHKT, State> =
+  (F & { readonly _State: State })['type'];
+
 export type FormApiGenericTypes<T> =
   T extends FormApi<infer S, infer F>
     ? { formApi: T; state: S; field: F }
@@ -59,7 +74,8 @@ export type Prettify<T> = {
 
 // Addon type utilities
 
-type ExtractAddonState<A> = A extends FormAddon<infer E> ? E : Record<never, never>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ExtractAddonState<A> = A extends FormAddon<infer E, any> ? E : Record<never, never>;
 
 /** Merges the ExtraState of all addons in the tuple into a single object type. */
 export type MergeAddonStates<Addons extends readonly unknown[]> =
@@ -67,18 +83,18 @@ export type MergeAddonStates<Addons extends readonly unknown[]> =
     ? ExtractAddonState<Head> & MergeAddonStates<Tail>
     : Record<never, never>;
 
-/** Returns `true` if any addon in the tuple has `_addonType === 'array'`. */
-export type HasArrayAddon<Addons extends readonly unknown[]> =
-  Addons extends readonly [infer Head, ...infer Tail]
-    ? Head extends { readonly _addonType: 'array' }
-      ? true
-      : HasArrayAddon<Tail>
-    : false;
+type ExtractAddonExtension<Addon, State extends Record<string, unknown>> =
+  Addon extends { readonly _extensionHKT?: infer H }
+    ? H extends AddonExtensionHKT
+      ? ApplyAddonExtension<H, State>
+      : Record<never, never>
+    : Record<never, never>;
 
-/** Returns `true` if any addon in the tuple has `_addonType === 'nested'`. */
-export type HasNestedAddon<Addons extends readonly unknown[]> =
-  Addons extends readonly [infer Head, ...infer Tail]
-    ? Head extends { readonly _addonType: 'nested' }
-      ? true
-      : HasNestedAddon<Tail>
-    : false;
+/** Merges the compound-form extension contributed by each addon in the tuple. */
+export type MergeAddonExtensions<
+  State extends Record<string, unknown>,
+  Addons extends readonly unknown[]
+> =
+  Addons extends readonly [infer Head, ...infer Tail extends readonly unknown[]]
+    ? ExtractAddonExtension<Head, State> & MergeAddonExtensions<State, Tail>
+    : Record<never, never>;

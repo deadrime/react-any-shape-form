@@ -38,6 +38,8 @@ export type {
   ExtractFormState,
   ResolveState,
   MergeAddonStates,
-  HasArrayAddon,
-  HasNestedAddon,
+  MergeAddonExtensions,
+  AddonExtensionHKT,
+  ApplyAddonExtension,
 } from './typesHelpers';
+export { defineAddon } from './helpers/defineAddon';

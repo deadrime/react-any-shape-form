@@ -117,10 +117,19 @@ export type IArrayPlugin = {
 };
 
 // Addon system — each addon carries _addonState for type inference and optional lifecycle hooks
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type FormAddon<ExtraState extends Record<string, unknown> = Record<never, never>> = {
+// The phantom `_extensionHKT?` field carries a higher-kinded type so TypeScript can derive
+// the state-parameterized compound-form extension via `ApplyAddonExtension<H, State>`.
+export type FormAddon<
+  ExtraState extends Record<string, unknown> = Record<never, never>,
+  // The second generic is an HKT describing the compound-form extension.
+  // Import AddonExtensionHKT from typesHelpers to declare state-aware extensions.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ExtHKT = any
+> = {
   readonly _addonType: string;
   readonly _addonState: ExtraState;
+  /** Phantom field — never set at runtime, used only for TypeScript inference. */
+  readonly _extensionHKT?: ExtHKT;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setup?(formApi: any): void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

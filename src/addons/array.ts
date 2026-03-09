@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import FormArrayItem, { FormArrayItemProps } from "../FormArrayItem";
 import { useArrayField } from "../FormArrayItem";
 import { FormApi } from "../FormApi";
-import { ArrayOnly, ArrayOnlyFields, FormApiGenericTypes } from "../typesHelpers";
-import { ArrayItemError, FormAddon, FormApiPlugin, IArrayPlugin, ValidationError, ValidationRule, ValidationStatus, ValidateTrigger } from "../types";
+import { AddonExtensionHKT, ArrayOnly, ArrayOnlyFields, FormApiGenericTypes } from "../typesHelpers";
+import { ArrayItemError, ArrayItemProps, FieldUpdateCb, FormAddon, FormApiPlugin, IArrayPlugin, ValidationError, ValidationRule, ValidationStatus, ValidateTrigger } from "../types";
 import { ARRAY_PLUGIN_KEY } from "../pluginKeys";
 import { getValidationErrors, prepareRules } from "../helpers/getValidationErrors";
 
@@ -122,9 +122,46 @@ const useArrayFieldValidation = <
   return { errors, status };
 };
 
-export type ArrayFieldsAddon = FormAddon<Record<never, never>> & {
-  readonly _addonType: "array";
+/** The array-specific properties added to the compound form when `withArrayFields()` is passed. */
+export type ArrayCompoundFormExtension<State extends Record<string, unknown>> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ArrayItem: <T extends ArrayOnlyFields<State>>(
+    props: FormArrayItemProps<T, ArrayOnly<State[T]>>,
+  ) => React.ReactElement;
+  useArrayField: <T extends ArrayOnlyFields<State>>(
+    field: T,
+    rules?: ValidationRule<State[T]>[],
+    itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[],
+  ) => {
+    value: State[T];
+    errors: ValidationError<State[T]>[];
+    items: ArrayItemProps<ArrayOnly<State[T]>[number]>[];
+    itemErrors: ArrayItemError<ArrayOnly<State[T]>[number]>[];
+    append: (value: ArrayOnly<State[T]>[number]) => void;
+    prepend: (value: ArrayOnly<State[T]>[number]) => void;
+    remove: (index: number) => void;
+    move: (from: number, to: number) => void;
+    update: (
+      index: number,
+      value:
+        | ArrayOnly<State[T]>[number]
+        | FieldUpdateCb<ArrayOnly<State[T]>[number]>,
+    ) => void;
+  };
+  useArrayFieldValidation: <T extends ArrayOnlyFields<State>>(
+    field: T,
+  ) => {
+    errors: ArrayItemError<ArrayOnly<State[T]>[number]>[];
+    status: ValidationStatus;
+  };
 };
+
+/** HKT that maps a form state type to the array compound-form extension. */
+export interface ArrayExtensionHKT extends AddonExtensionHKT {
+  readonly type: ArrayCompoundFormExtension<this['_State']>;
+}
+
+export type ArrayFieldsAddon = FormAddon<Record<never, never>, ArrayExtensionHKT>;
 
 export function withArrayFields(): ArrayFieldsAddon {
   return {
