@@ -136,7 +136,7 @@ function SignupForm() {
 
 ## Combining Schema Validation with Field Rules
 
-Schema addons and per-field `rules` are fully independent — both run on submit and their errors are merged together. Use field `rules` for `onChange` feedback and a schema for final `onFinish` validation:
+Schema addons and per-field `rules` are fully independent — both run on submit and their errors are merged together. Use field `rules` for `onChange` feedback and a schema for final `onSubmit` validation:
 
 ```tsx
 <MyForm.Item
@@ -160,7 +160,7 @@ Schema addons and per-field `rules` are fully independent — both run on submit
 | | Schema addons | Field rules |
 |---|---|---|
 | Runs on `onChange` | No (always skipped) | Yes, if `validateTrigger` includes `onChange` |
-| Runs on `onFinish` / submit | Yes | Yes |
+| Runs on `onSubmit` / submit | Yes | Yes |
 | Errors appear in `Form.Item` | Yes | Yes |
 | Errors thrown from `validateFields` | Yes | Yes |
 

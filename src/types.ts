@@ -14,7 +14,7 @@ export type RuleType = 'string' | 'number' | 'regexp' | 'email' | 'array'
 
 export type Validator<T = unknown, S = Record<string, unknown>> = (value: T, rule: ValidationRule<T>, formState: S) => Promise<string | void | Error>;
 
-export type ValidateTrigger = 'onChange' | 'onFinish'
+export type ValidateTrigger = 'onChange' | 'onSubmit'
 
 export interface ItemSchemaResolver<T = unknown> {
   /** @internal */

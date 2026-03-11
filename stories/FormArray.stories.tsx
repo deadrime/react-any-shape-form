@@ -27,7 +27,7 @@ export const ArrayExample: StoryObj<typeof Form> = {
               { type: "array", max: 5, message: "Максимум 5 тегов" },
             ]}
             itemRules={[
-              { type: "string", min: 2, message: "Тег минимум 2 символа", validateTrigger: ['onChange', 'onFinish'] },
+              { type: "string", min: 2, message: "Тег минимум 2 символа", validateTrigger: ['onChange', 'onSubmit'] },
             ]}
           >
             {({ items, append, remove, errors }) => (

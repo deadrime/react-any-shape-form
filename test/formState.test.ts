@@ -131,7 +131,7 @@ describe("FormStatePlugin", () => {
       const rule: ValidationRule = {
         required: true,
         message: "Required",
-        validateTrigger: ["onFinish"],
+        validateTrigger: ["onSubmit"],
       };
       api.setFieldRules("name", [rule]);
       api.setFieldVisible("name", true);
@@ -143,7 +143,7 @@ describe("FormStatePlugin", () => {
       const rule: ValidationRule = {
         required: true,
         message: "Required",
-        validateTrigger: ["onFinish"],
+        validateTrigger: ["onSubmit"],
       };
       api.setFieldRules("name", [rule]);
       api.setFieldVisible("name", true);
@@ -195,7 +195,7 @@ describe("FormStatePlugin", () => {
       const rule: ValidationRule = {
         required: true,
         message: "Required",
-        validateTrigger: ["onFinish"],
+        validateTrigger: ["onSubmit"],
       };
       api.setFieldRules("name", [rule]);
       api.setFieldVisible("name", true);
@@ -208,7 +208,7 @@ describe("FormStatePlugin", () => {
       const rule: ValidationRule = {
         required: true,
         message: "Required",
-        validateTrigger: ["onFinish"],
+        validateTrigger: ["onSubmit"],
       };
       api.setFieldRules("name", [rule]);
       api.setFieldVisible("name", true);

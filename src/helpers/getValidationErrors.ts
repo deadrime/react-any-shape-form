@@ -15,7 +15,7 @@ export const prepareRules = <Value,>(
   const result: PreparedRule<Value>[] = [];
 
   for (const rule of rules) {
-    const validateTrigger = rule.validateTrigger || ['onChange', 'onFinish']
+    const validateTrigger = rule.validateTrigger || ['onChange', 'onSubmit']
     const preparedRule = {
       ...rule,
       validateTrigger,

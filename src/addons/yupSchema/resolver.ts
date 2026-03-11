@@ -6,7 +6,7 @@ export function yupResolver<T>(
   options?: { validateTrigger?: ValidateTrigger[] },
 ): ItemSchemaResolver<T> {
   return {
-    validateTrigger: options?.validateTrigger ?? ['onFinish'],
+    validateTrigger: options?.validateTrigger ?? ['onSubmit'],
     _validate: async (value) => {
       try {
         await schema.validate(value, { abortEarly: false });

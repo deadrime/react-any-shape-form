@@ -18,7 +18,7 @@ The library supports validating each array element individually through the `ite
 - **Error display by index** - Errors are displayed for specific elements by index
 - **Built-in rules support** - `required`, `min`, `max`, `pattern`, `email`, `type`
 - **Custom validators** - Support for async custom validators
-- **Validation triggers** - `onChange` (debounced) or `onFinish` (on submit)
+- **Validation triggers** - `onChange` (debounced) or `onSubmit` (on submit)
 
 ## Syntax
 
@@ -156,7 +156,7 @@ const checkUsernameExists = async (username: string) => {
         }
       },
       message: "Username is already taken",
-      validateTrigger: ["onChange", "onFinish"],
+      validateTrigger: ["onChange", "onSubmit"],
     },
   ]}
 >
@@ -264,7 +264,7 @@ return (
 You can specify when validation should run:
 
 - **onChange** - validates on value change (with debounce)
-- **onFinish** - validates on form submission (default)
+- **onSubmit** - validates on form submission (default)
 
 ```typescript
 const { fields, itemErrors } = MyForm.useArrayField(

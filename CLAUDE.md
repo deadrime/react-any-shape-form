@@ -58,25 +58,18 @@ The library uses a **subscription-based state management** pattern centered arou
 **FormItem Component (`src/FormItem.tsx`)**
 - Renders individual form fields with validation
 - Supports custom render functions for labels and errors
-- Handles validation rules and triggers (onChange, onFinish)
+- Handles validation rules and triggers (onChange, onSubmit)
 
 **FormArrayItem Component (`src/FormArrayItem.tsx`)**
 - Manages array fields with add/remove/update operations
 - Provides `useArrayField` hook for array field manipulation
-
-### Hooks
-
-- `useWatch(form, field)` - Subscribe to field value changes
-- `useField(form, field)` - Get field value and setter function
-- `useFieldValidation(form, field)` - Get validation errors and status
-- `useArrayField(form, field, rules?)` - Manage array field operations
 
 ### Validation System
 
 Validation is promise-based and supports:
 - Built-in rules: `required`, `min`, `max`, `pattern`, `email`
 - Custom async validators
-- Validation triggers: `onChange` (debounced) or `onFinish` (on submit)
+- Validation triggers: `onChange` (debounced) or `onSubmit` (on submit)
 - Per-field validation status tracking: `notStarted`, `validating`, `success`, `error`
 
 Validation logic is in `src/basicValidation.ts` and `src/helpers/getValidationErrors.ts`.

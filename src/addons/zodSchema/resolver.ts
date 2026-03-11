@@ -6,7 +6,7 @@ export function zodResolver<T>(
   options?: { validateTrigger?: ValidateTrigger[] },
 ): ItemSchemaResolver<T> {
   return {
-    validateTrigger: options?.validateTrigger ?? ['onFinish'],
+    validateTrigger: options?.validateTrigger ?? ['onSubmit'],
     _validate: async (value) => {
       const result = await schema.safeParseAsync(value);
       if (result.success) return [];

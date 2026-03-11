@@ -32,9 +32,9 @@ describe('valibotResolver', () => {
     expect(errors).toContain('Invalid email');
   });
 
-  test('default validateTrigger is onFinish', () => {
+  test('default validateTrigger is onSubmit', () => {
     const resolver = valibotResolver(userSchema);
-    expect(resolver.validateTrigger).toEqual(['onFinish']);
+    expect(resolver.validateTrigger).toEqual(['onSubmit']);
   });
 
   test('validateTrigger can be overridden', () => {

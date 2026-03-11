@@ -21,7 +21,7 @@ Validation in this library is:
 - **Promise-based** - All validators return promises, enabling async validation
 - **Type-safe** - Full TypeScript support with type inference
 - **Flexible** - Built-in rules for common cases, custom validators for complex logic
-- **Trigger-based** - Control when validation runs (onChange, onFinish)
+- **Trigger-based** - Control when validation runs (onChange, onSubmit)
 - **Per-field** - Each field tracks its own validation state independently
 
 ## Built-in Validation Rules
@@ -186,7 +186,7 @@ const checkUsernameAvailable = async (username: string) => {
         }
       },
       message: "Username validation failed",
-      validateTrigger: ["onChange", "onFinish"]
+      validateTrigger: ["onChange", "onSubmit"]
     }
   ]}
 >
@@ -260,7 +260,7 @@ Validates as the user types, with automatic debouncing:
 </MyForm.Item>
 ```
 
-### onFinish (On Submit)
+### onSubmit
 
 Validates only when the form is submitted (default behavior):
 
@@ -271,7 +271,7 @@ Validates only when the form is submitted (default behavior):
     {
       type: "email",
       message: "Invalid email format",
-      validateTrigger: ["onFinish"]  // or omit (default)
+      validateTrigger: ["onSubmit"]  // or omit (default)
     }
   ]}
 >
@@ -294,7 +294,7 @@ Combine both triggers for maximum validation coverage:
         const available = await checkUsername(value);
         if (!available) throw new Error("Username taken");
       },
-      validateTrigger: ["onChange", "onFinish"]
+      validateTrigger: ["onChange", "onSubmit"]
     }
   ]}
 >
@@ -562,7 +562,7 @@ type ValidationRule<T = any> = {
   message?: string;
 
   // When to trigger validation
-  validateTrigger?: Array<'onChange' | 'onFinish'>;
+  validateTrigger?: Array<'onChange' | 'onSubmit'>;
 }
 ```
 
@@ -610,7 +610,7 @@ Use `onChange` trigger with caution for API calls - the library automatically de
         const available = await fetch(\`/api/check-username/\${value}\`);
         if (!available) throw new Error("Username taken");
       },
-      validateTrigger: ["onChange", "onFinish"]
+      validateTrigger: ["onChange", "onSubmit"]
     }
   ]}
 >

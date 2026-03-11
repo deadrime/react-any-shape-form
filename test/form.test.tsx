@@ -115,7 +115,7 @@ describe("test Form", () => {
       const rule: ValidationRule = {
         required: true,
         message: "requiredError",
-        validateTrigger: ["onFinish"],
+        validateTrigger: ["onSubmit"],
       };
 
       test("must throw an error with empty input", async () => {
@@ -176,7 +176,7 @@ describe("test Form", () => {
               {
                 validator: crossFieldValidator,
                 message: "Passwords do not match",
-                validateTrigger: ["onFinish"],
+                validateTrigger: ["onSubmit"],
               },
             ]}
           >

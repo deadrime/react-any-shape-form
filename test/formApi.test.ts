@@ -120,7 +120,7 @@ describe("test FormApi", () => {
     const rule: ValidationRule = {
       required: true,
       message: "StrRequired",
-      validateTrigger: ["onFinish"],
+      validateTrigger: ["onSubmit"],
     };
     api.setFieldRules("strField", [rule]);
     api.setFieldsValue({

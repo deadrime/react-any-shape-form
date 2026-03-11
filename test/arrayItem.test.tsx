@@ -351,7 +351,7 @@ describe("Form.ArrayItem tests", () => {
               {
                 required: true,
                 message: "At least one tag is required",
-                validateTrigger: ["onFinish"],
+                validateTrigger: ["onSubmit"],
               },
             ]}
           >
@@ -402,7 +402,7 @@ describe("Form.ArrayItem tests", () => {
                 type: "array",
                 min: 2,
                 message: "At least 2 tags required",
-                validateTrigger: ["onFinish"],
+                validateTrigger: ["onSubmit"],
               },
             ]}
           >
@@ -446,7 +446,7 @@ describe("Form.ArrayItem tests", () => {
                 type: "array",
                 max: 3,
                 message: "Maximum 3 tags allowed",
-                validateTrigger: ["onFinish"],
+                validateTrigger: ["onSubmit"],
               },
             ]}
           >
@@ -493,7 +493,7 @@ describe("Form.ArrayItem tests", () => {
                     return Promise.reject("Duplicate tags not allowed");
                   }
                 },
-                validateTrigger: ["onFinish"],
+                validateTrigger: ["onSubmit"],
               },
             ]}
           >
@@ -671,13 +671,13 @@ describe("Form.ArrayItem tests", () => {
                 type: "string",
                 min: 3,
                 message: "Min 3 characters",
-                validateTrigger: ["onFinish"],
+                validateTrigger: ["onSubmit"],
               },
               {
                 type: "string",
                 max: 20,
                 message: "Max 20 characters",
-                validateTrigger: ["onFinish"],
+                validateTrigger: ["onSubmit"],
               },
             ]}
           >
@@ -848,7 +848,7 @@ describe("Form.ArrayItem tests", () => {
               {
                 type: "email",
                 message: "Invalid email format",
-                validateTrigger: ["onFinish"],
+                validateTrigger: ["onSubmit"],
               },
             ],
           }

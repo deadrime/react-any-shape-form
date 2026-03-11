@@ -28,7 +28,7 @@ export const useArrayField = <
   const effectiveItemRules = useMemo(() => {
     if (!options?.schema) return options?.itemRules;
     const schemaRule: ValidationRule = {
-      validateTrigger: options.schema.validateTrigger ?? ['onFinish'],
+      validateTrigger: options.schema.validateTrigger ?? ['onSubmit'],
       validator: async (value: unknown) => {
         const errs = await options.schema!._validate(value as State[Field][number]);
         if (errs.length > 0) throw new Error(errs.join(', '));

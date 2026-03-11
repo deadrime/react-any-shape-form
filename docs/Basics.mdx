@@ -13,7 +13,7 @@ import * as FormApiStories from '../stories/FormApiMethods.stories';
   }}
 />
 
-## Basic Example
+# Basic Example
 
 Here's a simple form with two fields - name and age. Notice how the library gives you complete control over rendering:
 
@@ -71,7 +71,7 @@ Create async validators for complex logic:
     }
   },
   message: "Username already exists",
-  validateTrigger: ["onChange", "onFinish"]
+  validateTrigger: ["onChange", "onSubmit"]
 }
 ```
 
@@ -79,7 +79,7 @@ Create async validators for complex logic:
 
 Control when validation runs:
 - **`onChange`** - validates as user types (debounced)
-- **`onFinish`** - validates on form submission
+- **`onSubmit`** - validates on form submission
 
 See the [Validation](/docs/documentation-validation--docs) section for detailed validation documentation.
 

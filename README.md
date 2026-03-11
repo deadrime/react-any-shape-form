@@ -46,7 +46,7 @@ const MyComponent = () =>
         {
           required: true,
           message: 'Name is required',
-          validateTrigger: ['onFinish']
+          validateTrigger: ['onSubmit']
         },
       ]}
     >
@@ -114,7 +114,7 @@ You can pass array of validation rules to `Form.Item`.
 Don't forget to set error message or return `Promise.reject('your-error-message')`.
 You can control validation trigger using `validationTrigger`:
 `["onChange"]` - trigger fires if value changed (debounced by `300ms`)
-`["onFinish"]` - trigger fires only after form submit
+`["onSubmit"]` - trigger fires only after form submit
 
 ```ts
 [

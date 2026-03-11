@@ -24,7 +24,7 @@ class YupSchemaAddon implements FormApiAddon {
         if (!field || !fields.includes(field)) continue;
         const error: ValidationError = {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          rule: { validateTrigger: ['onFinish'] } as any,
+          rule: { validateTrigger: ['onSubmit'] } as any,
           value: state[field],
           errorText: inner.message,
         };
