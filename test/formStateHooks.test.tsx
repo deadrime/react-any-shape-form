@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { act, render } from "@testing-library/react";
-import { createForm } from "../src/index";
+import { createGlobalForm } from "../src/index";
 import { withFormState } from "../src/addons/formState";
 import React from "react";
 
-const MyForm = createForm({ name: "", email: "", age: 0 }, withFormState());
+const MyForm = createGlobalForm({ name: "", email: "", age: 0 }, withFormState());
 
 afterEach(() => {
   MyForm.formApi.resetFields();
@@ -20,7 +20,7 @@ describe("useFormState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     expect(renderSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -42,7 +42,7 @@ describe("useFormState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     act(() => {
       MyForm.formApi.setFieldValue("name", "Alice");
@@ -66,7 +66,7 @@ describe("useFormState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     act(() => {
       MyForm.formApi.setFieldValue("name", "Alice");
@@ -89,7 +89,7 @@ describe("useFormState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     MyForm.formApi.setFieldRules("name", [{ required: true, message: "Required" }]);
     MyForm.formApi.setFieldVisible("name", true);
@@ -120,7 +120,7 @@ describe("useFormState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
     const before = renderSpy.mock.calls.length;
 
     act(() => {
@@ -141,7 +141,7 @@ describe("useFieldState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     expect(renderSpy).toHaveBeenLastCalledWith({
       isTouched: false,
@@ -159,7 +159,7 @@ describe("useFieldState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     act(() => {
       MyForm.formApi.setFieldValue("name", "Alice");
@@ -181,7 +181,7 @@ describe("useFieldState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
     const before = renderSpy.mock.calls.length;
 
     act(() => {
@@ -200,7 +200,7 @@ describe("useFieldState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     act(() => {
       MyForm.formApi.setFieldValue("name", "Alice");
@@ -225,7 +225,7 @@ describe("useFieldState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     MyForm.formApi.setFieldRules("name", [{ required: true, message: "Required" }]);
     MyForm.formApi.setFieldVisible("name", true);
@@ -248,7 +248,7 @@ describe("useFieldState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     MyForm.formApi.setFieldRules("name", [{ required: true, message: "Required" }]);
     MyForm.formApi.setFieldVisible("name", true);
@@ -271,7 +271,7 @@ describe("useFieldState", () => {
       return null;
     };
 
-    render(<TestComponent />);
+    render(<MyForm><TestComponent /></MyForm>);
 
     act(() => {
       MyForm.formApi.setFieldValue("name", "Alice");

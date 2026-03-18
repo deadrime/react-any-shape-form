@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { act, render, renderHook, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { createForm } from '../src/index';
+import { createForm, FormApi } from '../src/index';
 import { withArrayFields } from '../src/addons/array';
 import { zodResolver } from '../src/addons/zodSchema/resolver';
 
@@ -50,34 +50,32 @@ describe('zodResolver', () => {
   });
 
   test('integration: withArrayFields + schema prop + submit rejects with item errors', async () => {
-    const MyForm = createForm(
-      { users: [{ name: '', email: 'bad' }] as { name: string; email: string }[] },
-      withArrayFields(),
-    );
+    const MyForm = createForm<{ users: { name: string; email: string }[] }>().withAddons(withArrayFields());
 
     const TestComponent = () => (
-      <MyForm>
-        <MyForm.ArrayItem name="users" schema={zodResolver(userSchema)}>
-          {({ items }) => (
-            <div>
-              {items.map((item, i) => (
-                <div key={i} data-testid={`item-errors-${i}`}>
-                  {item.errors.map(e => e.errorText).join(', ')}
-                </div>
-              ))}
-            </div>
-          )}
-        </MyForm.ArrayItem>
-        <button
-          data-testid="submit-btn"
-          onClick={() => MyForm.formApi.submit().catch(() => {})}
-        >
-          Submit
-        </button>
-      </MyForm>
+      <MyForm.ArrayItem name="users" schema={zodResolver(userSchema)}>
+        {({ items }) => (
+          <div>
+            {items.map((item, i) => (
+              <div key={i} data-testid={`item-errors-${i}`}>
+                {item.errors.map(e => e.errorText).join(', ')}
+              </div>
+            ))}
+          </div>
+        )}
+      </MyForm.ArrayItem>
     );
 
-    const { getByTestId } = render(<TestComponent />);
+    const { getByTestId } = render(
+      <MyForm.Form
+        initialState={{ users: [{ name: '', email: 'bad' }] }}
+      >
+        <TestComponent />
+        <MyForm.Submit>
+          <button data-testid="submit-btn">Submit</button>
+        </MyForm.Submit>
+      </MyForm.Form>
+    );
 
     await userEvent.click(getByTestId('submit-btn'));
 
@@ -88,77 +86,105 @@ describe('zodResolver', () => {
   });
 
   test('append throws and does not mutate on invalid value', async () => {
-    const MyForm = createForm({ users: [] as { name: string }[] }, withArrayFields());
+    const MyForm = createForm<{ users: { name: string }[] }>().withAddons(withArrayFields());
     const itemSchema = zodResolver(z.object({ name: z.string().min(1, 'Name required') }));
+    let capturedApi: FormApi<any> | null = null;
 
     const { result } = renderHook(
       () => MyForm.useArrayField('users', { schema: itemSchema }),
-      { wrapper: ({ children }) => <MyForm>{children}</MyForm> },
+      {
+        wrapper: ({ children }) => (
+          <MyForm.Form
+            ref={(api) => { capturedApi = api; }}
+            initialState={{ users: [] }}
+          >
+            {children}
+          </MyForm.Form>
+        ),
+      },
     );
 
     await expect(result.current.append({ name: '' })).rejects.toThrow('Name required');
-    expect(MyForm.formApi.getFieldValue('users')).toHaveLength(0);
+    expect(capturedApi?.getFieldValue('users')).toHaveLength(0);
   });
 
   test('append resolves and mutates on valid value', async () => {
-    const MyForm = createForm({ users: [] as { name: string }[] }, withArrayFields());
+    const MyForm = createForm<{ users: { name: string }[] }>().withAddons(withArrayFields());
     const itemSchema = zodResolver(z.object({ name: z.string().min(1, 'Name required') }));
+    let capturedApi: FormApi<any> | null = null;
 
     const { result } = renderHook(
       () => MyForm.useArrayField('users', { schema: itemSchema }),
-      { wrapper: ({ children }) => <MyForm>{children}</MyForm> },
+      {
+        wrapper: ({ children }) => (
+          <MyForm.Form
+            ref={(api) => { capturedApi = api; }}
+            initialState={{ users: [] }}
+          >
+            {children}
+          </MyForm.Form>
+        ),
+      },
     );
 
     await act(() => result.current.append({ name: 'Alice' }));
-    expect(MyForm.formApi.getFieldValue('users')).toHaveLength(1);
+    expect(capturedApi?.getFieldValue('users')).toHaveLength(1);
   });
 
   test('update throws and does not mutate on invalid value', async () => {
-    const MyForm = createForm({ users: [{ name: 'Alice' }] as { name: string }[] }, withArrayFields());
+    const MyForm = createForm<{ users: { name: string }[] }>().withAddons(withArrayFields());
     const itemSchema = zodResolver(z.object({ name: z.string().min(1, 'Name required') }));
+    let capturedApi: FormApi<any> | null = null;
 
     const { result } = renderHook(
       () => MyForm.useArrayField('users', { schema: itemSchema }),
-      { wrapper: ({ children }) => <MyForm>{children}</MyForm> },
+      {
+        wrapper: ({ children }) => (
+          <MyForm.Form
+            ref={(api) => { capturedApi = api; }}
+            initialState={{ users: [{ name: 'Alice' }] }}
+          >
+            {children}
+          </MyForm.Form>
+        ),
+      },
     );
 
     await expect(result.current.update(0, { name: '' })).rejects.toThrow('Name required');
-    expect((MyForm.formApi.getFieldValue('users') as { name: string }[])[0].name).toBe('Alice');
+    expect((capturedApi?.getFieldValue('users') as { name: string }[])[0].name).toBe('Alice');
   });
 
   test('schema and itemRules both fire', async () => {
-    const MyForm = createForm(
-      { tags: [''] as string[] },
-      withArrayFields(),
-    );
+    const MyForm = createForm<{ tags: string[] }>().withAddons(withArrayFields());
 
     const TestComponent = () => (
-      <MyForm>
-        <MyForm.ArrayItem
-          name="tags"
-          schema={zodResolver(z.string().min(2, 'Too short'))}
-          itemRules={[{ required: true, message: 'Required' }]}
-        >
-          {({ items }) => (
-            <div>
-              {items.map((item, i) => (
-                <div key={i} data-testid={`item-errors-${i}`}>
-                  {item.errors.map(e => e.errorText).join(', ')}
-                </div>
-              ))}
-            </div>
-          )}
-        </MyForm.ArrayItem>
-        <button
-          data-testid="submit-btn"
-          onClick={() => MyForm.formApi.submit().catch(() => {})}
-        >
-          Submit
-        </button>
-      </MyForm>
+      <MyForm.ArrayItem
+        name="tags"
+        schema={zodResolver(z.string().min(2, 'Too short'))}
+        itemRules={[{ required: true, message: 'Required' }]}
+      >
+        {({ items }) => (
+          <div>
+            {items.map((item, i) => (
+              <div key={i} data-testid={`item-errors-${i}`}>
+                {item.errors.map(e => e.errorText).join(', ')}
+              </div>
+            ))}
+          </div>
+        )}
+      </MyForm.ArrayItem>
     );
 
-    const { getByTestId } = render(<TestComponent />);
+    const { getByTestId } = render(
+      <MyForm.Form
+        initialState={{ tags: [''] }}
+      >
+        <TestComponent />
+        <MyForm.Submit>
+          <button data-testid="submit-btn">Submit</button>
+        </MyForm.Submit>
+      </MyForm.Form>
+    );
 
     await userEvent.click(getByTestId('submit-btn'));
 

@@ -3,6 +3,7 @@ import { FormApi } from '../../FormApi';
 import { AddonExtensionHKT, GetFields } from '../../typesHelpers';
 import { FormAddon, FormApiAddon, ValidationError, ValidateTrigger } from '../../types';
 import { FORM_STATE_ADDON_KEY } from '../addonKeys';
+import { useFormInstance } from '../../FormContext';
 
 /**
  * Snapshot of the overall form state returned by `useFormState()`.
@@ -228,20 +229,45 @@ export function withFormState(): FormStateAddon {
       formApi.installAddon(FORM_STATE_ADDON_KEY, new FormStatePlugin(formApi));
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    _extend(compoundForm: any, formApi: FormApi<any>) {
-      const plugin = formApi.getAddon<FormStatePlugin>(FORM_STATE_ADDON_KEY)!;
-      compoundForm.useFormState = () =>
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useSyncExternalStore(
-          cb => plugin.subscribe(cb),
-          () => plugin.getSnapshot(),
-        );
-      compoundForm.useFieldState = (field: string) =>
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useSyncExternalStore(
-          cb => plugin.subscribe(cb),
-          () => plugin.getFieldSnapshot(field),
-        );
+    _extend(compoundForm: any, formApi: FormApi<any> | null) {
+      if (formApi === null) {
+        // Context mode: read FormApi from context on each hook call
+        compoundForm.useFormState = () => {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          const form = useFormInstance();
+          const plugin = form.getAddon<FormStatePlugin>(FORM_STATE_ADDON_KEY)!;
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          return useSyncExternalStore(
+            cb => plugin.subscribe(cb),
+            () => plugin.getSnapshot(),
+          );
+        };
+        compoundForm.useFieldState = (field: string) => {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          const form = useFormInstance();
+          const plugin = form.getAddon<FormStatePlugin>(FORM_STATE_ADDON_KEY)!;
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          return useSyncExternalStore(
+            cb => plugin.subscribe(cb),
+            () => plugin.getFieldSnapshot(field),
+          );
+        };
+      } else {
+        // Global mode: close over the plugin resolved at setup time
+        const plugin = formApi.getAddon<FormStatePlugin>(FORM_STATE_ADDON_KEY)!;
+        compoundForm.useFormState = () =>
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          useSyncExternalStore(
+            cb => plugin.subscribe(cb),
+            () => plugin.getSnapshot(),
+          );
+        compoundForm.useFieldState = (field: string) =>
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          useSyncExternalStore(
+            cb => plugin.subscribe(cb),
+            () => plugin.getFieldSnapshot(field),
+          );
+      }
     },
   };
 }

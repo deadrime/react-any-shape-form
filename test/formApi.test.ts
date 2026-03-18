@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import { FormApi } from "../src/FormApi";
 import { ValidationRule } from "../src";
-import { createForm } from "../src/useForm";
+import { createGlobalForm as createForm } from "../src/useForm";
 import { ChildFormsAddon, withNestedForms } from "../src/addons/nestedForm";
 import { NESTED_FORMS_ADDON_KEY } from "../src/addons/addonKeys";
 
@@ -774,5 +774,30 @@ describe("test FormApi", () => {
         expect(onSetInitialState).toHaveBeenCalledWith(expect.objectContaining({ strField: "new", numField: 42 }));
       });
     });
+  });
+});
+
+describe("array move immutability", () => {
+  test("move does not mutate original array", () => {
+    const originalArray = ["a", "b", "c"];
+    const api = new FormApi({ value: originalArray });
+
+    // Simulate the move(0, 2) logic from FormArrayItem
+    const fields = api.getFieldValue("value") as string[];
+    const from = 0;
+    const to = 2;
+    const movedItem = fields[from];
+    const withoutItem = fields.toSpliced(from, 1);
+    const result = withoutItem.toSpliced(to, 0, movedItem);
+
+    api.setFieldValue("value", result as any);
+
+    // Original array should not be mutated
+    expect(originalArray).toEqual(["a", "b", "c"]);
+
+    // Form value should be different
+    const newValue = api.getFieldValue("value");
+    expect(newValue).toEqual(["b", "c", "a"]);
+    expect(newValue).not.toBe(originalArray);
   });
 });

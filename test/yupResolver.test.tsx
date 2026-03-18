@@ -50,34 +50,32 @@ describe('yupResolver', () => {
   });
 
   test('integration: withArrayFields + schema prop + submit rejects with item errors', async () => {
-    const MyForm = createForm(
-      { users: [{ name: '', email: 'bad' }] as { name: string; email: string }[] },
-      withArrayFields(),
-    );
+    const MyForm = createForm<{ users: { name: string; email: string }[] }>().withAddons(withArrayFields());
 
     const TestComponent = () => (
-      <MyForm>
-        <MyForm.ArrayItem name="users" schema={yupResolver(userSchema)}>
-          {({ items }) => (
-            <div>
-              {items.map((item, i) => (
-                <div key={i} data-testid={`item-errors-${i}`}>
-                  {item.errors.map(e => e.errorText).join(', ')}
-                </div>
-              ))}
-            </div>
-          )}
-        </MyForm.ArrayItem>
-        <button
-          data-testid="submit-btn"
-          onClick={() => MyForm.formApi.submit().catch(() => {})}
-        >
-          Submit
-        </button>
-      </MyForm>
+      <MyForm.ArrayItem name="users" schema={yupResolver(userSchema)}>
+        {({ items }) => (
+          <div>
+            {items.map((item, i) => (
+              <div key={i} data-testid={`item-errors-${i}`}>
+                {item.errors.map(e => e.errorText).join(', ')}
+              </div>
+            ))}
+          </div>
+        )}
+      </MyForm.ArrayItem>
     );
 
-    const { getByTestId } = render(<TestComponent />);
+    const { getByTestId } = render(
+      <MyForm.Form
+        initialState={{ users: [{ name: '', email: 'bad' }] }}
+      >
+        <TestComponent />
+        <MyForm.Submit>
+          <button data-testid="submit-btn">Submit</button>
+        </MyForm.Submit>
+      </MyForm.Form>
+    );
 
     await userEvent.click(getByTestId('submit-btn'));
 
@@ -88,38 +86,36 @@ describe('yupResolver', () => {
   });
 
   test('schema and itemRules both fire', async () => {
-    const MyForm = createForm(
-      { tags: [''] as string[] },
-      withArrayFields(),
-    );
+    const MyForm = createForm<{ tags: string[] }>().withAddons(withArrayFields());
 
     const TestComponent = () => (
-      <MyForm>
-        <MyForm.ArrayItem
-          name="tags"
-          schema={yupResolver(yup.string().min(2, 'Too short'))}
-          itemRules={[{ required: true, message: 'Required' }]}
-        >
-          {({ items }) => (
-            <div>
-              {items.map((item, i) => (
-                <div key={i} data-testid={`item-errors-${i}`}>
-                  {item.errors.map(e => e.errorText).join(', ')}
-                </div>
-              ))}
-            </div>
-          )}
-        </MyForm.ArrayItem>
-        <button
-          data-testid="submit-btn"
-          onClick={() => MyForm.formApi.submit().catch(() => {})}
-        >
-          Submit
-        </button>
-      </MyForm>
+      <MyForm.ArrayItem
+        name="tags"
+        schema={yupResolver(yup.string().min(2, 'Too short'))}
+        itemRules={[{ required: true, message: 'Required' }]}
+      >
+        {({ items }) => (
+          <div>
+            {items.map((item, i) => (
+              <div key={i} data-testid={`item-errors-${i}`}>
+                {item.errors.map(e => e.errorText).join(', ')}
+              </div>
+            ))}
+          </div>
+        )}
+      </MyForm.ArrayItem>
     );
 
-    const { getByTestId } = render(<TestComponent />);
+    const { getByTestId } = render(
+      <MyForm.Form
+        initialState={{ tags: [''] }}
+      >
+        <TestComponent />
+        <MyForm.Submit>
+          <button data-testid="submit-btn">Submit</button>
+        </MyForm.Submit>
+      </MyForm.Form>
+    );
 
     await userEvent.click(getByTestId('submit-btn'));
 

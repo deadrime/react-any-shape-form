@@ -37,8 +37,7 @@ export const UseFormState: StoryObj<typeof Form> = {
         <div className="form">
           <MyForm.Item
             name="name"
-            rules={[{ required: true, message: "Name is required" }]}
-            validateTrigger="onChange"
+            rules={[{ required: true, message: "Name is required", validateTrigger: ["onChange"] }]}
           >
             {({ value, onChange, errors }) => (
               <div className="form-item">
@@ -58,10 +57,9 @@ export const UseFormState: StoryObj<typeof Form> = {
           <MyForm.Item
             name="email"
             rules={[
-              { required: true, message: "Email is required" },
-              { type: "email", message: "Invalid email" },
+              { required: true, message: "Email is required", validateTrigger: ["onChange"] },
+              { type: "email", message: "Invalid email", validateTrigger: ["onChange"] },
             ]}
-            validateTrigger="onChange"
           >
             {({ value, onChange, errors }) => (
               <div className="form-item">

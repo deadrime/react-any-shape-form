@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import * as v from 'valibot';
 import { FormApi } from '../src/FormApi';
 import { withValibotSchema } from '../src/addons/valibotSchema';
-import { createForm } from '../src/useForm';
+import { createGlobalForm as createForm } from '../src/useForm';
 
 const schema = v.object({
   email: v.pipe(v.string(), v.email('Invalid email')),

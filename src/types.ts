@@ -136,14 +136,22 @@ export type FormAddon<
   // The second generic is an HKT describing the compound-form extension.
   // Import AddonExtensionHKT from typesHelpers to declare state-aware extensions.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ExtHKT = any
+  ExtHKT = any,
+  // The third generic is an HKT describing additional required props for <Form>.
+  // Used with AddonFormPropsHKT from typesHelpers to enforce props like `nestedForms`.
+  FormPropsHKT = never,
 > = {
   readonly _addonType: string;
   readonly _addonState: ExtraState;
   /** Phantom field — never set at runtime, used only for TypeScript inference. */
   readonly _extensionHKT?: ExtHKT;
+  /** Phantom field — never set at runtime, used only for TypeScript inference. */
+  readonly _formPropsHKT?: FormPropsHKT;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setup?(formApi: any): void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _extend?(compoundForm: any, formApi: any): void;
+  /** Called once on mount inside <Form> when using the context-based createForm API. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _onContextMount?(formApi: any, props: Record<string, unknown>): (() => void) | void;
 };

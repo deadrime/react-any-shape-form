@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import * as yup from 'yup';
 import { FormApi } from '../src/FormApi';
 import { withYupSchema } from '../src/addons/yupSchema';
-import { createForm } from '../src/useForm';
+import { createGlobalForm as createForm } from '../src/useForm';
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email required'),

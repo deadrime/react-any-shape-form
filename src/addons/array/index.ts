@@ -5,6 +5,7 @@ import { FormApi } from "../../FormApi";
 import { AddonExtensionHKT, ArrayOnly, ArrayOnlyFields, FormApiGenericTypes } from "../../typesHelpers";
 import { ArrayItemError, ArrayItemProps, FieldUpdateCb, FormAddon, FormApiAddon, IArrayAddon, ItemSchemaResolver, ValidationError, ValidationRule, ValidationStatus, ValidateTrigger } from "../../types";
 import { ARRAY_ADDON_KEY } from "../addonKeys";
+import { useFormInstance } from "../../FormContext";
 import { getValidationErrors, prepareRules } from "../../helpers/getValidationErrors";
 
 export class ArrayItemsAddon implements FormApiAddon, IArrayAddon {
@@ -180,29 +181,48 @@ export function withArrayFields(): ArrayFieldsAddon {
     _setup(formApi: FormApi<any>) {
       formApi.installAddon(ARRAY_ADDON_KEY, new ArrayItemsAddon(formApi));
     },
-    _extend(compoundForm: any, form: FormApi<any>) {
-      type State = ReturnType<typeof form.getState>;
-
-      const ArrayItemComponent = <T extends ArrayOnlyFields<State>>(
-        props: FormArrayItemProps<T, ArrayOnly<State[T]>>,
-      ) => React.createElement(FormArrayItem as any, props);
-
-      const useArrayFieldHook = <T extends ArrayOnlyFields<State>>(
-        field: T,
-        options?: {
-          rules?: ValidationRule<State[T]>[];
-          itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[];
-          schema?: ItemSchemaResolver<ArrayOnly<State[T]>[number]>;
-        },
-      ) => useArrayField(form, field, options);
-
-      const useArrayFieldValidationHook = <T extends ArrayOnlyFields<State>>(
-        field: T,
-      ) => useArrayFieldValidation(form, field);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    _extend(compoundForm: any, form: FormApi<any> | null) {
+      // ArrayItem uses useFormInstance() internally — works in both modes
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ArrayItemComponent = (props: FormArrayItemProps<any, any>) =>
+        React.createElement(FormArrayItem as any, props);
 
       compoundForm.ArrayItem = ArrayItemComponent;
-      compoundForm.useArrayField = useArrayFieldHook;
-      compoundForm.useArrayFieldValidation = useArrayFieldValidationHook;
+
+      if (form === null) {
+        // Context mode: read FormApi from context
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const useArrayFieldFn = useArrayField as any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const useArrayFieldValidationFn = useArrayFieldValidation as any;
+        compoundForm.useArrayField = (field: string, options?: any) => {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          const contextForm = useFormInstance();
+          return useArrayFieldFn(contextForm, field, options);
+        };
+        compoundForm.useArrayFieldValidation = (field: string) => {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          const contextForm = useFormInstance();
+          return useArrayFieldValidationFn(contextForm, field);
+        };
+      } else {
+        // Global mode: close over the specific FormApi instance using typed wrappers
+        type State = ReturnType<typeof form.getState>;
+        const useArrayFieldHook = <T extends ArrayOnlyFields<State>>(
+          field: T,
+          options?: {
+            rules?: ValidationRule<State[T]>[];
+            itemRules?: ValidationRule<ArrayOnly<State[T]>[number]>[];
+            schema?: ItemSchemaResolver<ArrayOnly<State[T]>[number]>;
+          },
+        ) => useArrayField(form, field, options);
+        const useArrayFieldValidationHook = <T extends ArrayOnlyFields<State>>(
+          field: T,
+        ) => useArrayFieldValidation(form, field);
+        compoundForm.useArrayField = useArrayFieldHook;
+        compoundForm.useArrayFieldValidation = useArrayFieldValidationHook;
+      }
     },
   };
 }

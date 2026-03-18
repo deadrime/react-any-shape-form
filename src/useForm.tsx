@@ -11,6 +11,7 @@ import {
   Prettify,
   MergeAddonStates,
   MergeAddonExtensions,
+  MergeAddonFormProps,
   GetFields,
 } from "./typesHelpers";
 import {
@@ -21,6 +22,9 @@ import {
 } from "./types";
 import { Form, FormProps } from "./Form";
 import FormItem, { FormItemProps } from "./FormItem";
+import { FormSubmit } from "./FormSubmit";
+import { FormContext, useFormInstance } from "./FormContext";
+import { useIsomorphicLayoutEffect } from "./helpers/useIsomorphicLayoutEffect";
 
 // ---------------------------------------------------------------------------
 // Return-type helpers
@@ -32,7 +36,7 @@ type FullFormState<
 > = Prettify<State & MergeAddonStates<Addons>>;
 
 
-/** The full return type of `createForm` — base properties + optional array extension. */
+/** The full return type of `createGlobalForm` — base properties + optional array extension. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CreateFormReturn<
   State extends Record<string, unknown>,
@@ -70,8 +74,67 @@ export type CreateFormReturn<
   };
 } & MergeAddonExtensions<FullFormState<State, Addons>, Addons>;
 
+/** Handle exposed via ref on the context-based <Form> component. */
+/** @deprecated Use `FormApi` directly as the ref type. Kept for backward compatibility. */
+export type FormHandle = FormApi<any>;
+
+/** Props for the context-based <Form> component created by `createForm`. */
+export type FormBuilderProps<
+  State extends Record<string, unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Addons extends readonly FormAddon<any>[] = [],
+> = {
+  initialState: FullFormState<State, Addons>;
+  children: React.ReactNode;
+  onSubmit?: (state: FullFormState<State, Addons>) => void;
+  onFieldChange?: (
+    field: keyof FullFormState<State, Addons>,
+    value: FullFormState<State, Addons>[keyof FullFormState<State, Addons>],
+  ) => void;
+  id?: string;
+} & MergeAddonFormProps<Addons>;
+
+/** The full return type of `createForm`. */
+export type FormBuilderReturn<
+  State extends Record<string, unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Addons extends readonly FormAddon<any>[],
+> = {
+  Form: React.ForwardRefExoticComponent<
+    FormBuilderProps<State, Addons> & React.RefAttributes<FormApi<FullFormState<State, Addons>>>
+  >;
+  Item: <T extends GetFields<FullFormState<State, Addons>>>(
+    props: FormItemProps<T, FullFormState<State, Addons>[T]>,
+  ) => React.ReactElement;
+  Submit: typeof FormSubmit;
+  useWatch: {
+    <T extends GetFields<FullFormState<State, Addons>>>(
+      field: T,
+    ): FullFormState<State, Addons>[T];
+    <T extends GetFields<FullFormState<State, Addons>>>(
+      fields: T[],
+    ): Pick<FullFormState<State, Addons>, T>;
+  };
+  useField: <T extends GetFields<FullFormState<State, Addons>>>(
+    field: T,
+  ) => readonly [
+    FullFormState<State, Addons>[T],
+    (value: FieldUpdate<FullFormState<State, Addons>[T]>) => void,
+  ];
+  useFieldErrors: <T extends GetFields<FullFormState<State, Addons>>>(
+    field: T,
+  ) => {
+    errors: ValidationError<FullFormState<State, Addons>[T]>[];
+    status: ValidationStatus;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withAddons: <NewAddons extends FormAddon<any>[]>(
+    ...addons: [...NewAddons]
+  ) => FormBuilderReturn<State, [...Addons, ...NewAddons]>;
+} & MergeAddonExtensions<FullFormState<State, Addons>, Addons>;
+
 // ---------------------------------------------------------------------------
-// createForm / useForm
+// createGlobalForm / useForm (legacy API — global FormApi instance)
 // ---------------------------------------------------------------------------
 
 export const useCreateForm = <State extends Record<string, unknown>>(
@@ -83,7 +146,7 @@ export const useCreateForm = <State extends Record<string, unknown>>(
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createForm = <
+export const createGlobalForm = <
   State extends Record<string, unknown>,
   Addons extends FormAddon<any>[],
 >(
@@ -159,20 +222,141 @@ export const useForm = <
   ...addons: [...Addons]
 ): CreateFormReturn<State, Addons> => {
   // useRef captures the initial form instance; subsequent renders reuse it.
-  // We cast because TypeScript widens the inferred type when spreading ...addons
-  // into the inner createForm call, losing the tuple type of Addons.
   const ref = useRef<CreateFormReturn<State, Addons>>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     null as any,
   );
   if (!ref.current) {
-    ref.current = createForm(
+    ref.current = createGlobalForm(
       initialState,
       ...addons,
     ) as unknown as CreateFormReturn<State, Addons>;
   }
   return ref.current;
 };
+
+// ---------------------------------------------------------------------------
+// createForm — context-based API (FormApi created per <Form> render)
+// ---------------------------------------------------------------------------
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildFormBuilder<
+  State extends Record<string, unknown>,
+  Addons extends FormAddon<any>[],
+>(addons: [...Addons]): FormBuilderReturn<State, Addons> {
+  type FullState = FullFormState<State, Addons>;
+
+  // Merge addon initial states — used when creating FormApi in ContextForm
+  const mergedAddonStates = {} as Record<string, unknown>;
+  for (const addon of addons) {
+    Object.assign(mergedAddonStates, addon._addonState);
+  }
+
+  const ContextForm = React.forwardRef<FormApi<FullState>, FormBuilderProps<State, Addons>>(
+    function ContextFormInner(props, ref) {
+      const formApiRef = React.useRef<FormApi<FullState> | null>(null);
+      if (!formApiRef.current) {
+        const resolvedInitial = {
+          ...mergedAddonStates,
+          ...(props.initialState as Record<string, unknown>),
+        } as FullState;
+        const api = new FormApi<FullState>(resolvedInitial);
+        for (const addon of addons) {
+          addon._setup?.(api);
+        }
+        formApiRef.current = api;
+      }
+      const formApi = formApiRef.current;
+
+      useIsomorphicLayoutEffect(() => {
+        formApi.setInitialState(props.initialState);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+
+      useEffect(() => {
+        if (!props.onSubmit) return;
+        return formApi.onSubmit(props.onSubmit as (state: Record<string, unknown>) => void);
+      }, [formApi, props.onSubmit]);
+
+      React.useImperativeHandle(ref, () => formApi, [formApi]);
+
+      // Run addon context-mount effects (e.g., for withNestedForms)
+      useEffect(() => {
+        const cleanups: (() => void)[] = [];
+        for (const addon of addons) {
+          const cleanup = addon._onContextMount?.(formApi, props as unknown as Record<string, unknown>);
+          if (cleanup) cleanups.push(cleanup);
+        }
+        return () => cleanups.forEach(fn => fn());
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+
+      return (
+        <FormContext.Provider
+          value={{
+            formApi: formApi as FormApi<any>,
+            formId: props.id,
+            onFieldChange: props.onFieldChange as ((field: string, value: unknown) => void) | undefined,
+          }}
+        >
+          {props.children}
+        </FormContext.Provider>
+      );
+    },
+  );
+
+  // Context-based hooks
+  function useWatchHook<T extends GetFields<FullState>>(field: T): FullState[T];
+  function useWatchHook<T extends GetFields<FullState>>(fields: T[]): Pick<FullState, T>;
+  function useWatchHook<T extends GetFields<FullState>>(fieldOrFields: T | T[]) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const form = useFormInstance<FullState>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return useWatch(form, fieldOrFields as any);
+  }
+
+  const useFieldHook = <T extends GetFields<FullState>>(field: T) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const form = useFormInstance<FullState>();
+    return useField(form, field);
+  };
+
+  const useFieldErrorsHook = <T extends GetFields<FullState>>(field: T) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const form = useFormInstance<FullState>();
+    return useFieldValidation(form, field);
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const withAddonsFn = <NewAddons extends FormAddon<any>[]>(...newAddons: [...NewAddons]) => {
+    return buildFormBuilder<State, [...Addons, ...NewAddons]>([...addons, ...newAddons]);
+  };
+
+  const ItemComponent = <T extends GetFields<FullState>>(
+    props: FormItemProps<T, FullState[T]>,
+  ) => React.createElement(FormItem, props as any);
+
+  const compound = {
+    Form: ContextForm,
+    Item: ItemComponent,
+    Submit: FormSubmit,
+    useWatch: useWatchHook,
+    useField: useFieldHook,
+    useFieldErrors: useFieldErrorsHook,
+    withAddons: withAddonsFn,
+  };
+
+  // Let addons extend the compound form (context mode: formApi = null)
+  for (const addon of addons) {
+    addon._extend?.(compound, null);
+  }
+
+  return compound as unknown as FormBuilderReturn<State, Addons>;
+}
+
+export function createForm<State extends Record<string, unknown>>(): FormBuilderReturn<State, []> {
+  return buildFormBuilder<State, []>([]);
+}
 
 // ---------------------------------------------------------------------------
 // Low-level hooks (exported for direct use with FormApi instances)
@@ -292,4 +476,3 @@ export const useFieldValidation = <
 
   return { errors, status };
 };
-

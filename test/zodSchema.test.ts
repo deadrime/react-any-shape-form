@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 import { FormApi } from '../src/FormApi';
 import { withZodSchema } from '../src/addons/zodSchema';
-import { createForm } from '../src/useForm';
+import { createGlobalForm as createForm } from '../src/useForm';
 
 const schema = z.object({
   email: z.string().email('Invalid email'),

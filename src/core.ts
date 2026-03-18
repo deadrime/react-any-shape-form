@@ -5,8 +5,9 @@ export { default as FormItem } from './FormItem';
 export type { FormItemProps, FormItemChildrenProps } from './FormItem';
 export { useFormContext, useFormInstance, createFormContext, FormContext } from './FormContext';
 export type { FormContextState } from './FormContext';
-export { createForm, useForm, useCreateForm, useWatch, useField, useFieldValidation } from './useForm';
-export type { CreateFormReturn } from './useForm';
+export { createForm, createGlobalForm, useForm, useCreateForm, useWatch, useField, useFieldValidation } from './useForm';
+export type { CreateFormReturn, FormBuilderReturn, FormBuilderProps, FormHandle } from './useForm';
+export { FormSubmit } from './FormSubmit';
 export type {
   FieldError,
   FieldOnChangeCb,
@@ -42,5 +43,8 @@ export type {
   MergeAddonExtensions,
   AddonExtensionHKT,
   ApplyAddonExtension,
+  AddonFormPropsHKT,
+  ApplyAddonFormProps,
+  MergeAddonFormProps,
 } from './typesHelpers';
 export { defineAddon } from './addons/defineAddon';

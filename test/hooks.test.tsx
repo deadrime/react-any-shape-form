@@ -1,20 +1,16 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { act, render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createForm, useWatch } from "../src/index";
+import { createGlobalForm, useWatch } from "../src/index";
 import React from "react";
 
+const MyForm = createGlobalForm({ firstName: "", lastName: "", age: 0 });
+
+afterEach(() => {
+  MyForm.formApi.resetFields();
+});
+
 describe("useWatch with multiple fields", () => {
-  const MyForm = createForm({
-    firstName: "",
-    lastName: "",
-    age: 0,
-  });
-
-  afterEach(() => {
-    MyForm.formApi.resetFields();
-  });
-
   test("returns object with values for multiple fields", () => {
     const renderSpy = vi.fn();
 
@@ -22,7 +18,7 @@ describe("useWatch with multiple fields", () => {
       const values = MyForm.useWatch(["firstName", "lastName"]);
       renderSpy(values);
       return (
-        <MyForm>
+        <div>
           <MyForm.Item name="firstName">
             {({ value, onChange }) => (
               <input
@@ -41,11 +37,15 @@ describe("useWatch with multiple fields", () => {
               />
             )}
           </MyForm.Item>
-        </MyForm>
+        </div>
       );
     };
 
-    render(<TestComponent />);
+    render(
+      <MyForm>
+        <TestComponent />
+      </MyForm>
+    );
     expect(renderSpy).toHaveBeenLastCalledWith({
       firstName: "",
       lastName: "",
@@ -59,7 +59,7 @@ describe("useWatch with multiple fields", () => {
       const values = MyForm.useWatch(["firstName", "lastName"]);
       renderSpy(values);
       return (
-        <MyForm>
+        <div>
           <MyForm.Item name="firstName">
             {({ value, onChange }) => (
               <input
@@ -78,11 +78,15 @@ describe("useWatch with multiple fields", () => {
               />
             )}
           </MyForm.Item>
-        </MyForm>
+        </div>
       );
     };
 
-    const { getByTestId } = render(<TestComponent />);
+    const { getByTestId } = render(
+      <MyForm>
+        <TestComponent />
+      </MyForm>
+    );
 
     await userEvent.type(getByTestId("first-name"), "John");
     expect(renderSpy).toHaveBeenLastCalledWith({
@@ -104,7 +108,7 @@ describe("useWatch with multiple fields", () => {
       const values = MyForm.useWatch(["firstName"]);
       renderSpy(values);
       return (
-        <MyForm>
+        <div>
           <MyForm.Item name="firstName">
             {({ value, onChange }) => (
               <input
@@ -124,11 +128,15 @@ describe("useWatch with multiple fields", () => {
               />
             )}
           </MyForm.Item>
-        </MyForm>
+        </div>
       );
     };
 
-    render(<TestComponent />);
+    render(
+      <MyForm>
+        <TestComponent />
+      </MyForm>
+    );
     const callCountBefore = renderSpy.mock.calls.length;
 
     act(() => {
@@ -139,7 +147,7 @@ describe("useWatch with multiple fields", () => {
   });
 
   test("standalone useWatch with single field", () => {
-    const MyForm2 = createForm({ x: 1, y: 2 });
+    const MyForm2 = createGlobalForm({ x: 1, y: 2 });
     const renderSpy = vi.fn();
 
     const TestComponent = () => {
@@ -166,7 +174,7 @@ describe("useWatch with multiple fields", () => {
   });
 
   test("standalone useWatch with array of fields", () => {
-    const MyForm2 = createForm({ x: 1, y: 2, z: 3 });
+    const MyForm2 = createGlobalForm({ x: 1, y: 2, z: 3 });
     const renderSpy = vi.fn();
 
     const TestComponent = () => {

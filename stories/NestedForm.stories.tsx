@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { Meta, StoryObj } from "@storybook/react-vite";
-import { createForm } from "../src";
+import { createGlobalForm as createForm } from "../src";
 import { Form } from "../src/Form";
 import { withNestedForms } from "../src/addons/nestedForm";
 import "./stories.css";

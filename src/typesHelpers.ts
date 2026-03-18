@@ -98,3 +98,28 @@ export type MergeAddonExtensions<
   Addons extends readonly [infer Head, ...infer Tail extends readonly unknown[]]
     ? ExtractAddonExtension<Head, State> & MergeAddonExtensions<State, Tail>
     : Record<never, never>;
+
+// ---------------------------------------------------------------------------
+// Addon Form Props HKT — for declaring additional required <Form> props
+// ---------------------------------------------------------------------------
+
+/** Base interface for addon form-props HKTs. Override `type` to declare additional Form props. */
+export interface AddonFormPropsHKT {
+  readonly type: Record<string, unknown>;
+}
+
+/** Apply an addon form-props HKT, producing the extra props object type. */
+export type ApplyAddonFormProps<H extends AddonFormPropsHKT> = H['type'];
+
+type ExtractAddonFormProps<Addon> =
+  Addon extends { readonly _formPropsHKT?: infer H }
+    ? H extends AddonFormPropsHKT
+      ? ApplyAddonFormProps<H>
+      : Record<never, never>
+    : Record<never, never>;
+
+/** Merges extra Form props declared by each addon in the tuple. */
+export type MergeAddonFormProps<Addons extends readonly unknown[]> =
+  Addons extends readonly [infer Head, ...infer Tail]
+    ? ExtractAddonFormProps<Head> & MergeAddonFormProps<Tail>
+    : Record<never, never>;
